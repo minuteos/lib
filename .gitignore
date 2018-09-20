@@ -1,0 +1,9 @@
+# We ignore just various OS generated files, no output should ever appear
+# in this repository
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
