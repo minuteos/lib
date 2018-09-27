@@ -27,7 +27,8 @@ include $(BASE_DIR)Functions.mk
 PROJECT_ROOT = $(call parentdir,$(BASE_DIR))
 
 # the host running the build is the default target
-TARGETS ?= host
+TARGET ?= host
+TARGETS ?= $(TARGET)
 
 # default configuration is release
 CONFIG ?= Release
@@ -53,8 +54,8 @@ NAME ?= $(notdir $(realpath $(PROJECT_ROOT)))
 LIB_ROOTS := $(call subdirs,$(PROJECT_ROOT),lib*)
 TARGET_ROOTS := $(call subdirs,$(PROJECT_ROOT) $(LIB_ROOTS),targets)
 COMPONENT_DIRS = $(call subdirs,$(LIB_ROOTS),$(COMPONENTS))
-TARGET_DIRS = $(call subdirs,$(TARGET_ROOTS),$(TARGETS))
-TARGET_COMPONENT_DIRS = $(call subdirs,$(TARGET_DIRS),$(COMPONENTS))
+TARGET_DIRS = $(call subdirs2,$(TARGET_ROOTS),$(TARGETS))
+TARGET_COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(COMPONENTS))
 LIB_DIRS = $(COMPONENT_DIRS) $(TARGET_DIRS) $(TARGET_COMPONENT_DIRS)
 FIRST_MAKE_DIR = $(dir $(firstword $(MAKEFILE_LIST)))
 
@@ -62,17 +63,23 @@ FIRST_MAKE_DIR = $(dir $(firstword $(MAKEFILE_LIST)))
 # Prepare compilation settings, so the component makefiles can modify them
 #
 
+# Output directories and primary output files
+OUTTARGET = out/$(firstword $(TARGETS))/
+OUTDIR    = $(OUTTARGET)$(CONFIG)/
+OBJDIR    = $(OUTDIR)obj/
+OUTPUT    = $(OUTDIR)$(NAME)
+
 # Include directories are the directories which contain components
-INCLUDE_DIRS = $(PROJECT_ROOT) $(TARGET_ROOTS) $(LIB_ROOTS)
+INCLUDE_DIRS = $(PROJECT_ROOT) $(TARGET_DIRS) $(TARGET_ROOTS) $(LIB_ROOTS)
 
 # Source directories are all component directories
-SOURCE_DIRS = $(FIRST_MAKE_DIR) $(LIB_DIRS)
+SOURCE_DIRS = $(sort $(FIRST_MAKE_DIR) $(LIB_DIRS))
 
 # Source file extensions
 SOURCE_EXTS = .c .cpp .S
 
 # Default compilation flags to minimize output size
-COMMON_FLAGS = -g3 -Wall -fmessage-length=0 -fno-exceptions -fdata-sections -ffunction-sections
+COMMON_FLAGS = -g -Wall -fmessage-length=0 -fno-exceptions -fdata-sections -ffunction-sections
 C_FLAGS = -std=gnu11
 CXX_FLAGS = -std=gnu++14 -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
 OPT_FLAGS = -O3 -Os
@@ -107,20 +114,13 @@ ifneq (,$(REMAINING_MAKEFILES))
   $(error Too many dependency levels, consider simplifying them or adding more resolution steps to Base.mk)
 endif
 
+sinclude $(call subfiles,$(LIB_DIRS),IncludePost.mk)
+
 #
 # Fix variables before compilation
 #
 
 COMPONENTS := $(sort $(call dirname,$(COMPONENT_DIRS) $(TARGET_COMPONENT_DIRS)))
-
-#
-# Output directories and primary output files
-#
-
-OUTTARGET = out/$(firstword $(TARGETS))/
-OUTDIR    = $(OUTTARGET)$(CONFIG)/
-OBJDIR    = $(OUTDIR)obj/
-OUTPUT    = $(OUTDIR)$(NAME)
 
 #
 # Toolchain
@@ -136,6 +136,7 @@ ECHO = echo
 CAT = cat
 DATE = date
 TEE = tee
+LN = ln
 
 #
 # Fix everything for compilation
@@ -151,11 +152,11 @@ DEFINES += $(subst -,_,$(addprefix C,$(COMPONENTS)))
 DEP_OPT = -MMD -MP
 DEF_OPT = $(addprefix -D,$(DEFINES))
 INC_OPT = $(call diropt,-I,$(call subdirs,$(dir $<),private) $(INCLUDE_DIRS))
-LIB_OPT = $(call diropt,-L,$(LIB_DIRS))
+LIB_OPT = $(call diropt,-L,$(LIB_DIRS) $(LINK_DIRS)) $(addprefix -l,$(LIBS))
 
 C_OPT    = $(DEF_OPT) $(INC_OPT) $(DEP_OPT) $(CPP_FLAGS) $(ARCH_FLAGS) $(COMMON_FLAGS) $(OPT_FLAGS)
-CC_OPT   = $(C_OPT) $(C_FLAGS)
-CXX_OPT  = $(C_OPT) $(CXX_FLAGS)
+CC_OPT   = $(C_OPT) $(C_FLAGS) $(C_FLAGS_EXTRA)
+CXX_OPT  = $(C_OPT) $(CXX_FLAGS) $(CXX_FLAGS_EXTRA)
 LINK_OPT = $(ARCH_FLAGS) $(LIB_OPT) $(LINK_FLAGS)
 
 #
@@ -171,7 +172,7 @@ PCH_OPT := -include $(OBJDIR)precompiled -Winvalid-pch
 PCH_FILE := $(OBJDIR)precompiled.gch
 DEPS += $(OBJDIR)precompiled.d
 
-$(PCH_FILE): $(PCH)
+$(PCH_FILE): $(PCH) | $(PREBUILD)
 	@$(MKDIR) -p $(OBJDIR)
 	$(CXX) -c $< $(CXX_OPT) -o $@
 
@@ -197,21 +198,26 @@ test: $(TESTRESULTS) $(TESTSUMMARY)
 
 objs: $(OBJS)
 
-$(OBJDIR)%.o: %.c
+$(OBJDIR)%.o: %.c | $(PREBUILD)
 	@$(MKDIR) -p $(dir $@)
 	$(CC) -c $< $(CC_OPT) -o $@
 
-$(OBJDIR)%.o: %.S
+$(OBJDIR)%.o: %.S | $(PREBUILD)
 	@$(MKDIR) -p $(dir $@)
 	$(CC) -c $< $(CC_OPT) -o $@
 
-$(OBJDIR)%.o: %.cpp $(PCH_FILE)
+$(OBJDIR)%.o: %.cpp $(PCH_FILE) | $(PREBUILD)
 	@$(MKDIR) -p $(dir $@)
 	$(CXX) -c $< $(CXX_OPT) $(PCH_OPT) -o $@
 
+$(OBJDIR)%.nopch.o: %.nopch.cpp | $(PREBUILD)
+	$(error $<)
+	@$(MKDIR) -p $(dir $@)
+	$(CXX) -c $< $(CXX_OPT) -o $@
+
 $(OUTPUT).elf: $(OBJS) $(BLOBS)
 	@$(MKDIR) -p $(dir $@)
-	$(CXX) -o $@ $(OBJS) $(BLOBS) $(LIBS) $(LINK_OPT)
+	$(CXX) -o $@ $(sort $(OBJS) $(BLOBS)) $(LINK_OPT)
 
 $(OUTPUT).S: $(OUTPUT).elf
 	$(OBJDUMP) -d $< >$@

@@ -23,6 +23,9 @@ subfiles = $(call relcanon,$(foreach d,$(1),$(wildcard $(addprefix $(d),$(2)))))
 # provides all existing combnations of directories from both arguments
 subdirs = $(call relcanon,$(patsubst %/.,%/,$(wildcard $(foreach d,$(1),$(addprefix $(d),$(addsuffix /.,$(2)))))))
 
+# provides all existing combnations of directories from both arguments, prefering the order in the second argument
+subdirs2 = $(call relcanon,$(patsubst %/.,%/,$(wildcard $(foreach d,$(2),$(addsuffix $(d)/.,$(1))))))
+
 # extracts directory names from a set of directories or files
 dirname = $(notdir $(1:/=))
 
