@@ -172,7 +172,7 @@ PCH_OPT := -include $(OBJDIR)precompiled -Winvalid-pch
 PCH_FILE := $(OBJDIR)precompiled.gch
 DEPS += $(OBJDIR)precompiled.d
 
-$(PCH_FILE): $(PCH) | $(PREBUILD)
+$(PCH_FILE): $(PCH) prebuild
 	@$(MKDIR) -p $(OBJDIR)
 	$(CXX) -c $< $(CXX_OPT) -o $@
 
@@ -184,13 +184,13 @@ endif
 
 .DEFAULT_GOAL := all
 
-.PHONY: all main disassembly test objs
+.PHONY: all main prebuild disassembly test objs
 
 .SUFFIXES:
 
 all: main disassembly
 
-main: $(OUTPUT).elf
+main: prebuild $(OUTPUT).elf
 
 disassembly: $(OUTPUT).S $(OUTPUT).SS
 
@@ -198,24 +198,24 @@ test: $(TESTRESULTS) $(TESTSUMMARY)
 
 objs: $(OBJS)
 
-$(OBJDIR)%.o: %.c | $(PREBUILD)
+$(OBJDIR)%.o: %.c prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(CC) -c $< $(CC_OPT) -o $@
 
-$(OBJDIR)%.o: %.S | $(PREBUILD)
+$(OBJDIR)%.o: %.S prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(CC) -c $< $(CC_OPT) -o $@
 
-$(OBJDIR)%.o: %.cpp $(PCH_FILE) | $(PREBUILD)
+$(OBJDIR)%.o: %.cpp $(PCH_FILE) prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(CXX) -c $< $(CXX_OPT) $(PCH_OPT) -o $@
 
-$(OBJDIR)%.nopch.o: %.nopch.cpp | $(PREBUILD)
+$(OBJDIR)%.nopch.o: %.nopch.cpp prebuild
 	$(error $<)
 	@$(MKDIR) -p $(dir $@)
 	$(CXX) -c $< $(CXX_OPT) -o $@
 
-$(OUTPUT).elf: $(OBJS) $(BLOBS)
+$(OUTPUT).elf: $(OBJS) $(BLOBS) prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(CXX) -o $@ $(sort $(OBJS) $(BLOBS)) $(LINK_OPT)
 
