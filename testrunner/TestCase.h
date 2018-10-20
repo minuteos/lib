@@ -9,7 +9,6 @@
 #include <base/base.h>
 
 #include <setjmp.h>
-#include <iostream>
 #include <functional>
 
 class TestCase
@@ -26,11 +25,13 @@ protected:
 
 public:
     void Assert(bool condition) { if (!condition) Fail(); }
-    template<typename T> void AssertEqual(T o1, T o2) { if (o1 != o2) Fail([o1,o2] { std::cout << o1 << " != " << o2; }); }
+    template<typename T> void AssertEqual(T o1, T o2) { if (o1 != o2) Fail([this,o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
     void Fail();
     void Fail(const char* reason);
     void Fail(const char* format, ...);
     void Fail(std::function<void(void)> reasonPrint);
+    void Print(const char* text) { puts(text); }
+    void Print(int value) { printf("%d", value); }
 
 private:
     bool Execute();
