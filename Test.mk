@@ -14,6 +14,7 @@
 # force variables that would be incorrectly detected by Base.mk
 override BASE_DIR = $(dir $(lastword $(MAKEFILE_LIST)))
 override FIRST_MAKE_DIR = $(TEST)
+override PCH = lib/testrunner/precompiled.hpp 
 
 # derive the name of the output and default components from the input
 NAME = $(call dirname,$(OUTDIR))
