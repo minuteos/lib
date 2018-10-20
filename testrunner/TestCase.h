@@ -24,6 +24,7 @@ protected:
     virtual const char* File() const = 0;
     virtual int Line() const = 0;
 
+public:
     void Assert(bool condition) { if (!condition) Fail(); }
     template<typename T> void AssertEqual(T o1, T o2) { if (o1 != o2) Fail([o1,o2] { std::cout << o1 << " != " << o2; }); }
     void Fail();
