@@ -14,3 +14,6 @@
 
 #define va_call(func, last, ...) \
 	({ va_list va; va_start(va, last); auto res = func(__VA_ARGS__, va); va_end(va); res; })
+
+#define va_call_void(func, last, ...) \
+	({ va_list va; va_start(va, last); func(__VA_ARGS__, va); va_end(va); })

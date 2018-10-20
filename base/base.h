@@ -22,6 +22,7 @@
 #include <base/macros.h>
 #include <base/hacks.h>
 #include <base/helpers.h>
+#include <base/debug.h>
 
 // platform-specific base header, to include anything that is common for the platform
 // e.g. CMSIS for ARM targets
