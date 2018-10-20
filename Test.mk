@@ -17,7 +17,7 @@ override FIRST_MAKE_DIR = $(TEST)
 
 # derive the name of the output and default components from the input
 NAME = $(call dirname,$(OUTDIR))
-TEST_COMPONENT = $(call dirname,$(call parentdir,$(call parentdir,$(dir $@))))
+TEST_COMPONENT = $(call dirname,$(call parentdir,$(call parentdir,$(dir $(TEST)))))
 COMPONENTS = testrunner $(TEST_COMPONENT)
 
 # test can request additional components to be included

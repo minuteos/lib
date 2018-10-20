@@ -10,6 +10,7 @@
 
 #include <setjmp.h>
 #include <iostream>
+#include <functional>
 
 class TestCase
 {

@@ -23,7 +23,7 @@ TEST_SUMMARY  := $(OUTTEST)summary.testres
 
 $(TEST_SUMMARY): $(TEST_RESULTS)
 	@$(DATE) >$@
-	@$(foreach d,$(TEST_RESULTS),$(ECHO) "\n*** Results from '$(call t_stripout,$(dir $(d)))'\\n" >>$@; $(CAT) $(d) >>$@)
+	@$(foreach d,$(TEST_RESULTS),$(ECHO) "\n*** Results from '$(call t_stripout,$(dir $(d)))'\\n" >>$@; $(CAT) $(d) >>$@;)
 	$(info )
 	$(info Test log can be found in '$@')
 
@@ -39,7 +39,9 @@ $(TEST_BINARIES):
 	$(info )
 	$(info *** Running test suite '$(patsubst $(OUTTEST)%,%,$(dir $@))')
 	$(info )
-	@$< 2>&1 | $(TEE) $@
+	@$(TEST_RUN) $< 2>&1 | $(TEE) $@
+
+.PHONY: tests test
 
 tests: $(TEST_BINARIES)
 

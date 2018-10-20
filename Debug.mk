@@ -6,5 +6,5 @@
 # Debug.mk - specific options for Debug builds
 #
 
-OPT_FLAGS = -Og
+OPT_FLAGS = -O0
 DEFINES += DEBUG
