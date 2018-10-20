@@ -11,9 +11,13 @@
 #include <defs.h>
 
 // include a few common system headers
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+#include <base/macros.h>
+#include <base/hacks.h>
