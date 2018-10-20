@@ -67,7 +67,7 @@ class Delegate
 	}
 
 public:
-	ALWAYS_INLINE constexpr Delegate() : target(NULL), fn(NULL) {}
+	ALWAYS_INLINE constexpr Delegate(fptr_t fn = NULL, void* arg0 = NULL) : target(arg0), fn(fn) {}
 
 	template<class T>
 	ALWAYS_INLINE constexpr Delegate(T* target, TRes (T::*method)(Args...))
