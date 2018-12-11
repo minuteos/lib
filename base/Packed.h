@@ -39,6 +39,13 @@ template<typename T> union PackedWrapper<T, 8>
 	packed_t packed;
 };
 
+template<typename T> union PackedWrapper<T, 12>
+{
+	typedef uint32_t __attribute__((vector_size(16))) packed_t;
+	T value;
+	packed_t packed;
+};
+
 template<typename T> union PackedWrapper<T, 16>
 {
 	typedef uint32_t __attribute__((vector_size(16))) packed_t;
