@@ -29,6 +29,8 @@ $(TEST_SUMMARY): $(TEST_RESULTS)
 
 .PHONY: $(TEST_BINARIES)
 
+MAKEOVERRIDES := TARGET=$(TARGET)
+
 $(TEST_BINARIES):
 	$(info )
 	$(info *** Building test suite '$(patsubst $(OUTTEST)%,%,$(dir $@))')

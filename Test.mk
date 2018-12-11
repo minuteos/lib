@@ -16,12 +16,14 @@ override BASE_DIR = $(dir $(lastword $(MAKEFILE_LIST)))
 override FIRST_MAKE_DIR = $(TEST)
 override PCH = lib/testrunner/precompiled.hpp 
 
+include $(BASE_DIR)Functions.mk
+
 # derive the name of the output and default components from the input
 NAME = $(call dirname,$(OUTDIR))
 TEST_COMPONENT = $(call dirname,$(call parentdir,$(call parentdir,$(dir $(TEST)))))
 COMPONENTS = testrunner $(TEST_COMPONENT)
 
 # test can request additional components to be included
-sinclude $(TEST)/Include.mk
+sinclude $(TEST)Include.mk
 
 include $(BASE_DIR)Base.mk

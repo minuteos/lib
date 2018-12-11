@@ -85,8 +85,8 @@ CXX_FLAGS = -std=gnu++14 -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
 OPT_FLAGS = -O3 -Os
 
 # Include configuration-specific makefiles
-sinclude $(BASE_DIR)/$(CONFIG).mk
-sinclude $(PROJECT_ROOT)/$(CONFIG).mk
+sinclude $(BASE_DIR)$(CONFIG).mk
+sinclude $(PROJECT_ROOT)$(CONFIG).mk
 
 #
 # Include all makefiles from used components and targets (LIB_DIRS)
