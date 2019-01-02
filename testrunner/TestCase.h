@@ -30,8 +30,9 @@ public:
     void Fail(const char* reason);
     void Fail(const char* format, ...);
     void Fail(std::function<void(void)> reasonPrint);
-    void Print(const char* text) { puts(text); }
+    void Print(const char* text) { printf(text); }
     void Print(int value) { printf("%d", value); }
+    template<typename T> void Print(const T* ptr) { printf("%p", ptr); }
 
 private:
     bool Execute();
