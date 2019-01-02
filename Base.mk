@@ -188,9 +188,9 @@ endif
 
 .SUFFIXES:
 
-all: main disassembly
+all: main
 
-main: prebuild $(OUTPUT).elf
+main: prebuild $(OUTPUT).elf disassembly
 
 disassembly: $(OUTPUT).S $(OUTPUT).SS
 
