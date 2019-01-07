@@ -26,13 +26,17 @@ protected:
 public:
     void Assert(bool condition) { if (!condition) Fail(); }
     template<typename T> void AssertEqual(T o1, T o2) { if (o1 != o2) Fail([this,o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
+    template<typename T> void AssertNotEqual(T o1, T o2) { if (o1 == o2) Fail([this,o1,o2] { Print(o1); Print(" == "); Print(o2); }); }
     void Fail();
     void Fail(const char* reason);
     void Fail(const char* format, ...);
     void Fail(std::function<void(void)> reasonPrint);
-    void Print(const char* text) { printf(text); }
+    void Print(const char* text) { printf("%s", text); }
     void Print(int value) { printf("%d", value); }
     template<typename T> void Print(const T* ptr) { printf("%p", ptr); }
+    template<typename T> void Print(T* ptr) { printf("%p", ptr); }
+    // everything else is printed as an integer
+    template<typename T> void Print(T value) { printf("%ld", (long)value); }
 
 private:
     bool Execute();
