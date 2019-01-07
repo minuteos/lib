@@ -75,6 +75,7 @@ template<size_t size> class __MemPoolInstance
     template<size_t> friend void* MemPoolAlloc();
     template<size_t> friend void* MemPoolAllocDynamic();
     template<size_t> friend void MemPoolFree(void*);
+    template<size_t> friend constexpr MemPool* MemPoolGet();
 };
 
 template<size_t size> class MemPool __MemPoolInstance<size>::s_instance(size);
@@ -113,3 +114,12 @@ template<size_t size> ALWAYS_INLINE void* MemPoolAllocDynamic()
 template<typename T> ALWAYS_INLINE T* MemPoolAllocDynamic() { return (T*)MemPoolAllocDynamic<sizeof(T)>(); }
 
 void MemPoolFreeDynamic(void* mem);
+
+template<size_t size> ALWAYS_INLINE constexpr MemPool* MemPoolGet()
+{
+    if (size > MEMPOOL_MAX_SIZE)
+        return NULL;
+    else
+        return &__MemPoolInstance<MemPoolSize<size>()>::s_instance;
+}
+template<typename T> ALWAYS_INLINE constexpr MemPool* MemPoolGet() { return MemPoolGet<sizeof(T)>(); }

@@ -43,4 +43,14 @@ TEST_CASE("02 Dynamic alloc")
     MemPoolFreeDynamic(mem2);
 }
 
+TEST_CASE("03 MemPoolGet")
+{
+    // maximum size MemPool must still be available
+    AssertNotEqual(MemPoolGet<MEMPOOL_MAX_SIZE>(), (MemPool*)NULL);
+    // size above maximum must not be available
+    AssertEqual(MemPoolGet<MEMPOOL_MAX_SIZE * 2>(), (MemPool*)NULL);
+    // check smallest possible mempool
+    AssertEqual(MemPoolGet<1>(), MemPoolGet<MEMPOOL_MIN_SIZE>());
+}
+
 }
