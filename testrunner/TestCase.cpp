@@ -6,6 +6,10 @@
 
 #include <testrunner/TestCase.h>
 
+#ifdef Ckernel
+#include <kernel/kernel.h>
+#endif
+
 TestCase* TestCase::s_first = NULL;
 TestCase* TestCase::s_last = NULL;
 
@@ -45,6 +49,9 @@ bool TestCase::Execute()
     }
     
     failJump = &fail;
+#ifdef Ckernel
+    __testrunner_time = 0;
+#endif
     Run();
     puts("OK");
     return false;

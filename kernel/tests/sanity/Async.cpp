@@ -1,0 +1,107 @@
+/*
+ * Copyright (c) 2019 triaxis s.r.o.
+ * Licensed under the MIT license. See LICENSE.txt file in the repository root
+ * for full license information.
+ *
+ * kernel/tests/sanity/Async.cpp
+ * 
+ * Direct tests of asynchronous function calling mechanisms
+ */
+
+#include <testrunner/TestCase.h>
+
+#include <kernel/async.h>
+
+namespace   // prevent collisions
+{
+
+TEST_CASE("01 Simple call")
+{
+    struct
+    {
+        async(Test, int ms, int tick, int res) async_def()
+        {
+            async_sleep_ms(ms);
+            async_sleep_ticks(tick);
+            async_delay_ms(ms);
+            async_delay_ticks(tick);
+            async_return(res);
+        }
+        async_end
+
+        AsyncFrame* p = NULL;
+        async_res_t Step() { return Test(&p, 10, 20, 30); }
+    } t;
+
+    auto res = t.Step();
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::SleepMilliseconds);
+    AssertEqual(_ASYNC_RES_VALUE(res), 10);
+    AssertNotEqual(t.p, (AsyncFrame*)NULL);
+
+    res = t.Step();
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::SleepTicks);
+    AssertEqual(_ASYNC_RES_VALUE(res), 20);
+
+    res = t.Step();
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::DelayMilliseconds);
+    AssertEqual(_ASYNC_RES_VALUE(res), 10);
+
+    res = t.Step();
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::DelayTicks);
+    AssertEqual(_ASYNC_RES_VALUE(res), 20);
+
+    res = t.Step();
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Complete);
+    AssertEqual(_ASYNC_RES_VALUE(res), 30);
+    AssertEqual(t.p, (AsyncFrame*)NULL);
+}
+
+TEST_CASE("02 Masked waits")
+{
+    struct
+    {
+        async(Test, int ms, int tick, int res) async_def()
+        {
+            if (await_mask_sec(x, 1, 2, 3))
+            {
+                if (!await_mask_not_ms(p, 4, 5, 6))
+                {
+                    await_mask(*this, 0xFF, 0);
+                }
+            }
+        }
+        async_end
+
+        int x;
+        AsyncFrame* p = NULL;
+        async_res_t Step() { return Test(&p, 10, 20, 30); }
+    } t;
+
+    auto res = t.Step();
+    AssertNotEqual(t.p, (AsyncFrame*)NULL);
+    AssertEqual((intptr_t)_ASYNC_RES_TYPE(res), (intptr_t)AsyncResult::WaitSeconds | 0x0201);
+    AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
+    AssertEqual((int*)t.p->waitPtr, &t.x);
+    AssertEqual(t.p->waitTimeout, 3u);
+    t.p->waitResult = true;  // simulate success
+
+    res = t.Step();
+    AssertEqual((intptr_t)_ASYNC_RES_TYPE(res), (intptr_t)AsyncResult::WaitInvertedMilliseconds | 0x0504);
+    AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
+    AssertEqual((AsyncFrame**)t.p->waitPtr, &t.p);
+    AssertEqual(t.p->waitTimeout, 6u);
+    t.p->waitResult = false; // simulate timeout
+
+    res = t.Step();
+    AssertEqual((intptr_t)_ASYNC_RES_TYPE(res), (intptr_t)AsyncResult::Wait | 0xFF);
+    AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
+    AssertEqual((typeof(t)*)t.p->waitPtr, &t);
+    AssertEqual(t.p->waitTimeout, 0u);
+
+    res = t.Step();
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Complete);
+    AssertEqual(_ASYNC_RES_VALUE(res), 0);
+    AssertEqual(t.p, (AsyncFrame*)NULL);
+}
+
+}

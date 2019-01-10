@@ -27,6 +27,12 @@ public:
     void Assert(bool condition) { if (!condition) Fail(); }
     template<typename T1, typename T2> void AssertEqual(T1 o1, T2 o2) { if (o1 != o2) Fail([this,o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
     template<typename T1, typename T2> void AssertNotEqual(T1 o1, T2 o2) { if (o1 == o2) Fail([this,o1,o2] { Print(o1); Print(" == "); Print(o2); }); }
+    template<typename T1, typename T2> void AssertLessThan(T1 o1, T2 o2) { if (o1 >= o2) Fail([this,o1,o2] { Print(o1); Print(" >= "); Print(o2); }); }
+    template<typename T1, typename T2> void AssertGreaterThan(T1 o1, T2 o2) { if (o1 <= o2) Fail([this,o1,o2] { Print(o1); Print(" <= "); Print(o2); }); }
+    template<typename T1, typename T2> void AssertLessOrEqual(T1 o1, T2 o2) { if (o1 > o2) Fail([this,o1,o2] { Print(o1); Print(" > "); Print(o2); }); }
+    template<typename T1, typename T2> void AssertGreaterOrEqual(T1 o1, T2 o2) { if (o1 < o2) Fail([this,o1,o2] { Print(o1); Print(" < "); Print(o2); }); }
+    void AssertEqualString(const char* s1, const char* s2) { if (strcmp(s1, s2)) Fail([this,s1,s2] { Print(s1); Print(" != "); Print(s2); }); }
+    void AssertNotEqualString(const char* s1, const char* s2) { if (!strcmp(s1, s2)) Fail([this,s1,s2] { Print(s1); Print(" == "); Print(s2); }); }
     void Fail();
     void Fail(const char* reason);
     void Fail(const char* format, ...);
