@@ -79,9 +79,14 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
 		return;
 
 #ifdef MONO_US
-	static uint s_last = MONO_US, s_sec, s_sub;
+#ifdef MONO_US_STARTS_AT_ZERO
+	static auto s_last = 0;
+#else
+	static auto s_last = MONO_US;
+#endif
+	static int s_sec, s_sub;
 
-	uint elapsed = MONO_US - s_last;
+	auto elapsed = MONO_US - s_last;
 	s_last += elapsed;
 
 	int sub = s_sub + elapsed;
@@ -92,9 +97,9 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
 	bool nz = false;
 
 	PLATFORM_DBG_CHAR(channel, '[');
-	for (uint n = 1000000000; n; n /= 10)
+	for (int n = 1000000000; n; n /= 10)
 	{
-		uint c = sec / n;
+		int c = sec / n;
 		sec -= c * n;
 		if (c || nz)
 		{
@@ -107,9 +112,9 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
 		}
 	}
 
-	for (uint n = 100000; n; n /= 10)
+	for (int n = 100000; n; n /= 10)
 	{
-		uint c = sub / n;
+		int c = sub / n;
 		sub -= c * n;
 		if (c || n == 1000)
 			nz = true;
