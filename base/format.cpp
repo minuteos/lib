@@ -112,6 +112,10 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
 					left = true;
 					continue;
 
+				case 'l':
+					// just ignore
+					continue;
+
 				case 'c':
 					output(context, (char)va_arg(va, unsigned));
 					outputCount++;
