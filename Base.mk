@@ -130,6 +130,7 @@ CC = $(TOOLCHAIN_PREFIX)gcc
 CXX = $(TOOLCHAIN_PREFIX)g++
 OBJCOPY = $(TOOLCHAIN_PREFIX)objcopy
 OBJDUMP = $(TOOLCHAIN_PREFIX)objdump
+SIZE = $(TOOLCHAIN_PREFIX)size
 RM = rm
 MKDIR = mkdir
 ECHO = echo
@@ -218,6 +219,7 @@ $(OBJDIR)%.nopch.o: %.nopch.cpp | prebuild
 $(OUTPUT).elf: $(OBJS) $(BLOBS) | prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(CXX) -o $@ $(sort $(OBJS) $(BLOBS)) $(LINK_OPT)
+	@$(SIZE) $@
 
 $(OUTPUT).S: $(OUTPUT).elf
 	$(OBJDUMP) -d $< >$@
