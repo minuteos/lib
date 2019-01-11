@@ -23,6 +23,7 @@
 #include <base/hacks.h>
 #include <base/helpers.h>
 #include <base/bitfields.h>
+#include <base/enums.h>
 #include <base/debug.h>
 
 // platform-specific base header, to include anything that is common for the platform
