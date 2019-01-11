@@ -42,7 +42,7 @@
 #endif
 
 #ifndef PLATFORM_SLEEP
-#warning "'kernel/platform.h' did no provide PLATFORM_SLEEP macro - assuming platform without sleep support"
+#warning "'kernel/platform.h' did not provide PLATFORM_SLEEP macro - assuming platform without sleep support"
 #define PLATFORM_SLEEP(since, duration)
 #endif
 
