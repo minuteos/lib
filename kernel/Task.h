@@ -39,7 +39,9 @@ public:
     //! Runs a new task on the main scheduler, with an optional delay
     ALWAYS_INLINE static void Run(AsyncDelegate<> fn, mono_t delay = 0) { Scheduler::Main().Add(fn); }
     //! Runs a new task on the main scheduler, with an optional delay
-    template<typename T> ALWAYS_INLINE static void Add(T& target, async_res_t (T::*method)(AsyncFrame**), mono_t delay = 0) { Scheduler::Main().Add(target, method, delay); }
+    template<typename T> ALWAYS_INLINE static void Run(T& target, async_res_t (T::*method)(AsyncFrame**), mono_t delay = 0) { Scheduler::Main().Add(target, method, delay); }
+    //! Runs a new task on the main scheduler, with an optional delay
+    template<typename T> ALWAYS_INLINE static void Run(T* target, async_res_t (T::*method)(AsyncFrame**), mono_t delay = 0) { Scheduler::Main().Add(target, method, delay); }
 
     friend class Scheduler;
 };

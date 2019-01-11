@@ -35,6 +35,12 @@ public:
         Add(GetDelegate(&target, method), delay);
     }
 
+    //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate,mono_t)
+    template<typename T> ALWAYS_INLINE void Add(T* target, async_res_t (T::*method)(AsyncFrame**), mono_t delay = 0)
+    {
+        Add(GetDelegate(target, method), delay);
+    }
+
     //! Executes the scheduled tasks
     mono_t Run();
 
