@@ -8,6 +8,8 @@
 
 #include <base/base.h>
 
+#ifdef __cplusplus
+
 template<typename TTo, typename TFrom> 
 ALWAYS_INLINE static constexpr TTo& unsafe_cast(TFrom& value)
 { return *(TTo*)&value; }
@@ -15,3 +17,5 @@ ALWAYS_INLINE static constexpr TTo& unsafe_cast(TFrom& value)
 template<typename TTo, typename TFrom> 
 ALWAYS_INLINE static constexpr const TTo& unsafe_cast(const TFrom& value)
 { return *(const TTo*)&value; }
+
+#endif
