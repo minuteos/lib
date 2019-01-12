@@ -11,6 +11,7 @@
 #if __GNUC__
 #define ALWAYS_INLINE   __attribute__((always_inline)) inline
 #define NO_INLINE       __attribute__((noinline))
+#define UNUSED          __attribute__((unused))
 #endif
 
 #if __GNUC__ && !__clang__
@@ -32,6 +33,10 @@
 
 #ifndef OPTIMIZE
 #define OPTIMIZE        OPTIMIZE_SIZE
+#endif
+
+#ifndef UNUSED
+#define UNUSED
 #endif
 
 // C/C++ agnostic EXTERN_C section
