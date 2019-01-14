@@ -49,3 +49,10 @@
 #define END_EXTERN_C
 #define EXTERN_C
 #endif
+
+//! expand and concatenate parameters
+#define CONCAT(a, b) _CONCAT(a, b)
+#define _CONCAT(a, b) a ## b
+
+//! create an identifier unique within the compilation unit
+#define UNIQUE(base)    CONCAT(base, __COUNTER__)
