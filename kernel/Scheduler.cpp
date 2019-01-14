@@ -34,7 +34,7 @@ void Scheduler::Add(AsyncDelegate<> fn, mono_t delay)
 {
     Task* t = MemPoolAlloc<Task>();
     t->fn = fn;
-    t->wait.until = CurrentTime() + delay;
+    t->wait.until = CurrentTime() + MonoFromMilliseconds(delay);
     t->wait.cont = true;
     t->next = delayed;
     delayed = t;
