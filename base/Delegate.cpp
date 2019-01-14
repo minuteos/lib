@@ -8,6 +8,8 @@
  * Implementation of pointer to member function decoding with virtual table lookup
  */
 
+#include <base/base.h>
+
 #include <base/Delegate.h>
 
 Packed<_PMFDecodeResult> _PMFDecode(void* target, ptrdiff_t fptrOrVtOffset, ptrdiff_t thisAdjust)
