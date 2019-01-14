@@ -42,7 +42,7 @@ void Scheduler::Add(AsyncDelegate<> fn, mono_t delay)
 
 async_res_t Scheduler::__CallStatic(void* fptr, AsyncFrame** pCallee)
 {
-    return ((async_res_t (*)(AsyncFrame**))fptr)(pCallee);
+    return ((async_fptr_t)fptr)(pCallee);
 }
 
 /*!

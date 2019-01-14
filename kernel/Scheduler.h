@@ -24,19 +24,19 @@ public:
     void Add(AsyncDelegate<> fn, mono_t delay = 0);
 
     //! Adds a task represented by a static function to the scheduler
-    ALWAYS_INLINE void Add(async_res_t (*function)(AsyncFrame**), mono_t delay = 0)
+    ALWAYS_INLINE void Add(async_fptr_t function, mono_t delay = 0)
     {
         Add(AsyncDelegate<>(&__CallStatic, (void*)function), delay);
     }
 
     //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate,mono_t)
-    template<typename T> ALWAYS_INLINE void Add(T& target, async_res_t (T::*method)(AsyncFrame**), mono_t delay = 0)
+    template<typename T> ALWAYS_INLINE void Add(T& target, async_methodptr_t<T> method, mono_t delay = 0)
     {
         Add(GetDelegate(&target, method), delay);
     }
 
     //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate,mono_t)
-    template<typename T> ALWAYS_INLINE void Add(T* target, async_res_t (T::*method)(AsyncFrame**), mono_t delay = 0)
+    template<typename T> ALWAYS_INLINE void Add(T* target, async_methodptr_t<T> method, mono_t delay = 0)
     {
         Add(GetDelegate(target, method), delay);
     }

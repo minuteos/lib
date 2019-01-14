@@ -227,3 +227,8 @@ next: \
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;
+
+//! Pointer to an asynchronous function
+typedef async_res_t (*async_fptr_t)(AsyncFrame**);
+//! Pointer to an asynchronous instance method
+template<class T> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**);
