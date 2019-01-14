@@ -56,6 +56,7 @@ private:
 
     static Scheduler s_main;        //!< Main scheduler instance
 
+public:
     //! Wrapper for static functions to match the delegate signature
     static async_res_t __CallStatic(void* fptr, AsyncFrame** pCallee);
 };
