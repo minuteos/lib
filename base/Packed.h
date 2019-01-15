@@ -22,7 +22,7 @@ template<typename T, size_t size = sizeof(T)> union PackedWrapper
 	packed_t packed;
 };
 
-#if __ARM_PCS == 1
+#if __ARM_PCS || __ARM_PCS_VFP
 
 // actual packing is used only with the ARM Procedure Call Standard
 template<typename T> union PackedWrapper<T, 4>

@@ -10,7 +10,7 @@
 
 #include <base/base.h>
 
-#if __ARM_PCS == 1
+#if __ARM_PCS || __ARM_PCS_VFP
 
 // ARM returns vectors in general purpose registers, we can exploit this to return results in R0/R1
 typedef intptr_t __attribute__((vector_size(sizeof(intptr_t) * 2))) res_pair_t;
