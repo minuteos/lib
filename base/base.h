@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include <base/macros.h>
+#include <base/endianness.h>
 #include <base/hacks.h>
 #include <base/helpers.h>
 #include <base/bitfields.h>

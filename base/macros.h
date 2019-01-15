@@ -12,6 +12,10 @@
 #define ALWAYS_INLINE   __attribute__((always_inline)) inline
 #define NO_INLINE       __attribute__((noinline))
 #define UNUSED          __attribute__((unused))
+
+#define BSWAP16 __builtin_bswap16
+#define BSWAP32 __builtin_bswap32
+
 #endif
 
 #if __GNUC__ && !__clang__
@@ -37,6 +41,20 @@
 
 #ifndef UNUSED
 #define UNUSED
+#endif
+
+#ifndef BSWAP16
+ALWAYS_INLINE static uint16_t BSWAP16(uint16_t n)
+{
+    return (n >> 8) | (n << 8);
+}
+#endif
+
+#ifndef BSWAP32
+ALWAYS_INLINE static uint32_t BSWAP32(uint32_t n)
+{
+    return (BSWAP16(n) << 16) | BSWAP16(n >> 16);
+}
 #endif
 
 // C/C++ agnostic EXTERN_C section
