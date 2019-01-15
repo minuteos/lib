@@ -27,14 +27,14 @@ template<typename T, size_t size = sizeof(T)> union PackedWrapper
 // actual packing is used only with the ARM Procedure Call Standard
 template<typename T> union PackedWrapper<T, 4>
 {
-	typedef uint32_t packed_t;
+	typedef uint32_t __attribute__((vector_size(4))) packed_t;
 	T value;
 	packed_t packed;
 };
 
 template<typename T> union PackedWrapper<T, 8>
 {
-	typedef uint64_t packed_t;
+	typedef uint32_t __attribute__((vector_size(8))) packed_t;
 	T value;
 	packed_t packed;
 };
