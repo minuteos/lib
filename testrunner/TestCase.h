@@ -7,6 +7,7 @@
 #pragma once
 
 #include <base/base.h>
+#include <base/Span.h>
 
 #include <setjmp.h>
 #include <functional>
@@ -40,6 +41,7 @@ public:
 
     void Print(const char* text) { printf("%s", text); }
     void Print(int value) { printf("%d", value); }
+    void Print(Span value) { printf("%.*s", (int)value.Length(), value.Pointer()); }
     template<typename T> void Print(const T* ptr) { printf("%p", ptr); }
     template<typename T> void Print(T* ptr) { printf("%p", ptr); }
     // everything else is printed as an integer
