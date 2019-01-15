@@ -43,8 +43,15 @@ class Delegate
 {
 	typedef TRes (*fptr_t)(void* target, Args...);
 
-	void* target;
-	fptr_t fn;
+	union
+	{
+		struct
+		{
+			void* target;
+			fptr_t fn;
+		};
+		Packed<_PMFDecodeResult> packed;
+	};
 
 	template<class T, typename TRes2, typename... Args2> friend constexpr Delegate<TRes2, Args2...> GetDelegate(T* target, TRes (T::*method)(Args...));
 
@@ -62,7 +69,7 @@ class Delegate
 		}
 		else
 		{
-			*this = unsafe_cast<Delegate>(_PMFDecode(target, rep.fptrOrVtOffset, rep.thisAdjust));
+			this->packed = _PMFDecode(target, rep.fptrOrVtOffset, rep.thisAdjust);
 		}
 	}
 
