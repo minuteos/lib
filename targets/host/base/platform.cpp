@@ -23,12 +23,12 @@ static std::chrono::steady_clock::time_point __steady_clock_zero()
 
 static auto __zeroinit = __steady_clock_zero();
 
-mono_t __platform_mono_us()
+uint64_t __platform_mono_us()
 {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - __steady_clock_zero()).count();
 }
 
-void __platform_sleep(mono_t until)
+void __platform_sleep(uint64_t until)
 {
     std::this_thread::sleep_until(__steady_clock_zero() + std::chrono::microseconds(until));
 }

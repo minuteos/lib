@@ -12,6 +12,8 @@
  * typically used on Cortex-M MCUs, which is the primary target
  */
 
+#pragma once
+
 typedef uint32_t mono_t;
 
 #define MONO_FREQUENCY  32768
