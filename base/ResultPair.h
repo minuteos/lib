@@ -8,6 +8,8 @@
  * Efficient implementation of returning two values from a function
  */
 
+#pragma once
+
 #include <base/base.h>
 
 #if __ARM_PCS || __ARM_PCS_VFP
