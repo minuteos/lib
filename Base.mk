@@ -164,9 +164,9 @@ LINK_OPT = $(ARCH_FLAGS) $(LIB_OPT) $(LINK_FLAGS)
 #
 # Automatic precompiled header support
 #
-# Just place a "precompiled.hpp" in the project root, which includes all the desired headers
+# Just place a "precompiled.hpp" in the project source directory, which includes all the desired headers
 #
-PCH := $(call subfiles,$(PROJECT_ROOT),precompiled.hpp)
+PCH := $(call subfiles,$(PROJECT_SOURCE_DIR),precompiled.hpp)
 
 ifneq (,$(PCH))
 
