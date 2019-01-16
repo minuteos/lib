@@ -8,6 +8,8 @@
 
 #include <base/Span.h>
 
+#include <ctype.h>
+
 res_pair_t Span::Sub(Span s, size_t start, size_t length)
 {
 	if (start > s.len)
