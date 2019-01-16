@@ -73,7 +73,7 @@ OUTPUT    = $(OUTDIR)$(NAME)
 INCLUDE_DIRS = $(PROJECT_ROOT) $(TARGET_DIRS) $(TARGET_ROOTS) $(LIB_ROOTS)
 
 # Source directories are all component directories
-SOURCE_DIRS = $(sort $(FIRST_MAKE_DIR) $(LIB_DIRS))
+SOURCE_DIRS = $(sort $(FIRST_MAKE_DIR) $(FIRST_MAKE_DIR)src/ $(LIB_DIRS))
 
 # Source file extensions
 SOURCE_EXTS = .c .cpp .S
