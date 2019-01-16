@@ -46,8 +46,8 @@ NAME ?= $(notdir $(realpath $(PROJECT_ROOT)))
 # COMPONENT_DIRS - active component directories (located under LIB_ROOTS)
 # TARGET_DIRS - active target directories (located under TARGET_ROOTS)
 # TARGET_COMPONENT_DIRS - active component directories (located under TARGET_DIRS)
-# FIRST_MAKE_DIR - directory holding the initial Makefile
-#                  (all sources in it will be compiled as well)
+# PROJECT_SOURCE_DIR - directory holding the project specific source files
+# SOURCE_DIR - directory holding the source files to be compiled
 # LIB_DIRS - all directories containing module source files
 #
 
@@ -57,7 +57,8 @@ COMPONENT_DIRS = $(call subdirs,$(LIB_ROOTS),$(COMPONENTS))
 TARGET_DIRS = $(call subdirs2,$(TARGET_ROOTS),$(TARGETS))
 TARGET_COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(COMPONENTS))
 LIB_DIRS = $(COMPONENT_DIRS) $(TARGET_DIRS) $(TARGET_COMPONENT_DIRS)
-FIRST_MAKE_DIR = $(dir $(firstword $(MAKEFILE_LIST)))
+PROJECT_SOURCE_DIR = $(PROJECT_ROOT)src/
+SOURCE_DIR = $(PROJECT_SOURCE_DIR)
 
 #
 # Prepare compilation settings, so the component makefiles can modify them
@@ -70,10 +71,10 @@ OBJDIR    = $(OUTDIR)obj/
 OUTPUT    = $(OUTDIR)$(NAME)
 
 # Include directories are the directories which contain components
-INCLUDE_DIRS = $(PROJECT_ROOT) $(TARGET_DIRS) $(TARGET_ROOTS) $(LIB_ROOTS)
+INCLUDE_DIRS = $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS) $(LIB_ROOTS)
 
 # Source directories are all component directories
-SOURCE_DIRS = $(sort $(FIRST_MAKE_DIR) $(FIRST_MAKE_DIR)src/ $(LIB_DIRS))
+SOURCE_DIRS = $(sort $(SOURCE_DIR) $(LIB_DIRS))
 
 # Source file extensions
 SOURCE_EXTS = .c .cpp .S
