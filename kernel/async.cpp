@@ -37,7 +37,7 @@ NO_INLINE async_res_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpe
 NO_INLINE async_res_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     if (auto f = *pCallee)
-        return (async_res_t){ (intptr_t)f, (intptr_t)f->cont };
+        return _ASYNC_RES(f, f->cont);
     else if (spec->pool)
         return _async_prolog_pool(pCallee, spec);
     else

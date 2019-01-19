@@ -89,26 +89,27 @@ struct AsyncFrame
      * Makes sure that the mask does not cross a byte boundary,
      * initializes related fields and packs the remaining values into the result tuple
      */
-    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, intptr_t mask, intptr_t expect, intptr_t timeout)
+    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, intptr_t timeout)
     {
         ASSERT((intptr_t)type & (intptr_t)AsyncResult::Wait);
 
-        if (mask)
-        {
-            while (!(mask & 0xFF))
-            {
-                mask >>= 8;
-                expect >>= 8; 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-                ptr++;
-#endif
-            }
-        }
+        auto shift = mask_shift(mask);
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        waitPtr = (const uint8_t*)ptr + (shift >> 3);
+#else
         waitPtr = (const uint8_t*)ptr;
+#endif
         waitTimeout = timeout;
+        expect >>= shift;
+        mask >>= shift;
         ASSERT(mask == (mask & 0xFF));
-        return _ASYNC_RES(this, type | (mask & 0xFF) | ((expect & 0xFF) << 8));
+        return _ASYNC_RES(this, ((intptr_t)type | (uint8_t)(mask) | (uint8_t)(expect) << 8));
+    }
+
+    static constexpr unsigned mask_shift(uintptr_t mask)
+    {
+        return (!mask || (mask & 0xFF)) ? 0 : (mask & 0xFF00) ? 8 : (mask & 0xFF0000) ? 16 : 24;
     }
 };
 
