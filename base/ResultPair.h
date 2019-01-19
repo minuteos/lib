@@ -12,14 +12,24 @@
 
 #include <base/base.h>
 
-#if __ARM_PCS || __ARM_PCS_VFP
+#if __ARM_PCS
 
-// ARM returns vectors in general purpose registers, we can exploit this to return results in R0/R1
+// ARM PCS returns vectors in general purpose registers, we can exploit this to return results in R0/R1
 typedef intptr_t __attribute__((vector_size(sizeof(intptr_t) * 2))) res_pair_t;
 
 #define RES_PAIR_FIRST(res) ((res)[0])
 #define RES_PAIR_SECOND(res) ((res)[1])
-#define RES_PAIR(first, second) ((res_pair_t){ (intptr_t)first, (intptr_t)second })
+#define RES_PAIR(first, second) ((res_pair_t){ (intptr_t)(first), (intptr_t)(second) })
+
+#elif __ARM_PCS_VFP
+
+// there is no other choice than using a 64-bit integer - PCS_VFP forces everything else (doubles and vectors) into VFP registers
+// note that this can cause undesirable side effects, such as picking the wrong conversion
+typedef uint64_t res_pair_t;
+
+#define RES_PAIR_FIRST(res) ((intptr_t)(res))
+#define RES_PAIR_SECOND(res) ((intptr_t)((res) >> 32))
+#define RES_PAIR(first, second) ((uint64_t)pack64((intptr_t)(first), (intptr_t)(second)))
 
 #else
 
@@ -30,6 +40,6 @@ typedef struct { intptr_t first, second; } res_pair_t;
 
 #define RES_PAIR_FIRST(res) ((res).first)
 #define RES_PAIR_SECOND(res) ((res).second)
-#define RES_PAIR(first, second) ((res_pair_t){ (intptr_t)first, (intptr_t)second })
+#define RES_PAIR(first, second) ((res_pair_t){ (intptr_t)(first), (intptr_t)(second) })
 
 #endif

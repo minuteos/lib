@@ -22,7 +22,7 @@ template<typename T, size_t size = sizeof(T)> union PackedWrapper
 	packed_t packed;
 };
 
-#if __ARM_PCS || __ARM_PCS_VFP
+#if __ARM_PCS
 
 // actual packing is used only with the ARM Procedure Call Standard
 template<typename T> union PackedWrapper<T, 4>
@@ -49,6 +49,15 @@ template<typename T> union PackedWrapper<T, 12>
 template<typename T> union PackedWrapper<T, 16>
 {
 	typedef uint32_t __attribute__((vector_size(16))) packed_t;
+	T value;
+	packed_t packed;
+};
+
+#elif __ARM_PCS_VFP
+
+template<typename T> union PackedWrapper<T, 8>
+{
+	typedef struct { uint64_t value; } packed_t;
 	T value;
 	packed_t packed;
 };
