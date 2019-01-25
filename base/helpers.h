@@ -17,3 +17,5 @@
 
 #define va_call_void(func, last, ...) \
 	({ va_list va; va_start(va, last); func(__VA_ARGS__, va); va_end(va); })
+
+#define countof(arr)	(sizeof(arr) / sizeof((arr)[0]))
