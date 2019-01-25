@@ -113,6 +113,11 @@ public:
      *  from the end of the original Span */
     ALWAYS_INLINE Span Slice(int start, int end) const { return Slice(*this, start, end); }
 
+    //! Returns a new Span consisting of up to n bytes from the start of the original Span. The bytes are removed from the target Span
+    ALWAYS_INLINE Span ConsumeLeft(size_t n) { auto res = Left(n); p += res.len; len -= res.len; return res; }
+    //! Returns a new Span consisting of up to n bytes from the end of the original Span. The bytes are removed from the target Span
+    ALWAYS_INLINE Span ConsumeRight(size_t n) { auto res = Right(n); len -= res.len; return res; }
+    
     //! Splits off the part of the span up to the specified @p separator
     /*!
      * The target Span is modified in place and will contain the part remaining

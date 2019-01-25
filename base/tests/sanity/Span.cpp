@@ -41,6 +41,13 @@ TEST_CASE("01 Sub")
     AssertEqual(span.RemoveRight(0), span);
     AssertEqual(span.RemoveRight(3), Span("0123456789ABC"));
     AssertEqual(span.RemoveRight(300), Span());
+
+    AssertEqual(span.ConsumeLeft(3), Span("012"));
+    AssertEqual(span, Span("3456789ABCDEF"));
+    AssertEqual(span.ConsumeRight(3), Span("DEF"));
+    AssertEqual(span, Span("3456789ABC"));
+    AssertEqual(span.ConsumeLeft(300), Span("3456789ABC"));
+    AssertEqual(span, Span());
 }
 
 TEST_CASE("02 Slicing")
