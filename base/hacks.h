@@ -20,7 +20,8 @@ ALWAYS_INLINE static constexpr const TTo& unsafe_cast(const TFrom& value)
 
 ALWAYS_INLINE static constexpr int64_t pack64(int32_t lo, int32_t hi)
 {
-    return ((union { int32_t i32[2]; int64_t i64; }){ .i32 = { lo, hi } }).i64;
+    union { int32_t i32[2]; int64_t i64; } x = { .i32 = { lo, hi } };
+    return x.i64;
 }
 
 #endif
