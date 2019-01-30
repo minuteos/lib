@@ -38,8 +38,9 @@ enum struct AsyncResult : uintptr_t
     _WaitTimeoutMilliseconds = 0x30000,
     _WaitTimeoutMask = 0x30000,
     _WaitInvertedMask = 0x40000,
+    _WaitAcquireMask = 0x80000,
 
-    Wait = 0x80000,         //!< Wait for a specific byte to change to an expected value
+    Wait = 0x100000,         //!< Wait for a specific byte to change to an expected value
     WaitUntil = Wait | _WaitTimeoutUntil,
     WaitTicks = Wait | _WaitTimeoutTicks,
     WaitMilliseconds = Wait | _WaitTimeoutMilliseconds,
@@ -49,8 +50,13 @@ enum struct AsyncResult : uintptr_t
     WaitInvertedTicks = WaitInverted | _WaitTimeoutTicks,
     WaitInvertedMilliseconds = WaitInverted | _WaitTimeoutMilliseconds,
     WaitInvertedSeconds = WaitInverted | _WaitTimeoutSeconds,
+    WaitAcquire = Wait | _WaitAcquireMask,
+    WaitAcquireUntil = WaitAcquire | _WaitTimeoutUntil,
+    WaitAcquireTicks = WaitAcquire | _WaitTimeoutTicks,
+    WaitAcquireMilliseconds = WaitAcquire | _WaitTimeoutMilliseconds,
+    WaitAcquireSeconds = WaitAcquire | _WaitTimeoutSeconds,
 
-    _WaitEnd = 0xFFFFF,
+    _WaitEnd = 0x1FFFFF,
 };
 
 //! Extracts the value from the result tuple
@@ -74,7 +80,7 @@ struct AsyncFrame
     union
     {
         AsyncFrame* callee; //!< Pointer to the frame of the asynchronous function being called
-        const uint8_t* waitPtr; //!< Pointer to the value to be monitored with @ref AsyncResult::Wait 
+        uint8_t* waitPtr;   //!< Pointer to the value to be monitored with @ref AsyncResult::Wait 
     };
     contptr_t cont;     //!< Pointer to the instruction where execution will continue
     union
@@ -96,9 +102,9 @@ struct AsyncFrame
         auto shift = mask_shift(mask);
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        waitPtr = (const uint8_t*)ptr + (shift >> 3);
+        waitPtr = (uint8_t*)ptr + (shift >> 3);
 #else
-        waitPtr = (const uint8_t*)ptr;
+        waitPtr = (uint8_t*)ptr;
 #endif
         waitTimeout = timeout;
         expect >>= shift;
@@ -231,6 +237,17 @@ next: __async.waitResult; })
 #define await_signal_sec(sig, sec) await_mask_not_sec(sig, 0xFF, 0, sec)
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of platform-dependent ticks
 #define await_signal_ticks(sig, ticks) await_mask_not_ticks(sig, 0xFF, 0, ticks)
+
+//! Waits indefinitely for the acquisition of the specified bits
+#define await_acquire(reg, mask)   _await_mask(WaitAcquire, reg, mask, 0, 0)
+//! Waits for the acquisition of the specified bits until the specified instant
+#define await_acquire_until(reg, mask, until) _await_mask(WaitAcquireUntil, reg, mask, 0, until)
+//! Waits for the acquisition of the specified bits for the specified number of milliseconds
+#define await_acquire_ms(reg, mask, ms) _await_mask(WaitAcquireMilliseconds, reg, mask, 0, ms)
+//! Waits for the acquisition of the specified bits for the specified number of seconds
+#define await_acquire_sec(reg, mask, sec) _await_mask(WaitAcquireSeconds, reg, mask, 0, sec)
+//! Waits for the acquisition of the specified bits for the specified number of platform-dependent ticks
+#define await_acquire_ticks(reg, mask, ticks) _await_mask(WaitAcquireTicks, reg, mask, 0, ticks)
 
 //! Calls another async function
 #define await(fn, ...) ({ \

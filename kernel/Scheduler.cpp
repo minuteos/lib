@@ -134,6 +134,7 @@ mono_t Scheduler::Run()
                     task->wait.mask = (uint8_t)type;
                     task->wait.expect = (uint8_t)((uint32_t)type >> 8);
                     task->wait.invert = !!((intptr_t)type & (intptr_t)AsyncResult::_WaitInvertedMask);
+                    task->wait.acquire = !!((intptr_t)type & (intptr_t)AsyncResult::_WaitAcquireMask);
                     task->wait.frame = f;
 
                     mono_t timeout = f->waitTimeout;
@@ -250,6 +251,11 @@ mono_t Scheduler::Run()
                 {
                     maxSleep = 0;
                     PLATFORM_ENABLE_INTERRUPTS();
+                }
+
+                if (task->wait.acquire)
+                {
+                    *task->wait.ptr ^= task->wait.mask;
                 }
 
                 // return the task to the active queue
