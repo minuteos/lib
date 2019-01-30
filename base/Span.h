@@ -16,6 +16,8 @@
 
 #include <algorithm>
 
+class Buffer;
+
 /*!
  * A class representing a contiguous range of bytes in memory
  *
@@ -85,6 +87,8 @@ public:
     Span CopyTo(void* p, size_t max) const { auto len = std::min(max, this->len); memcpy(p, this->p, len); return Span(p, len); }
     //! Copies the content of the Span to an array of arbitrary type. Returns a Span representing the copy
     template<typename T, size_t n> ALWAYS_INLINE Span CopyTo(T (&buffer)[n]) const { return CopyTo(buffer, sizeof(T) * n); }
+    //! Copies the content of the Span to a Buffer. Returns the part of the Buffer representing the copy
+    ALWAYS_INLINE Buffer CopyTo(Buffer buf) const;
 
     //! Compares the span byte-by-byte with another memory location
     int CompareTo(const void* p) const { return memcmp(this->p, p, len); }
@@ -237,4 +241,39 @@ private:
     static int ParseInt(Span s, int baseStopAtInvalid, int defVal);
     ALWAYS_INLINE int ReadInt(unsigned lenSignRev, uint32_t defVal) const { return defVal && !Length() ? defVal : ReadInt(*this, lenSignRev); }
     static int ReadInt(Span s, unsigned lenSignRev);
+
+    friend class Buffer;
 };
+
+class Buffer : public Span
+{
+public:
+    //! Constructs an empty (invalid) buffer
+    constexpr Buffer() {}
+    //! Constructs a Buffer covering a range of memory determined by start and length
+    constexpr Buffer(void* p, size_t len) : Span(p, len) {}
+    //! Constructs a Buffer covering a range of memory determined by start (inclusive) and end (exclusive)
+    constexpr Buffer(void* start, void* end) : Span(start, end) {}
+    //! Constructs a Buffer covering a single object
+    template<class T> constexpr Buffer(T& value) : Span((char*)&value, sizeof(T)) {}
+
+    //! Gets the pointer to the beginning of the Buffer
+    constexpr char* Pointer() const { return (char*)p; }
+
+    //! Returns a new Buffer consisting of up to n bytes from the start of the original Buffer
+    ALWAYS_INLINE Buffer Left(size_t n) const { return _FromSpan(Span::Left(n)); }
+    //! Returns a new Buffer consisting of up to n bytes from the end of the original Buffer
+    ALWAYS_INLINE Buffer Right(size_t n) const { return _FromSpan(Span::Right(n)); }
+    //! Returns a new Buffer consisting of up to length bytes, starting at the specified position in the original Buffer
+    ALWAYS_INLINE Buffer Sub(size_t start, size_t length) const { return _FromSpan(Span::Sub(start, length)); }
+    //! Returns a new Buffer consisting of the original Buffer with up to n bytes removed from the start
+    ALWAYS_INLINE Buffer RemoveLeft(size_t n) const { return _FromSpan(Span::RemoveLeft(n)); }
+    //! Returns a new Buffer consisting of the original Buffer with up to n bytes removed from the end
+    ALWAYS_INLINE Buffer RemoveRight(size_t n) const { return _FromSpan(Span::RemoveRight(n)); }
+
+private:
+    //! This is a strictly internal function for reinterpreting a Span as a writable Buffer 
+    ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((char*)span.p, span.len); }
+};
+
+ALWAYS_INLINE Buffer Span::CopyTo(Buffer buf) const { auto len = std::min(buf.len, this->len); memcpy(buf.Pointer(), this->p, len); return Buffer(buf.Pointer(), len); }
