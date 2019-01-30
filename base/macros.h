@@ -12,7 +12,7 @@
 #define ALWAYS_INLINE   __attribute__((always_inline)) inline
 #define NO_INLINE       __attribute__((noinline))
 #define UNUSED          __attribute__((unused))
-#define PACKED_STRUCT   struct __attribute__((packed))
+#define PACKED_STRUCT   struct __attribute__((packed, aligned(sizeof(int))))
 #define PACKED_UNALIGNED_STRUCT   struct __attribute__((packed, aligned(1)))
 
 #define BSWAP16 __builtin_bswap16
