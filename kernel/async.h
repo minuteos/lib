@@ -150,7 +150,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
  */
 #define async_def(...) { \
     __label__ __start__; \
-    struct __FRAME { AsyncFrame __async; __VA_ARGS__; }; \
+    struct __FRAME { AsyncFrame __async; async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } __VA_ARGS__; }; \
 	static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
     auto __prolog_res = _async_prolog(__pCallee, &__spec); \
     __FRAME& f = *(__FRAME*)RES_PAIR_FIRST(__prolog_res); \
@@ -158,13 +158,17 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     goto *(contptr_t*)RES_PAIR_SECOND(__prolog_res); \
     __start__:;
 
+//! Starts definition of a synchronous function using the async calling convention
+#define async_def_sync(...) { \
+    struct __FRAME { async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } __VA_ARGS__; } f; \
+
 //! Terminates the definition of an async function. See @ref async_def for details
 #define async_end \
     async_return(0); \
 }
 
 //! Finished the execution of an async function immediately and returns the specified value
-#define async_return(value) return _async_epilog(__pCallee, (value))
+#define async_return(value) return f.__epilog(__pCallee, (value))
 
 #define _async_yield(type, value) ({ __label__ next; __async.cont = &&next; return _ASYNC_RES(value, AsyncResult::type); next: false; })
 
