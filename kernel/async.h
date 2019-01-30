@@ -217,6 +217,17 @@ next: __async.waitResult; })
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of platform-dependent ticks
 #define await_mask_not_ticks(reg, mask, expect, ticks) _await_mask(WaitInvertedTicks, reg, mask, expect, ticks)
 
+//! Waits indefinitely for the byte at the specified memory location to become non-zero
+#define await_signal(sig) await_mask_not(sig, 0xFF, 0)
+//! Waits for the byte at the specified memory location to become non-zero until the specified instant
+#define await_signal_until(sig, until) await_mask_not_until(sig, 0xFF, 0, until)
+//! Waits for the byte at the specified memory location to become non-zero for the specified number of milliseconds
+#define await_signal_ms(sig, ms) await_mask_not_ms(sig, 0xFF, 0, ms)
+//! Waits for the byte at the specified memory location to become non-zero for the specified number of seconds
+#define await_signal_sec(sig, sec) await_mask_not_sec(sig, 0xFF, 0, sec)
+//! Waits for the byte at the specified memory location to become non-zero for the specified number of platform-dependent ticks
+#define await_signal_ticks(sig, ticks) await_mask_not_ticks(sig, 0xFF, 0, ticks)
+
 //! Calls another async function
 #define await(fn, ...) ({ \
     __label__ next; \
