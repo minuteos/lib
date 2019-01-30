@@ -7,6 +7,7 @@
  */
 
 #include <base/base.h>
+#include <base/Span.h>
 
 #include <base/format.h>
 
@@ -120,6 +121,68 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
 					output(context, (char)va_arg(va, unsigned));
 					outputCount++;
 					break;
+
+				case 'a':
+					fill = '.';
+					// fall through
+
+				case 'b':
+				{
+					Span data = va_arg(va, Span);
+					str = data;
+					limit = data.Length();
+					width -= limit;
+
+					if (width < 0)
+						width = 0;
+
+					if (!left)
+					{
+						// left padding
+						while (width)
+						{
+							output(context, ' ');
+							// outputCount is already accounted for
+							width--;
+						}
+					}
+
+					for (unsigned i = 0; i < (unsigned)limit; i++)
+					{
+						char c = str[i];
+						if (fill != ' ' && (uint8_t)c < ' ')
+							c = fill;
+						output(context, c);
+						outputCount++;
+					}
+
+					// right padding
+					while (width)
+					{
+						output(context, ' ');
+						// outputCount is already accounted for
+						width--;
+					}
+					break;
+				}
+
+				case 'h':
+					hexLower = 0x20;
+					// fall through
+
+				case 'H':
+				{
+					// hexadecimal data
+					Span data = va_arg(va, Span);
+					str = data;
+					for (unsigned i = 0; i < data.Length(); i++)
+					{
+						output(context, l_hex[(uint8_t)data[i] >> 4] | hexLower);
+						output(context, l_hex[(uint8_t)data[i] & 15] | hexLower);
+						outputCount += 2;
+					}
+					break;
+				}
 
 				case 's':
 					str = va_arg(va, const char*);
