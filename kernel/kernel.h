@@ -13,6 +13,7 @@
 #include <kernel/config.h>
 #include <kernel/async.h>
 #include <kernel/mono.h>
+#include <kernel/atomic.h>
 
 #include <kernel/Scheduler.h>
 #include <kernel/Task.h>
