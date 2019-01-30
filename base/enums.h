@@ -12,6 +12,16 @@
 
 #ifdef __cplusplus
 
+//! Declares friend operators suitable for an enumeration containing flags
+/*! This has to be used for private enums within classes */
+#define DECLARE_FLAG_ENUM(enumType) \
+	friend enumType constexpr operator |(enumType a, enumType b); \
+	friend enumType operator &(enumType a, enumType b); \
+	friend enumType operator *(enumType a, bool b); \
+	friend enumType operator *(bool a, enumType b); \
+	friend enumType operator ~(enumType a); \
+	friend bool operator !(enumType a);
+
 //! Defines operators suitable for an enumeration containing flags
 #define DEFINE_FLAG_ENUM(enumType) \
 	ALWAYS_INLINE enumType constexpr operator |(enumType a, enumType b) { return (enumType)((int)a | (int)b); } \
@@ -23,6 +33,7 @@
 
 #else
 
+#define DECLARE_FLAG_ENUM(enumType)
 #define DEFINE_FLAG_ENUM(enumType)
 
 #endif
