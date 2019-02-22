@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/async.cpp
- * 
+ *
  * General support for asynchronous functions
  */
 
@@ -18,7 +18,7 @@ NO_INLINE async_res_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* 
     return _ASYNC_RES(f, spec->start);
 }
 
-//! Prolog allocation of an oversized frame dynamically using @ref malloc 
+//! Prolog allocation of an oversized frame dynamically using @ref malloc
 NO_INLINE async_res_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     AsyncFrame* f = *pCallee = (AsyncFrame*)malloc(spec->frameSize);
@@ -30,8 +30,8 @@ NO_INLINE async_res_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpe
 /*!
  * Called every time an asynchronous function is entered,
  * allocates and initializes a new frame on first entry
- * 
- * Returns a tuple containing the called frame pointer and 
+ *
+ * Returns a tuple containing the called frame pointer and
  * continuation address
  */
 NO_INLINE async_res_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec)
@@ -56,6 +56,6 @@ NO_INLINE async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result)
         callee->spec->pool->Free(callee);
     else
         free(callee);
-    
+
     return _ASYNC_RES(result, AsyncResult::Complete);
 }

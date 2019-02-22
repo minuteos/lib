@@ -4,10 +4,10 @@
  * for full license information.
  *
  * testrunner/kernel_platform.h
- * 
+ *
  * Replacement for kernel/platform.h for running tests, where sleeping
  * automatically jumps forward in time
- * 
+ *
  * Type sizes and monotonic frequency are chosen to be simlar to what is
  * typically used on Cortex-M MCUs, which is the primary target
  */

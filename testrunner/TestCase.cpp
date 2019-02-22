@@ -47,7 +47,7 @@ bool TestCase::Execute()
         // we get here after a failure
         return true;
     }
-    
+
     failJump = &fail;
 #ifdef Ckernel
     __testrunner_time = 0;
@@ -72,7 +72,7 @@ void TestCase::_Fail(int line, const char* reason)
 }
 
 void TestCase::_Fail(int line, const char* format, ...)
-{   
+{
     va_list va;
     va_start(va, format);
     printf("FAIL (");

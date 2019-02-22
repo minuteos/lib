@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/config.h
- * 
+ *
  * Loads and validates platform specific configuration
  */
 

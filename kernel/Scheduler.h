@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/Scheduler.h
- * 
+ *
  * Simple cooperative task scheduler
  */
 

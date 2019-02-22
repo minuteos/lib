@@ -10,11 +10,11 @@
 
 #ifdef __cplusplus
 
-template<typename TTo, typename TFrom> 
+template<typename TTo, typename TFrom>
 ALWAYS_INLINE static constexpr TTo& unsafe_cast(TFrom& value)
 { return *(TTo*)&value; }
 
-template<typename TTo, typename TFrom> 
+template<typename TTo, typename TFrom>
 ALWAYS_INLINE static constexpr const TTo& unsafe_cast(const TFrom& value)
 { return *(const TTo*)&value; }
 

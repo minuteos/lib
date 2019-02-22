@@ -4,12 +4,12 @@
  * for full license information.
  *
  * Delegate.h
- * 
+ *
  * Strongly-typed pointer to member function combined with target. Virtual
  * functions are resolved ahead of time.
  */
 
-#pragma once 
+#pragma once
 
 #include <base/base.h>
 
@@ -25,15 +25,15 @@
 
 struct _PMFInternal
 {
-	ptrdiff_t fptrOrVtOffset, thisAdjust;
+    ptrdiff_t fptrOrVtOffset, thisAdjust;
 };
 
 struct _PMFDecodeResult
 {
-	typedef void (*fptr_t)(void*);
+    typedef void (*fptr_t)(void*);
 
-	void* target;
-	fptr_t fptr;
+    void* target;
+    fptr_t fptr;
 };
 
 Packed<_PMFDecodeResult> _PMFDecode(void* target, ptrdiff_t fptrOrVtOffset, ptrdiff_t thisAdjust);
@@ -41,64 +41,64 @@ Packed<_PMFDecodeResult> _PMFDecode(void* target, ptrdiff_t fptrOrVtOffset, ptrd
 template<typename TRes, typename... Args>
 class Delegate
 {
-	typedef TRes (*fptr_t)(void* target, Args...);
+    typedef TRes (*fptr_t)(void* target, Args...);
 
-	union
-	{
-		struct
-		{
-			void* target;
-			fptr_t fn;
-		};
-		Packed<_PMFDecodeResult> packed;
-	};
+    union
+    {
+        struct
+        {
+            void* target;
+            fptr_t fn;
+        };
+        Packed<_PMFDecodeResult> packed;
+    };
 
-	template<class T, typename TRes2, typename... Args2> friend constexpr Delegate<TRes2, Args2...> GetDelegate(T* target, TRes (T::*method)(Args...));
+    template<class T, typename TRes2, typename... Args2> friend constexpr Delegate<TRes2, Args2...> GetDelegate(T* target, TRes (T::*method)(Args...));
 
-	ALWAYS_INLINE constexpr void Init(void* target, _PMFInternal& rep)
-	{
-		// try to inline decoding of non-virtual functions if the compiler knows ahead of time if the function is virtual or not
+    ALWAYS_INLINE constexpr void Init(void* target, _PMFInternal& rep)
+    {
+        // try to inline decoding of non-virtual functions if the compiler knows ahead of time if the function is virtual or not
 #if PMF_ODD_FPTR
-		if (__builtin_constant_p(rep.thisAdjust) && !(rep.thisAdjust & 1))
+        if (__builtin_constant_p(rep.thisAdjust) && !(rep.thisAdjust & 1))
 #else
-		if (__builtin_constant_p(rep.fptrOrVtOffset) && !(rep.fptrOrVtOffset & 1))
+        if (__builtin_constant_p(rep.fptrOrVtOffset) && !(rep.fptrOrVtOffset & 1))
 #endif
-		{
-			this->target = (void*)(uintptr_t(target) + (rep.thisAdjust >> PMF_ODD_FPTR));
-			this->fn = (fptr_t)rep.fptrOrVtOffset;
-		}
-		else
-		{
-			this->packed = _PMFDecode(target, rep.fptrOrVtOffset, rep.thisAdjust);
-		}
-	}
+        {
+            this->target = (void*)(uintptr_t(target) + (rep.thisAdjust >> PMF_ODD_FPTR));
+            this->fn = (fptr_t)rep.fptrOrVtOffset;
+        }
+        else
+        {
+            this->packed = _PMFDecode(target, rep.fptrOrVtOffset, rep.thisAdjust);
+        }
+    }
 
 public:
-	ALWAYS_INLINE constexpr Delegate(fptr_t fn = NULL, void* arg0 = NULL) : target(arg0), fn(fn) {}
+    ALWAYS_INLINE constexpr Delegate(fptr_t fn = NULL, void* arg0 = NULL) : target(arg0), fn(fn) {}
 
-	template<class T>
-	ALWAYS_INLINE constexpr Delegate(T* target, TRes (T::*method)(Args...))
-	{
-		Init(target, unsafe_cast<_PMFInternal>(method));
-	}
+    template<class T>
+    ALWAYS_INLINE constexpr Delegate(T* target, TRes (T::*method)(Args...))
+    {
+        Init(target, unsafe_cast<_PMFInternal>(method));
+    }
 
-	template<class T>
-	ALWAYS_INLINE constexpr Delegate(const T* target, TRes (T::*method)(Args...) const)
-	{
-		Init(target, unsafe_cast<_PMFInternal>(method));
-	}
+    template<class T>
+    ALWAYS_INLINE constexpr Delegate(const T* target, TRes (T::*method)(Args...) const)
+    {
+        Init(target, unsafe_cast<_PMFInternal>(method));
+    }
 
-	ALWAYS_INLINE constexpr TRes operator()(Args... args) { return fn(target, args...); }
+    ALWAYS_INLINE constexpr TRes operator()(Args... args) { return fn(target, args...); }
 };
 
 template<class T, typename TRes, typename... Args>
 ALWAYS_INLINE constexpr Delegate<TRes, Args...> GetDelegate(T* target, TRes (T::*method)(Args...))
 {
-	return Delegate<TRes, Args...>(target, method);
+    return Delegate<TRes, Args...>(target, method);
 }
 
 template<class T, typename TRes, typename... Args>
 ALWAYS_INLINE constexpr Delegate<TRes, Args...> GetDelegate(const T* target, TRes (T::*method)(Args...) const)
 {
-	return Delegate<TRes, Args...>(target, method);
+    return Delegate<TRes, Args...>(target, method);
 }

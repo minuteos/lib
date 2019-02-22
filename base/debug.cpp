@@ -20,122 +20,122 @@
 
 void DBG_AssertFailed(const char* file, unsigned line)
 {
-	DBG("ASSERT FAILED: %s(%u)\n", file, line);
-	for (;;);
+    DBG("ASSERT FAILED: %s(%u)\n", file, line);
+    for (;;);
 }
 
 void CDBG_PutCharDirect(unsigned channel, char ch)
 {
-	PLATFORM_DBG_CHAR(channel, ch);
+    PLATFORM_DBG_CHAR(channel, ch);
 }
 
 void DBG_PutChar(char ch)
 {
-	if (PLATFORM_DBG_ACTIVE(0))
-		PLATFORM_DBG_CHAR(0, ch);
+    if (PLATFORM_DBG_ACTIVE(0))
+        PLATFORM_DBG_CHAR(0, ch);
 }
 
 void DBG_PrintF(const char* format, ...)
 {
-	if (PLATFORM_DBG_ACTIVE(0))
-		va_call(vformat, format, (format_output)CDBG_PutCharDirect, 0, format);
+    if (PLATFORM_DBG_ACTIVE(0))
+        va_call(vformat, format, (format_output)CDBG_PutCharDirect, 0, format);
 }
 
 void DBG_DebugPrintF(const char* format, ...)
 {
-	va_call_void(DebugPrintFV, format, 0, NULL, format);
+    va_call_void(DebugPrintFV, format, 0, NULL, format);
 }
 
 void DBG_DebugPrintFC(const char* component, const char* format, ...)
 {
-	va_call_void(DebugPrintFV, format, 0, component, format);
+    va_call_void(DebugPrintFV, format, 0, component, format);
 }
 
 void CDBG_PutChar(unsigned channel, char ch)
 {
-	if (PLATFORM_DBG_ACTIVE(channel))
-		PLATFORM_DBG_CHAR(channel, ch);
+    if (PLATFORM_DBG_ACTIVE(channel))
+        PLATFORM_DBG_CHAR(channel, ch);
 }
 
 void CDBG_PrintF(unsigned channel, const char* format, ...)
 {
-	if (PLATFORM_DBG_ACTIVE(channel))
-		va_call(vformat, format, (format_output)CDBG_PutCharDirect, (void*)(uintptr_t)channel, format);
+    if (PLATFORM_DBG_ACTIVE(channel))
+        va_call(vformat, format, (format_output)CDBG_PutCharDirect, (void*)(uintptr_t)channel, format);
 }
 
 void CDBG_DebugPrintF(unsigned channel, const char* format, ...)
 {
-	va_call_void(DebugPrintFV, format, channel, NULL, format);
+    va_call_void(DebugPrintFV, format, channel, NULL, format);
 }
 
 void CDBG_DebugPrintFC(unsigned channel, const char* component, const char* format, ...)
 {
-	va_call_void(DebugPrintFV, format, channel, component, format);
+    va_call_void(DebugPrintFV, format, channel, component, format);
 }
 
 void DebugPrintFV(unsigned channel, const char* component, const char* format, va_list va)
 {
-	if (!PLATFORM_DBG_ACTIVE(channel))
-		return;
+    if (!PLATFORM_DBG_ACTIVE(channel))
+        return;
 
 #ifdef MONO_US
 #ifdef MONO_US_STARTS_AT_ZERO
-	static auto s_last = 0;
+    static auto s_last = 0;
 #else
-	static auto s_last = MONO_US;
+    static auto s_last = MONO_US;
 #endif
-	static int s_sec, s_sub;
+    static int s_sec, s_sub;
 
-	auto elapsed = MONO_US - s_last;
-	s_last += elapsed;
+    auto elapsed = MONO_US - s_last;
+    s_last += elapsed;
 
-	int sub = s_sub + elapsed;
-	int sec = sub / 1000000;
-	s_sub = sub -= sec * 1000000;
-	s_sec = sec += s_sec;
+    int sub = s_sub + elapsed;
+    int sec = sub / 1000000;
+    s_sub = sub -= sec * 1000000;
+    s_sec = sec += s_sec;
 
-	bool nz = false;
+    bool nz = false;
 
-	PLATFORM_DBG_CHAR(channel, '[');
-	for (int n = 1000000000; n; n /= 10)
-	{
-		int c = sec / n;
-		sec -= c * n;
-		if (c || nz)
-		{
-			PLATFORM_DBG_CHAR(channel, '0' + c);
-			nz = true;
-		}
-		else if (c || n <= 1000)
-		{
-			PLATFORM_DBG_CHAR(channel, c ? '0' + c : ' ');
-		}
-	}
+    PLATFORM_DBG_CHAR(channel, '[');
+    for (int n = 1000000000; n; n /= 10)
+    {
+        int c = sec / n;
+        sec -= c * n;
+        if (c || nz)
+        {
+            PLATFORM_DBG_CHAR(channel, '0' + c);
+            nz = true;
+        }
+        else if (c || n <= 1000)
+        {
+            PLATFORM_DBG_CHAR(channel, c ? '0' + c : ' ');
+        }
+    }
 
-	for (int n = 100000; n; n /= 10)
-	{
-		int c = sub / n;
-		sub -= c * n;
-		if (c || n == 1000)
-			nz = true;
-		PLATFORM_DBG_CHAR(channel, c || nz ? '0' + c : ' ');
-		if (n == 1000)
-			PLATFORM_DBG_CHAR(channel, '.');
-	}
+    for (int n = 100000; n; n /= 10)
+    {
+        int c = sub / n;
+        sub -= c * n;
+        if (c || n == 1000)
+            nz = true;
+        PLATFORM_DBG_CHAR(channel, c || nz ? '0' + c : ' ');
+        if (n == 1000)
+            PLATFORM_DBG_CHAR(channel, '.');
+    }
 
-	PLATFORM_DBG_CHAR(channel, ']');
-	PLATFORM_DBG_CHAR(channel, ' ');
+    PLATFORM_DBG_CHAR(channel, ']');
+    PLATFORM_DBG_CHAR(channel, ' ');
 #endif
 
-	if (component)
-	{
-		while (*component)
-			PLATFORM_DBG_CHAR(channel, *component++);
-		PLATFORM_DBG_CHAR(channel, ':');
-		PLATFORM_DBG_CHAR(channel, ' ');
-	}
+    if (component)
+    {
+        while (*component)
+            PLATFORM_DBG_CHAR(channel, *component++);
+        PLATFORM_DBG_CHAR(channel, ':');
+        PLATFORM_DBG_CHAR(channel, ' ');
+    }
 
-	vformat((format_output)CDBG_PutCharDirect, (void*)(uintptr_t)channel, format, va);
+    vformat((format_output)CDBG_PutCharDirect, (void*)(uintptr_t)channel, format, va);
 }
 
 #endif

@@ -4,7 +4,7 @@
  * for full license information.
  *
  * MemPool.cpp
- * 
+ *
  * Simple fixed-size low-overhead memory pools
  */
 

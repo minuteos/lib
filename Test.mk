@@ -14,7 +14,7 @@
 # force variables that would be incorrectly detected by Base.mk
 override BASE_DIR = $(dir $(lastword $(MAKEFILE_LIST)))
 override SOURCE_DIR = $(TEST)
-override PCH = lib/testrunner/precompiled.hpp 
+override PCH = lib/testrunner/precompiled.hpp
 
 include $(BASE_DIR)Functions.mk
 

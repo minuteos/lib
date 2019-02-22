@@ -4,7 +4,7 @@
  * for full license information.
  *
  * io/InputStream.h
- * 
+ *
  * Base class for all input streams
  */
 

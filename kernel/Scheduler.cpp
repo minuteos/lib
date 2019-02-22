@@ -18,14 +18,14 @@ Scheduler Scheduler::s_main;
 
 /*!
  * Adds a new task to the scheduler
- * 
+ *
  * Tasks are always added to the @ref Scheduler::delayed queue.
  * This will cause them to actually start running in the order they are
  * added, as they are first added to the head of the delayed queue which causes
  * the order to be reversed, but the again get reversed upon transfer to the
  * active queue
- * 
- * @remark The allocated pointer to the @ref Task structure is intentionally 
+ *
+ * @remark The allocated pointer to the @ref Task structure is intentionally
  * not returned, as it's inherently dangerous to store it - the task may
  * complete at any time and if another task is created in the same cycle,
  * it will be at the same address.
@@ -47,9 +47,9 @@ async_res_t Scheduler::__CallStatic(void* fptr, AsyncFrame** pCallee)
 
 /*!
  * Executes the scheduled task. Returns once there are no more tasks to execute.
- * 
+ *
  * The scheduler is very simple and repeats the following steps until terminated:
- * 
+ *
  * - all active tasks execute until they give up execution, and are processed
  *   accordingly (moved to the delayed or waiting queue, adjust maximum sleeping time)
  * - delayed tasks are made active if due
@@ -96,7 +96,7 @@ mono_t Scheduler::Run()
                 case AsyncResult::DelayUntil...AsyncResult::DelayMilliseconds:
                 {
                     mono_t until;
-                    
+
                     if (task->wait.cont)
                     {
                         // continue where previous delay ended

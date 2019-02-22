@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/kernel.h
- * 
+ *
  * Primary header for the kernel component
  */
 

@@ -4,7 +4,7 @@
  * for full license information.
  *
  * targets/host/base/platform.cpp
- * 
+ *
  * Basic support for host platform, implemented using standard C++ library.
  */
 

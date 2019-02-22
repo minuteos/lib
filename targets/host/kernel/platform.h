@@ -4,7 +4,7 @@
  * for full license information.
  *
  * targets/host/kernel/platform.h
- * 
+ *
  * Kernel support for host platform
  */
 

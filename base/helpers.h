@@ -4,7 +4,7 @@
  * for full license information.
  *
  * helpers.h
- * 
+ *
  * Various useful helper macros
  */
 
@@ -13,9 +13,9 @@
 #include <base/base.h>
 
 #define va_call(func, last, ...) \
-	({ va_list va; va_start(va, last); auto res = func(__VA_ARGS__, va); va_end(va); res; })
+    ({ va_list va; va_start(va, last); auto res = func(__VA_ARGS__, va); va_end(va); res; })
 
 #define va_call_void(func, last, ...) \
-	({ va_list va; va_start(va, last); func(__VA_ARGS__, va); va_end(va); })
+    ({ va_list va; va_start(va, last); func(__VA_ARGS__, va); va_end(va); })
 
 #define countof(arr)	(sizeof(arr) / sizeof((arr)[0]))

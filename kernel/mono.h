@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/mono.h
- * 
+ *
  * Monotonic time conversions
  */
 

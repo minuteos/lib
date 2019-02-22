@@ -4,7 +4,7 @@
  * for full license information.
  *
  * io/OutputStream.h
- * 
+ *
  * Base class for all output streams
  */
 

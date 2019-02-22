@@ -4,7 +4,7 @@
  * for full license information.
  *
  * ResultPair.h
- * 
+ *
  * Efficient implementation of returning two values from a function
  */
 

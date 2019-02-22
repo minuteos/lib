@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel-app/kernel.h
- * 
+ *
  * Kernel application framework header
  */
 

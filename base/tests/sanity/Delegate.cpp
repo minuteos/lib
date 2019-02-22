@@ -4,7 +4,7 @@
  * for full license information.
  *
  * Delegate.cpp
- * 
+ *
  * Tests of the Delegate decoding algorithm for various pointer-to-member
  * cases
  */

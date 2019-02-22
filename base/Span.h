@@ -4,11 +4,11 @@
  * for full license information.
  *
  * base/Span.h
- * 
+ *
  * Helper for working with a contiguous block of memory
  */
 
-#pragma once 
+#pragma once
 
 #include <base/base.h>
 
@@ -113,7 +113,7 @@ public:
     /*! @p n can be negative, in which case it is counted from the end of the original Span */
     ALWAYS_INLINE Span SliceRight(int n) const { return Slice(*this, n, std::numeric_limits<int>::max()); }
     //! Returns a new Span consisting of the part of the orignal Span between the two slicing points
-    /*! Both @p start and @p end can be negative, in which case they are counted 
+    /*! Both @p start and @p end can be negative, in which case they are counted
      *  from the end of the original Span */
     ALWAYS_INLINE Span Slice(int start, int end) const { return Slice(*this, start, end); }
 
@@ -121,13 +121,13 @@ public:
     ALWAYS_INLINE Span ConsumeLeft(size_t n) { auto res = Left(n); p += res.len; len -= res.len; return res; }
     //! Returns a new Span consisting of up to n bytes from the end of the original Span. The bytes are removed from the target Span
     ALWAYS_INLINE Span ConsumeRight(size_t n) { auto res = Right(n); len -= res.len; return res; }
-    
+
     //! Splits off the part of the span up to the specified @p separator
     /*!
      * The target Span is modified in place and will contain the part remaining
      * after the separator. If the separator is not found, the original Span
      * is left unmodified.
-     * 
+     *
      * @return The part of the original Span to the left of the separator.
      * An empty span, if the separator is not found in the original Span.
      */
@@ -149,10 +149,10 @@ public:
      * The target Span is modified in place and will contain the part remaining
      * after the separator. If the separator is not found, the result is the entire
      * Span and the target Span is reset (set to empty).
-     * 
+     *
      * This function is useful for processing spans containing multiple parts
      * separated by a given character, such as configuration strings or paths
-     * 
+     *
      * @code
      * Span config = "a=3;b=4;c=5";
      * Span part;
@@ -164,7 +164,7 @@ public:
      *   }
      * }
      * @endcode
-     * 
+     *
      * @return The part of the original Span to the left of the separator.
      * The entire original target Span is returned if the separator is not found.
      */
@@ -175,7 +175,7 @@ public:
      * Whitespace at the start and end of the Span is skipped automatically. If there are
      * no valid digits found, or if @p stopAtInvalid is @c false and an invalid
      * character is encountered in the number, @defVal is returned.
-     * 
+     *
      * @return The parsed integer, or @defVal when parsing fails
      */
     ALWAYS_INLINE int ParseInt(int defVal = 0, bool stopAtInvalid = true) const { return ParseInt(0, defVal, stopAtInvalid); }
@@ -184,16 +184,16 @@ public:
      * Whitespace at the start and end of the Span is skipped automatically. If there are
      * no valid digits found, or if @p stopAtInvalid is @c false and an invalid
      * character is encountered in the number, @defVal is returned.
-     * 
+     *
      * @return The parsed integer, or @defVal when parsing fails
      */
     ALWAYS_INLINE int ParseIntBase(unsigned base, int defVal = 0, bool stopAtInvalid = true) const { return ParseInt(base, defVal, stopAtInvalid); }
-    //! Parses the content of the span as an ASCII hexadecimal integer (Base 16) 
+    //! Parses the content of the span as an ASCII hexadecimal integer (Base 16)
     /*!
      * Whitespace at the start and end of the Span is skipped automatically. If there are
      * no valid digits found, or if @p stopAtInvalid is @c false and an invalid
      * character is encountered in the number, @defVal is returned.
-     * 
+     *
      * @return The parsed integer, or @defVal when parsing fails
      */
     ALWAYS_INLINE unsigned ParseHex(unsigned defVal = 0, bool stopAtInvalid = true) const { return ParseInt(16, defVal, stopAtInvalid); }
@@ -211,7 +211,7 @@ public:
     ALWAYS_INLINE uint16_t ReadUIntBE16(uint16_t defVal = 0) const { return ReadInt(0x22, defVal); }
     //! Decodes the content of the Span (up to 2 bytes) as a big-endian signed integer
     ALWAYS_INLINE int16_t ReadIntBE16(int16_t defVal = 0) const { return ReadInt(0x32, defVal); }
-    
+
     //! Decodes the content of the Span (up to 3 bytes) as a little-endian unsigned integer
     ALWAYS_INLINE uint32_t ReadUIntLE24(uint32_t defVal = 0) const { return ReadInt(3, defVal); }
     //! Decodes the content of the Span (up to 3 bytes) as a little-endian signed integer
@@ -272,7 +272,7 @@ public:
     ALWAYS_INLINE Buffer RemoveRight(size_t n) const { return _FromSpan(Span::RemoveRight(n)); }
 
 private:
-    //! This is a strictly internal function for reinterpreting a Span as a writable Buffer 
+    //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
     ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((char*)span.p, span.len); }
 };
 

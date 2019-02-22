@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel-app/main.cpp
- * 
+ *
  * Provides a default entry point for a standard MinuteOS kernel based application
  */
 

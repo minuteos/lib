@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/async.h
- * 
+ *
  * General support for asynchronous functions
  */
 
@@ -80,7 +80,7 @@ struct AsyncFrame
     union
     {
         AsyncFrame* callee; //!< Pointer to the frame of the asynchronous function being called
-        uint8_t* waitPtr;   //!< Pointer to the value to be monitored with @ref AsyncResult::Wait 
+        uint8_t* waitPtr;   //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
     };
     contptr_t cont;     //!< Pointer to the instruction where execution will continue
     union
@@ -92,9 +92,9 @@ struct AsyncFrame
 
     //! Prepares the frame for a wait operation
     /*!
-     * Makes sure that the mask does not cross a byte boundary,
-     * initializes related fields and packs the remaining values into the result tuple
-     */
+    * Makes sure that the mask does not cross a byte boundary,
+    * initializes related fields and packs the remaining values into the result tuple
+    */
     ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, intptr_t timeout)
     {
         ASSERT((intptr_t)type & (intptr_t)AsyncResult::Wait);
@@ -139,7 +139,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! Starts the definition of an async function
 /*!
  * The parameters of this macro are frame-local variables which are allocated per-invocation
- * 
+ *
  * Usage example:
  * @code
  * async(CountToN, int n)
@@ -157,7 +157,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 #define async_def(...) { \
     __label__ __start__; \
     struct __FRAME { AsyncFrame __async; async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } __VA_ARGS__; }; \
-	static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
+    static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
     auto __prolog_res = _async_prolog(__pCallee, &__spec); \
     __FRAME& f = *(__FRAME*)RES_PAIR_FIRST(__prolog_res); \
     AsyncFrame& __async = f.__async; \
@@ -205,7 +205,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     return __async._prepare_wait(AsyncResult::type, (intptr_t)&(reg), (mask), (expect), (timeout)); \
 next: __async.waitResult; })
 
-//! Waits indefinitely for the value at the specified memory location to become the expected value (after masking) 
+//! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
 #define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, 0)
 //! Waits for the value at the specified memory location to become the expected value (after masking) until the specified instant
 #define await_mask_until(reg, mask, expect, until) _await_mask(WaitUntil, reg, mask, expect, until)

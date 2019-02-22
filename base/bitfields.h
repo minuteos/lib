@@ -4,11 +4,11 @@
  * for full license information.
  *
  * base/bitfields.h
- * 
+ *
  * Bit manipulation helpers
  */
 
-#pragma once 
+#pragma once
 
 #include <base/base.h>
 

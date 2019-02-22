@@ -4,9 +4,9 @@
  * for full license information.
  *
  * Span.cpp
- * 
+ *
  * Tests the memory span manipulation methods
- * 
+ *
  */
 
 #include <testrunner/TestCase.h>
@@ -137,7 +137,7 @@ TEST_CASE("04 Integer Parsing")
     AssertEqual(Span("42 ").ParseHex(0, false), 0x42u);
     AssertEqual(Span("123").ParseIntBase(8), 0123);
     AssertEqual(Span("0x123").ParseInt(), 0x123);
-    AssertEqual(Span("0b10101").ParseInt(), 0b10101);   
+    AssertEqual(Span("0b10101").ParseInt(), 0b10101);
 }
 
 TEST_CASE("05 Integer decoding")

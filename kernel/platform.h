@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/platform.h
- * 
+ *
  * Placeholder to be overriden in specific targets
  */
 

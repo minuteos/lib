@@ -4,7 +4,7 @@
  * for full license information.
  *
  * base/endianness.h
- * 
+ *
  * A set of macros dealing with byte order on the target platform
  */
 

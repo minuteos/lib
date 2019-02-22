@@ -4,7 +4,7 @@
  * for full license information.
  *
  * format.h
- * 
+ *
  * Lightweight printf-style formatting
  */
 
@@ -14,8 +14,8 @@
 
 struct format_write_info
 {
-	char* p;
-	char* end;
+    char* p;
+    char* end;
 };
 
 typedef void (*format_output)(void* context, char ch);
@@ -30,5 +30,3 @@ extern int format(format_output output, void* context, const char* format, ...);
 extern int vformat(format_output output, void* context, const char* format, va_list va);
 
 END_EXTERN_C
-
-

@@ -4,7 +4,7 @@
  * for full license information.
  *
  * Packed.cpp
- * 
+ *
  * Tests the structure packing algorithm for various sizes of structures
  */
 

@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/atomic.h
- * 
+ *
  * Support for atomic operations
  */
 

@@ -4,7 +4,7 @@
  * for full license information.
  *
  * targets/host/base/platform.h
- * 
+ *
  * Basic support for host platform
  */
 

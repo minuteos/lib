@@ -27,7 +27,7 @@ private:
         mono_t until;           //!< Instant when the wait will be over
         bool cont : 1;          //!< Indicates that the next wait should continue immediately after the time in the @ref until field
         bool invert : 1;        //!< Wait condition is inverted, i.e. we're waiting for the value to be other than @ref expect
-        bool acquire : 1;       //!< Task should acquire the masked bits (invert them) when the masked value matches @expect 
+        bool acquire : 1;       //!< Task should acquire the masked bits (invert them) when the masked value matches @expect
         uint8_t mask;           //!< Mask of bits which are checked in the byte pointed to by @ref ptr
         uint8_t expect;         //!< Value expected at @ref ptr (after applying @ref mask)
         uint8_t* ptr;           //!< Pointer to the value on which the task is waiting

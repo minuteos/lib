@@ -4,9 +4,9 @@
  * for full license information.
  *
  * MemPool.cpp
- * 
+ *
  * Tests the fixed-size pool allocator
- * 
+ *
  * Only very rudimentary tests are carried out (essentially only compilability
  * of all code paths is tested), as it's quite hard to create a simple test that
  * would prove anything, and many other tests would fail in case of a bug

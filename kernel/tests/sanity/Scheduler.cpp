@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/tests/sanity/Scheduler.cpp
- * 
+ *
  * Basic task scheduler tests
  */
 

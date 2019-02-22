@@ -4,7 +4,7 @@
  * for full license information.
  *
  * kernel/tests/sanity/Async.cpp
- * 
+ *
  * Direct tests of asynchronous function calling mechanisms
  */
 

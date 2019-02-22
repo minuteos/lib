@@ -4,7 +4,7 @@
  * for full license information.
  *
  * overflow.h
- * 
+ *
  * Helpers for overflow arithmetic
  */
 
