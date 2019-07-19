@@ -128,7 +128,7 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
 
                 case 'b':
                 {
-                    Span data = va_arg(va, Span);
+                    Span data = va_arg(va, res_pair_t);
                     str = data;
                     limit = data.Length();
                     width -= limit;
@@ -173,7 +173,7 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                 case 'H':
                 {
                     // hexadecimal data
-                    Span data = va_arg(va, Span);
+                    Span data = va_arg(va, res_pair_t);
                     str = data;
                     for (unsigned i = 0; i < data.Length(); i++)
                     {

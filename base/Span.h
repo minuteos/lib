@@ -81,6 +81,9 @@ public:
     //! Checks if the content of the Span differs from another Span
     ALWAYS_INLINE bool operator !=(Span other) const { return len != other.len || (p != other.p && memcmp(p, other.p, len)); }
 
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const char operator[](size_t index) const { return p[index]; }
+
     //! Copies the content of the Span to another memory location, returns a Span representing the copy
     Span CopyTo(void* p) const { memmove(p, this->p, len); return Span(p, len); }
     //! Copies the content of the Span to another memory location, limiting the maximum size. Returns a Span representing the copy
@@ -259,6 +262,9 @@ public:
 
     //! Gets the pointer to the beginning of the Buffer
     constexpr char* Pointer() const { return (char*)p; }
+
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr char& operator[](size_t index) const { return ((char*)p)[index]; }
 
     //! Returns a new Buffer consisting of up to n bytes from the start of the original Buffer
     ALWAYS_INLINE Buffer Left(size_t n) const { return _FromSpan(Span::Left(n)); }
