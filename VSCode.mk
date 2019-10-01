@@ -22,27 +22,109 @@ else
   endif
 endif
 
-.PHONY: sense
+.PHONY: sense vscode
 
 sense: .vscode/c_cpp_properties.json
 
+vscode: sense .vscode/launch.json .vscode/tasks.json
+
+define C_CPP_PROPERTIES_TEMPLATE
+{
+	"configurations": [
+		{
+			"name": "$(VSCODE_OS)",
+			"includePath": [
+				$(foreach i,$(INCLUDE_DIRS),"$${workspaceFolder}/$i",)
+				""
+			],
+			"defines": [
+				$(foreach d,$(DEFINES),"$d",)
+				""
+			],
+			"compilerPath": "$(CC)"
+		}
+	]
+}
+endef
+
+define TASKS_TEMPLATE
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build",
+			"type": "shell",
+			"command": "make",
+			"group": "build",
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"label": "Build Debug",
+			"type": "shell",
+			"command": "make CONFIG=Debug",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"label": "Clean",
+			"type": "shell",
+			"command": ["make clean"],
+			"group": "test"
+		},
+		{
+			"label": "Clean Debug",
+			"type": "shell",
+			"command": "make clean CONFIG=Debug",
+			"group": "test"
+		}
+	]
+}
+endef
+
+define LAUNCH_TEMPLATE
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch $(CONFIG)",
+            "cwd": "$${workspaceRoot}",
+            "executable": "$(OUTPUT).elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "preLaunchTask": "Build $(CONFIG)",
+            "device": "$(EFM32_BT_DEVICE)",
+            "swoConfig": {
+                "enabled": true,
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console",
+                        "label": "SWV",
+                        "showOnStartup": true
+                    }
+                ]
+            }
+        }
+    ]
+}
+endef
+
+.vscode/c_cpp_properties.json: export TEMPLATE=$(C_CPP_PROPERTIES_TEMPLATE)
 .vscode/c_cpp_properties.json: FORCE
-	@$(ECHO) '{' >$@
-	@$(ECHO) '	"configurations": [' >>$@
-	@$(ECHO) '		{' >>$@
-	@$(ECHO) '			"name": "$(VSCODE_OS)",' >>$@
-	@$(ECHO) '			"includePath": [' >>$@
-	@$(foreach i,$(INCLUDE_DIRS),\
-	 $(ECHO) '				"$${workspaceFolder}/$i",' >>$@;)
-	@$(ECHO) '				""' >>$@
-	@$(ECHO) '			],' >>$@
-	@$(ECHO) '			"defines": [' >>$@
-	@$(foreach d,$(DEFINES),\
-	 $(ECHO) '				"$d",' >>$@;)
-	@$(ECHO) '				""' >>$@
-	@$(ECHO) '			],' >>$@
-	@$(ECHO) '			"compilerPath": "$(CC)"' >>$@
-	@$(ECHO) '		}' >>$@
-	@$(ECHO) '	],' >>$@
-	@$(ECHO) '	"version": 4' >>$@
-	@$(ECHO) '}' >>$@
+	@$(ECHO) "$$TEMPLATE" >$@
+
+.vscode/tasks.json: export TEMPLATE=$(TASKS_TEMPLATE)
+.vscode/tasks.json:
+	@$(ECHO) "$$TEMPLATE" >$@
+
+.vscode/launch.json: export TEMPLATE=$(LAUNCH_TEMPLATE)
+.vscode/launch.json:
+	@$(ECHO) "$$TEMPLATE" >$@
