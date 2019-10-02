@@ -15,6 +15,8 @@ namespace kernel
 
 //! Main scheduler instance
 Scheduler Scheduler::s_main;
+//! Currently active scheduler instance
+Scheduler* Scheduler::s_current;
 
 /*!
  * Adds a new task to the scheduler
@@ -62,6 +64,9 @@ async_res_t Scheduler::__CallStatic(void* fptr, AsyncFrame** pCallee)
  */
 mono_t Scheduler::Run()
 {
+    auto previousScheduler = s_current;
+    s_current = this;
+
     for (;;)
     {
         mono_t t = CurrentTime();
@@ -73,6 +78,7 @@ mono_t Scheduler::Run()
         pNext = &active;
         while ((task = *pNext))
         {
+            current = task;
             auto res = task->fn(&task->top);
             auto type = _ASYNC_RES_TYPE(res);
             auto value = _ASYNC_RES_VALUE(res);
@@ -131,8 +137,18 @@ mono_t Scheduler::Run()
                 {
                     AsyncFrame* f = (AsyncFrame*)value;
                     task->wait.ptr = f->waitPtr;
-                    task->wait.mask = (uint8_t)type;
-                    task->wait.expect = (uint8_t)((uint32_t)type >> 8);
+                    if ((intptr_t)type & (intptr_t)AsyncResult::_WaitSignalMask)
+                    {
+                        // compute mask, avoid unaligned access
+                        task->wait.expect = 0;
+                        auto align = (intptr_t)task->wait.ptr & (sizeof(uintptr_t) - 1);
+                        task->wait.ptr = (uintptr_t*)((intptr_t)task->wait.ptr & ~(sizeof(uintptr_t) - 1));
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+                        task->wait.mask = 0xFF << (align << 3);
+#else
+                        task->wait.mask = 0xFF << ((sizeof(uintptr_t) - 1 -align) << 3);
+#endif
+                    }
                     task->wait.invert = !!((intptr_t)type & (intptr_t)AsyncResult::_WaitInvertedMask);
                     task->wait.acquire = !!((intptr_t)type & (intptr_t)AsyncResult::_WaitAcquireMask);
                     task->wait.frame = f;
@@ -231,6 +247,7 @@ mono_t Scheduler::Run()
             // completes
             if (!(active || delayed || waiting))
             {
+                s_current = previousScheduler;
                 return t;
             }
 

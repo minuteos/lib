@@ -20,7 +20,7 @@ typedef const void* contptr_t;  //!< Pointer to the next instruction to be execu
 typedef res_pair_t async_res_t; //!< Intermediate result tuple (type and associated value) of asynchronous function execution
 
 //!< State of asynchronous function execution
-enum struct AsyncResult : uintptr_t
+enum struct AsyncResult : intptr_t
 {
     Complete,               //!< Execution has completed, value contains the result
     SleepUntil,             //!< Allow sleep until the specified instant
@@ -32,15 +32,16 @@ enum struct AsyncResult : uintptr_t
     DelaySeconds,           //!< Unconditional sleep for the specified number of seconds
     DelayMilliseconds,      //!< Unconditional sleep for the specified number of milliseconds
 
-    _WaitTimeoutUntil = 0x00000,
-    _WaitTimeoutTicks = 0x10000,
-    _WaitTimeoutSeconds = 0x20000,
-    _WaitTimeoutMilliseconds = 0x30000,
-    _WaitTimeoutMask = 0x30000,
-    _WaitInvertedMask = 0x40000,
-    _WaitAcquireMask = 0x80000,
+    _WaitTimeoutUntil = 0x0,
+    _WaitTimeoutTicks = 0x1,
+    _WaitTimeoutSeconds = 0x2,
+    _WaitTimeoutMilliseconds = 0x3,
+    _WaitTimeoutMask = 0x3,
+    _WaitInvertedMask = 0x4,
+    _WaitAcquireMask = 0x8,
+    _WaitSignalMask = 0x10,
 
-    Wait = 0x100000,         //!< Wait for a specific byte to change to an expected value
+    Wait = 0x20,            //!< Wait for a specific word to change to an expected value
     WaitUntil = Wait | _WaitTimeoutUntil,
     WaitTicks = Wait | _WaitTimeoutTicks,
     WaitMilliseconds = Wait | _WaitTimeoutMilliseconds,
@@ -55,8 +56,18 @@ enum struct AsyncResult : uintptr_t
     WaitAcquireTicks = WaitAcquire | _WaitTimeoutTicks,
     WaitAcquireMilliseconds = WaitAcquire | _WaitTimeoutMilliseconds,
     WaitAcquireSeconds = WaitAcquire | _WaitTimeoutSeconds,
+    WaitSignal = Wait | _WaitSignalMask | _WaitInvertedMask,
+    WaitSignalUntil = WaitSignal | _WaitTimeoutUntil,
+    WaitSignalTicks = WaitSignal | _WaitTimeoutTicks,
+    WaitSignalMilliseconds = WaitSignal | _WaitTimeoutMilliseconds,
+    WaitSignalSeconds = WaitSignal | _WaitTimeoutSeconds,
+    WaitInvertedSignal = Wait | _WaitSignalMask,
+    WaitInvertedSignalUntil = WaitInvertedSignal | _WaitTimeoutUntil,
+    WaitInvertedSignalTicks = WaitInvertedSignal | _WaitTimeoutTicks,
+    WaitInvertedSignalMilliseconds = WaitInvertedSignal | _WaitTimeoutMilliseconds,
+    WaitInvertedSignalSeconds = WaitInvertedSignal | _WaitTimeoutSeconds,
 
-    _WaitEnd = 0x1FFFFF,
+    _WaitEnd = 0x3F
 };
 
 //! Extracts the value from the result tuple
@@ -80,7 +91,7 @@ struct AsyncFrame
     union
     {
         AsyncFrame* callee; //!< Pointer to the frame of the asynchronous function being called
-        uint8_t* waitPtr;   //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
+        uintptr_t* waitPtr; //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
     };
     contptr_t cont;     //!< Pointer to the instruction where execution will continue
     union
@@ -91,31 +102,13 @@ struct AsyncFrame
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
     //! Prepares the frame for a wait operation
-    /*!
-    * Makes sure that the mask does not cross a byte boundary,
-    * initializes related fields and packs the remaining values into the result tuple
-    */
-    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, intptr_t timeout)
+    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, mono_t timeout);
+    //! Prepares the frame for a byte wait operation
+    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, mono_t timeout)
     {
-        ASSERT((intptr_t)type & (intptr_t)AsyncResult::Wait);
-
-        auto shift = mask_shift(mask);
-
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        waitPtr = (uint8_t*)ptr + (shift >> 3);
-#else
-        waitPtr = (uint8_t*)ptr;
-#endif
+        waitPtr = (uintptr_t*)ptr;
         waitTimeout = timeout;
-        expect >>= shift;
-        mask >>= shift;
-        ASSERT(mask == (mask & 0xFF));
-        return _ASYNC_RES(this, ((intptr_t)type | (uint8_t)(mask) | (uint8_t)(expect) << 8));
-    }
-
-    static constexpr unsigned mask_shift(uintptr_t mask)
-    {
-        return (!mask || (mask & 0xFF)) ? 0 : (mask & 0xFF00) ? 8 : (mask & 0xFF0000) ? 16 : 24;
+        return _ASYNC_RES(this, type);
     }
 };
 
@@ -205,6 +198,12 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     return __async._prepare_wait(AsyncResult::type, (intptr_t)&(reg), (mask), (expect), (timeout)); \
 next: __async.waitResult; })
 
+#define _await_signal(type, reg, timeout) ({ \
+    __label__ next; \
+    __async.cont = &&next; \
+    return __async._prepare_wait(AsyncResult::type, (intptr_t)&(reg), (timeout)); \
+next: __async.waitResult; })
+
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
 #define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, 0)
 //! Waits for the value at the specified memory location to become the expected value (after masking) until the specified instant
@@ -228,15 +227,26 @@ next: __async.waitResult; })
 #define await_mask_not_ticks(reg, mask, expect, ticks) _await_mask(WaitInvertedTicks, reg, mask, expect, ticks)
 
 //! Waits indefinitely for the byte at the specified memory location to become non-zero
-#define await_signal(sig) await_mask_not(sig, 0xFF, 0)
+#define await_signal(sig) _await_signal(WaitSignal, sig, 0)
 //! Waits for the byte at the specified memory location to become non-zero until the specified instant
-#define await_signal_until(sig, until) await_mask_not_until(sig, 0xFF, 0, until)
+#define await_signal_until(sig, until) _await_signal(WaitSignalUntil, sig, until)
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of milliseconds
-#define await_signal_ms(sig, ms) await_mask_not_ms(sig, 0xFF, 0, ms)
+#define await_signal_ms(sig, ms) _await_signal(WaitSignalMilliseconds, sig, ms)
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of seconds
-#define await_signal_sec(sig, sec) await_mask_not_sec(sig, 0xFF, 0, sec)
+#define await_signal_sec(sig, sec) _await_signal(WaitSignalSeconds, sig, sec)
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of platform-dependent ticks
-#define await_signal_ticks(sig, ticks) await_mask_not_ticks(sig, 0xFF, 0, ticks)
+#define await_signal_ticks(sig, ticks) _await_signal(WaitSignalTicks, sig, ticks)
+
+//! Waits indefinitely for the byte at the specified memory location to become zero
+#define await_signal_off(sig) _await_signal(WaitInvertedSignal, sig, 0)
+//! Waits for the byte at the specified memory location to become zero until the specified instant
+#define await_signal_off_until(sig, until) _await_signal(WaitInvertedSignalUntil, sig, until)
+//! Waits for the byte at the specified memory location to become zero for the specified number of milliseconds
+#define await_signal_off_ms(sig, ms) _await_signal(WaitInvertedSignalMilliseconds, sig, ms)
+//! Waits for the byte at the specified memory location to become zero for the specified number of seconds
+#define await_signal_off_sec(sig, sec) _await_signal(WaitInvertedSignalSeconds, sig, sec)
+//! Waits for the byte at the specified memory location to become zero for the specified number of platform-dependent ticks
+#define await_signal_off_ticks(sig, ticks) _await_signal(WaitInvertedSignalTicks, sig, ticks)
 
 //! Waits indefinitely for the acquisition of the specified bits
 #define await_acquire(reg, mask)   _await_mask(WaitAcquire, reg, mask, 0, 0)
@@ -265,3 +275,13 @@ template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFram
 typedef async_res_t (*async_fptr_t)(AsyncFrame**);
 //! Pointer to an asynchronous instance method
 template<class T> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**);
+
+#include <kernel/Scheduler.h>
+#include <kernel/Task.h>
+
+ALWAYS_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, mono_t timeout)
+{
+    ::kernel::Scheduler::s_current->current->wait.mask = mask;
+    ::kernel::Scheduler::s_current->current->wait.expect = expect;
+    return _prepare_wait(type, ptr, timeout);
+}

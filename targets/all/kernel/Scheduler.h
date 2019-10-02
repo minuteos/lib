@@ -48,13 +48,22 @@ public:
     static ALWAYS_INLINE mono_t CurrentTime() { return MONO_CLOCKS; }
     //! Retrieves the main scheduler instance
     static ALWAYS_INLINE Scheduler& Main() { return s_main; }
+    //! Retrieves the currently active scheduler instnace
+    static ALWAYS_INLINE Scheduler& Current() { return *s_current; }
+
+    //! Retrieves the currently running task
+    ALWAYS_INLINE class Task& CurrentTask() { return *current; }
 
 private:
     class Task* active = NULL;      //!< Queue of running tasks
     class Task* delayed = NULL;     //!< Queue of unconditionally sleeping tasks
     class Task* waiting = NULL;     //!< Queue of tasks waiting for a value to change
+    class Task* current = NULL;     //!< Currently running task
 
     static Scheduler s_main;        //!< Main scheduler instance
+    static Scheduler* s_current;     //!< Currently active scheduler
+
+    friend struct ::AsyncFrame;
 
 public:
     //! Wrapper for static functions to match the delegate signature

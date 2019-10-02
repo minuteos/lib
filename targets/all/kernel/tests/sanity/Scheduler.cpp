@@ -173,6 +173,60 @@ TEST_CASE("04 Masked waits")
     AssertLessThan(endTime, MonoFromMilliseconds(11));
 }
 
+TEST_CASE("04b Signal waits")
+{
+    struct Test : SequenceRecorder
+    {
+        uint8_t signal[4] = { 0 };
+
+        async(Task1) async_def()
+        {
+            signal[1] = 1;
+            if (await_signal_ms(signal[2], 100))
+            {
+                Mark('1');
+            }
+            else
+            {
+                Mark('X');
+            }
+            signal[1] = 0;
+        }
+        async_end
+
+        async(Task2) async_def()
+        {
+            async_delay_ms(10);
+            signal[2] = 1;
+            Mark('2');
+        }
+        async_end
+
+        async(Task3) async_def()
+        {
+            if (await_signal_off_ms(signal[1], 5))
+            {
+                Mark('X');
+            }
+            else
+            {
+                Mark('3');
+            }
+        }
+        async_end
+    } t;
+
+    Scheduler s;
+    s.Add(t, &Test::Task1);
+    s.Add(t, &Test::Task2);
+    s.Add(t, &Test::Task3);
+    auto endTime = s.Run();
+
+    AssertEqualString(t, "3@5,2@10,1@10");
+    AssertGreaterOrEqual(endTime, MonoFromMilliseconds(10));
+    AssertLessThan(endTime, MonoFromMilliseconds(11));
+}
+
 TEST_CASE("05 Async calls")
 {
     struct Test : SequenceRecorder

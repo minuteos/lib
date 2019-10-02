@@ -79,21 +79,21 @@ TEST_CASE("02 Masked waits")
 
     auto res = t.Step();
     AssertNotEqual(t.p, (AsyncFrame*)NULL);
-    AssertEqual((intptr_t)_ASYNC_RES_TYPE(res), (intptr_t)AsyncResult::WaitSeconds | 0x0201);
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitSeconds);
     AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
     AssertEqual((int*)t.p->waitPtr, &t.x);
     AssertEqual(t.p->waitTimeout, 3u);
     t.p->waitResult = true;  // simulate success
 
     res = t.Step();
-    AssertEqual((intptr_t)_ASYNC_RES_TYPE(res), (intptr_t)AsyncResult::WaitInvertedMilliseconds | 0x0504);
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitInvertedMilliseconds);
     AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
     AssertEqual((AsyncFrame**)t.p->waitPtr, &t.p);
     AssertEqual(t.p->waitTimeout, 6u);
     t.p->waitResult = false; // simulate timeout
 
     res = t.Step();
-    AssertEqual((intptr_t)_ASYNC_RES_TYPE(res), (intptr_t)AsyncResult::Wait | 0xFF);
+    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Wait);
     AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
     AssertEqual((typeof(t)*)t.p->waitPtr, &t);
     AssertEqual(t.p->waitTimeout, 0u);
