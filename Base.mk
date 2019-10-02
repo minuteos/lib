@@ -39,24 +39,25 @@ NAME ?= $(notdir $(realpath $(PROJECT_ROOT)))
 #
 # Now we collect various source directories
 #
+# ALL_TARGETS - names of all the targets including dependencies,
+#               with the "all" target at the end
 # LIB_ROOTS - all the modules that can provide components
 # TARGET_ROOTS - all directories that can contain specific target directory
 #                (including a 'targets' directory in the project root)
 #
-# COMPONENT_DIRS - active component directories (located under LIB_ROOTS)
 # TARGET_DIRS - active target directories (located under TARGET_ROOTS)
-# TARGET_COMPONENT_DIRS - active component directories (located under TARGET_DIRS)
+# COMPONENT_DIRS - active component directories (located under TARGET_DIRS)
 # PROJECT_SOURCE_DIR - directory holding the project specific source files
 # SOURCE_DIR - directory holding the source files to be compiled
 # LIB_DIRS - all directories containing module source files
 #
 
+ALL_TARGETS = $(call uniq,$(filter-out all,$(TARGETS))) all
 LIB_ROOTS := $(call subdirs,$(PROJECT_ROOT),lib*)
 TARGET_ROOTS := $(call subdirs,$(PROJECT_ROOT) $(LIB_ROOTS),targets)
-COMPONENT_DIRS = $(call subdirs,$(LIB_ROOTS),$(COMPONENTS))
-TARGET_DIRS = $(call subdirs2,$(TARGET_ROOTS),$(TARGETS))
-TARGET_COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(COMPONENTS))
-LIB_DIRS = $(COMPONENT_DIRS) $(TARGET_DIRS) $(TARGET_COMPONENT_DIRS)
+TARGET_DIRS = $(call subdirs2,$(TARGET_ROOTS),$(ALL_TARGETS))
+COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(COMPONENTS))
+LIB_DIRS = $(TARGET_DIRS) $(COMPONENT_DIRS)
 PROJECT_SOURCE_DIR = $(PROJECT_ROOT)src/
 SOURCE_DIR = $(PROJECT_SOURCE_DIR)
 
@@ -71,7 +72,7 @@ OBJDIR    = $(OUTDIR)obj/
 OUTPUT    = $(OUTDIR)$(NAME)
 
 # Include directories are the directories which contain components
-INCLUDE_DIRS = $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS) $(LIB_ROOTS)
+INCLUDE_DIRS = $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS)
 
 # Source directories are all component directories
 SOURCE_DIRS = $(sort $(SOURCE_DIR) $(LIB_DIRS))
@@ -121,7 +122,7 @@ sinclude $(call subfiles,$(LIB_DIRS),IncludePost.mk)
 # Fix variables before compilation
 #
 
-COMPONENTS := $(sort $(call dirname,$(COMPONENT_DIRS) $(TARGET_COMPONENT_DIRS)))
+COMPONENTS := $(sort $(call dirname,$(COMPONENT_DIRS)))
 
 #
 # Toolchain
