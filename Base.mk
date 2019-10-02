@@ -122,7 +122,7 @@ sinclude $(call subfiles,$(LIB_DIRS),IncludePost.mk)
 # Fix variables before compilation
 #
 
-COMPONENTS := $(sort $(call dirname,$(COMPONENT_DIRS)))
+COMPONENTS := $(call uniq,$(COMPONENTS))
 
 #
 # Toolchain
@@ -150,7 +150,7 @@ OBJS    := $(addprefix $(OBJDIR),$(addsuffix .o,$(basename $(SOURCES))))
 BLOBS   := $(call subfiles,$(SOURCE_DIRS),*.o) $(ADDITIONAL_BLOBS)
 DEPS    := $(OBJS:.o=.d) $(ADDITIONAL_DEPS)
 # all components get a macro C<component_name>, useful for optional dependencies
-DEFINES += $(subst -,_,$(addprefix C,$(COMPONENTS)))
+DEFINES += $(subst /,_,$(subst -,_,$(addprefix C,$(COMPONENTS))))
 
 DEP_OPT = -MMD -MP
 DEF_OPT = $(addprefix -D,$(DEFINES))
