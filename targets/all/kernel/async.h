@@ -32,16 +32,17 @@ enum struct AsyncResult : intptr_t
     DelaySeconds,           //!< Unconditional sleep for the specified number of seconds
     DelayMilliseconds,      //!< Unconditional sleep for the specified number of milliseconds
 
-    _WaitTimeoutUntil = 0x0,
-    _WaitTimeoutTicks = 0x1,
-    _WaitTimeoutSeconds = 0x2,
-    _WaitTimeoutMilliseconds = 0x3,
-    _WaitTimeoutMask = 0x3,
-    _WaitInvertedMask = 0x4,
-    _WaitAcquireMask = 0x8,
-    _WaitSignalMask = 0x10,
+    _WaitTimeoutUntil = 0x4,
+    _WaitTimeoutTicks = 0x5,
+    _WaitTimeoutSeconds = 0x6,
+    _WaitTimeoutMilliseconds = 0x7,
+    _WaitTimeoutMask = 0x4,
+    _WaitTimeoutTypeMask = 0x7,
+    _WaitInvertedMask = 0x8,
+    _WaitAcquireMask = 0x10,
+    _WaitSignalMask = 0x20,
 
-    Wait = 0x20,            //!< Wait for a specific word to change to an expected value
+    Wait = 0x40,            //!< Wait for a specific word to change to an expected value
     WaitUntil = Wait | _WaitTimeoutUntil,
     WaitTicks = Wait | _WaitTimeoutTicks,
     WaitMilliseconds = Wait | _WaitTimeoutMilliseconds,
@@ -67,7 +68,7 @@ enum struct AsyncResult : intptr_t
     WaitInvertedSignalMilliseconds = WaitInvertedSignal | _WaitTimeoutMilliseconds,
     WaitInvertedSignalSeconds = WaitInvertedSignal | _WaitTimeoutSeconds,
 
-    _WaitEnd = 0x3F
+    _WaitEnd = 0x7F
 };
 
 //! Extracts the value from the result tuple
@@ -76,6 +77,16 @@ enum struct AsyncResult : intptr_t
 #define _ASYNC_RES_TYPE(res)     ((AsyncResult)RES_PAIR_SECOND(res))
 //! Creates an asynchronous result tuple
 #define _ASYNC_RES(value, type)  RES_PAIR(value, type)
+//! Filters the asynchronous result type for a set of flags
+constexpr static AsyncResult operator &(AsyncResult type, AsyncResult flag)
+{
+    return (AsyncResult)((intptr_t)(type) & (intptr_t)(flag));
+}
+//! Checks if the asynchronous result type contains a particular flag
+constexpr static bool operator &&(AsyncResult type, AsyncResult flag)
+{
+    return (type & flag) != AsyncResult::Complete;
+}
 
 //! Static definition of an asynchronous function
 struct AsyncSpec
@@ -102,14 +113,9 @@ struct AsyncFrame
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
     //! Prepares the frame for a wait operation
-    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, mono_t timeout);
+    async_res_t _prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect);
     //! Prepares the frame for a byte wait operation
-    ALWAYS_INLINE async_res_t _prepare_wait(AsyncResult type, intptr_t ptr, mono_t timeout)
-    {
-        waitPtr = (uintptr_t*)ptr;
-        waitTimeout = timeout;
-        return _ASYNC_RES(this, type);
-    }
+    async_res_t _prepare_wait(AsyncResult type);
 };
 
 //! Asynchronous function prolog
@@ -195,13 +201,19 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 #define _await_mask(type, reg, mask, expect, timeout) ({ \
     __label__ next; \
     __async.cont = &&next; \
-    return __async._prepare_wait(AsyncResult::type, (intptr_t)&(reg), (mask), (expect), (timeout)); \
+    __async.waitPtr = (uintptr_t*)&(reg); \
+    if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
+    auto res = __async._prepare_wait(AsyncResult::type, (mask), (expect)); \
+    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
 next: __async.waitResult; })
 
 #define _await_signal(type, reg, timeout) ({ \
     __label__ next; \
     __async.cont = &&next; \
-    return __async._prepare_wait(AsyncResult::type, (intptr_t)&(reg), (timeout)); \
+    __async.waitPtr = (uintptr_t*)&(reg); \
+    if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
+    auto res = __async._prepare_wait(AsyncResult::type); \
+    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
 next: __async.waitResult; })
 
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
@@ -275,13 +287,3 @@ template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFram
 typedef async_res_t (*async_fptr_t)(AsyncFrame**);
 //! Pointer to an asynchronous instance method
 template<class T> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**);
-
-#include <kernel/Scheduler.h>
-#include <kernel/Task.h>
-
-ALWAYS_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, intptr_t ptr, uintptr_t mask, uintptr_t expect, mono_t timeout)
-{
-    ::kernel::Scheduler::s_current->current->wait.mask = mask;
-    ::kernel::Scheduler::s_current->current->wait.expect = expect;
-    return _prepare_wait(type, ptr, timeout);
-}

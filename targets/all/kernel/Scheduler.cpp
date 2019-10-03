@@ -101,29 +101,31 @@ mono_t Scheduler::Run()
                 // unconditional sleep (delay)
                 case AsyncResult::DelayUntil...AsyncResult::DelayMilliseconds:
                 {
-                    mono_t until;
-
-                    if (task->wait.cont)
+                    if (type == AsyncResult::DelayUntil)
                     {
-                        // continue where previous delay ended
-                        until = task->wait.until;
+                        task->wait.until = value;
                     }
                     else
                     {
-                        task->wait.cont = true;
-                        until = t;
-                    }
+                        switch (type)
+                        {
+                            case AsyncResult::DelayMilliseconds: value = MonoFromMilliseconds(value); break;
+                            case AsyncResult::DelaySeconds: value = MonoFromSeconds(value); break;
+                            case AsyncResult::DelayTicks: break;
+                            default: ASSERT(false); break; // cannot happen
+                        }
 
-                    switch (type)
-                    {
-                        case AsyncResult::DelayUntil: until = value; break;
-                        case AsyncResult::DelayMilliseconds: until += MonoFromMilliseconds(value); break;
-                        case AsyncResult::DelaySeconds: until += MonoFromSeconds(value); break;
-                        case AsyncResult::DelayTicks: until += value; break;
-                        default: ASSERT(false); break; // cannot happen
+                        if (task->wait.cont)
+                        {
+                            // continue where previous delay ended
+                            task->wait.until += value;
+                        }
+                        else
+                        {
+                            task->wait.cont = true;
+                            task->wait.until = t + value;
+                        }
                     }
-
-                    task->wait.until = until;
 
                     // move task to the delay queue
                     *pNext = task->next;
@@ -137,7 +139,7 @@ mono_t Scheduler::Run()
                 {
                     AsyncFrame* f = (AsyncFrame*)value;
                     task->wait.ptr = f->waitPtr;
-                    if ((intptr_t)type & (intptr_t)AsyncResult::_WaitSignalMask)
+                    if (type && AsyncResult::_WaitSignalMask)
                     {
                         // compute mask, avoid unaligned access
                         task->wait.expect = 0;
@@ -149,44 +151,44 @@ mono_t Scheduler::Run()
                         task->wait.mask = 0xFF << ((sizeof(uintptr_t) - 1 -align) << 3);
 #endif
                     }
-                    task->wait.invert = !!((intptr_t)type & (intptr_t)AsyncResult::_WaitInvertedMask);
-                    task->wait.acquire = !!((intptr_t)type & (intptr_t)AsyncResult::_WaitAcquireMask);
+                    task->wait.invert = type && AsyncResult::_WaitInvertedMask;
+                    task->wait.acquire = type && AsyncResult::_WaitAcquireMask;
                     task->wait.frame = f;
 
-                    mono_t timeout = f->waitTimeout;
-                    f->waitResult = false;
-                    f->waitPtr = 0;
-
-                    if (!timeout)
+                    if (!(type && AsyncResult::_WaitTimeoutMask))
                     {
-                        // we'll wait forever
                         task->wait.cont = false;
+                    }
+                    else if ((type & AsyncResult::_WaitTimeoutTypeMask) == AsyncResult::_WaitTimeoutUntil)
+                    {
+                        task->wait.until = f->waitTimeout;
+                        task->wait.cont = true;
                     }
                     else
                     {
-                        mono_t until;
+                        mono_t timeout = f->waitTimeout;
+                        switch (type & AsyncResult::_WaitTimeoutTypeMask)
+                        {
+                            case AsyncResult::_WaitTimeoutMilliseconds: timeout = MonoFromMilliseconds(timeout); break;
+                            case AsyncResult::_WaitTimeoutSeconds: timeout = MonoFromSeconds(timeout); break;
+                            case AsyncResult::_WaitTimeoutTicks: break;
+                            default: ASSERT(false); break; // cannot happen
+                        }
 
                         if (task->wait.cont)
                         {
                             // continue where previous delay ended
-                            until = task->wait.until;
+                            task->wait.until += timeout;
                         }
                         else
                         {
                             task->wait.cont = true;
-                            until = t;
+                            task->wait.until = t + timeout;
                         }
-
-                        switch ((AsyncResult)((intptr_t)type & (intptr_t)AsyncResult::_WaitTimeoutMask))
-                        {
-                        case AsyncResult::_WaitTimeoutUntil: until = timeout; break;
-                        case AsyncResult::_WaitTimeoutMilliseconds: until += MonoFromMilliseconds(timeout); break;
-                        case AsyncResult::_WaitTimeoutSeconds: until += MonoFromSeconds(timeout); break;
-                        case AsyncResult::_WaitTimeoutTicks: until += timeout; break;
-                        default: ASSERT(false); break; // cannot happen
-                        }
-                        task->wait.until = until;
                     }
+
+                    f->waitResult = false;
+                    f->waitPtr = 0;
 
                     // move task to the waiting queue
                     *pNext = task->next;

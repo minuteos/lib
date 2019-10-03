@@ -8,7 +8,7 @@
  * General support for asynchronous functions
  */
 
-#include <kernel/async.h>
+#include <kernel/kernel.h>
 
 //! Prolog allocation of a frame from a memory pool
 NO_INLINE async_res_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* spec)
@@ -58,4 +58,33 @@ NO_INLINE async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result)
         free(callee);
 
     return _ASYNC_RES(result, AsyncResult::Complete);
+}
+
+NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type)
+{
+    bool match = !(*(uint8_t*)waitPtr);
+    if (match != (type && AsyncResult::_WaitInvertedMask))
+    {
+        type = AsyncResult::Complete;
+    }
+
+    return _ASYNC_RES(this, type);
+}
+
+NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect)
+{
+    bool match = (*waitPtr & mask) == expect;
+    if (match != (type && AsyncResult::_WaitInvertedMask))
+    {
+        // matched
+        if (type && AsyncResult::_WaitAcquireMask)
+        {
+            *waitPtr ^= mask;
+        }
+        return _ASYNC_RES(this, AsyncResult::Complete);
+    }
+
+    kernel::Scheduler::s_current->current->wait.mask = mask;
+    kernel::Scheduler::s_current->current->wait.expect = expect;
+    return _ASYNC_RES(this, type);
 }

@@ -64,15 +64,15 @@ TEST_CASE("02 Masked waits")
         {
             if (await_mask_sec(x, 1, 2, 3))
             {
-                if (!await_mask_not_ms(p, 4, 5, 6))
+                if (!await_mask_not_ms(x, 4, 0, 6))
                 {
-                    await_mask(*this, 0xFF, 0);
+                    await_mask(x, 0xFF, 0); // should pass immediately
                 }
             }
         }
         async_end
 
-        int x;
+        int x = 0;
         AsyncFrame* p = NULL;
         async_res_t Step() { return Test(&p, 10, 20, 30); }
     } t;
@@ -88,15 +88,9 @@ TEST_CASE("02 Masked waits")
     res = t.Step();
     AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitInvertedMilliseconds);
     AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
-    AssertEqual((AsyncFrame**)t.p->waitPtr, &t.p);
+    AssertEqual((int*)t.p->waitPtr, &t.x);
     AssertEqual(t.p->waitTimeout, 6u);
     t.p->waitResult = false; // simulate timeout
-
-    res = t.Step();
-    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Wait);
-    AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
-    AssertEqual((typeof(t)*)t.p->waitPtr, &t);
-    AssertEqual(t.p->waitTimeout, 0u);
 
     res = t.Step();
     AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Complete);
