@@ -60,14 +60,14 @@ bool TestCase::Execute()
 void TestCase::_Fail(int line)
 {
     puts("FAIL");
-    printf("  assertion at %s:%d", File(), line);
+    printf("  assertion at %s:%d\n", File(), line);
     longjmp(*failJump, 1);
 }
 
 void TestCase::_Fail(int line, const char* reason)
 {
     printf("FAIL (%s)\n", reason);
-    printf("  assertion at %s:%d", File(), line);
+    printf("  assertion at %s:%d\n", File(), line);
     longjmp(*failJump, 1);
 }
 
@@ -79,7 +79,7 @@ void TestCase::_Fail(int line, const char* format, ...)
     vprintf(format, va);
     puts(")");
     va_end(va);
-    printf("  assertion at %s:%d", File(), line);
+    printf("  assertion at %s:%d\n", File(), line);
     longjmp(*failJump, 1);
 }
 
@@ -88,6 +88,6 @@ void TestCase::_Fail(int line, std::function<void(void)> reason)
     printf("FAIL (");
     reason();
     puts(")");
-    printf("  assertion at %s:%d", File(), line);
+    printf("  assertion at %s:%d\n", File(), line);
     longjmp(*failJump, 1);
 }
