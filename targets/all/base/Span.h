@@ -47,6 +47,8 @@ public:
     constexpr Span(const void* p, size_t len) : p((const char*)p), len(len) {}
     //! Constructs a Span covering a range of memory determined by start (inclusive) and end (exclusive)
     constexpr Span(const void* start, const void* end) : p((const char*)start), len((const char*)end - (const char*)start) {}
+    //! Constructs a Span that is a copy of another Span
+    constexpr Span(const Span& value) : p(value.p), len(value.len) {}
     //! Constructs a Span covering a single object
     template<class T> constexpr Span(const T& value) : p((const char*)&value), len(sizeof(T)) {}
 
@@ -257,6 +259,10 @@ public:
     constexpr Buffer(void* p, size_t len) : Span(p, len) {}
     //! Constructs a Buffer covering a range of memory determined by start (inclusive) and end (exclusive)
     constexpr Buffer(void* start, void* end) : Span(start, end) {}
+    //! Constructs a copy of a buffer object
+    constexpr Buffer(const Buffer& other) : Span(other.p, other.len) {}
+    //! Constructs a copy of a buffer object
+    constexpr Buffer(Buffer& other) : Span(other.p, other.len) {}
     //! Constructs a Buffer covering a single object
     template<class T> constexpr Buffer(T& value) : Span((char*)&value, sizeof(T)) {}
 
