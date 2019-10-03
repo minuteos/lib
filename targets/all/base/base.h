@@ -27,6 +27,7 @@
 #include <base/enums.h>
 #include <base/overflow.h>
 #include <base/debug.h>
+#include <base/lookup.h>
 
 // platform-specific base header, to include anything that is common for the platform
 // e.g. CMSIS for ARM targets
