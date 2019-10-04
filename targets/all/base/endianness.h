@@ -31,9 +31,17 @@
 #define TO_BE16(n)    (n)
 #define TO_LE32(n)    BSWAP32(n)
 #define TO_BE32(n)    (n)
+#define FROM_LE16(n)  BSWAP16(n)
+#define FROM_BE16(n)  (n)
+#define FROM_LE32(n)  BSWAP32(n)
+#define FROM_BE32(n)  (n)
 #else
 #define TO_LE16(n)    (n)
 #define TO_BE16(n)    BSWAP16(n)
 #define TO_LE32(n)    (n)
 #define TO_BE32(n)    BSWAP32(n)
+#define FROM_LE16(n)  (n)
+#define FROM_BE16(n)  BSWAP16(n)
+#define FROM_LE32(n)  (n)
+#define FROM_BE32(n)  BSWAP32(n)
 #endif
