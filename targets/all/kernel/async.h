@@ -162,7 +162,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     __FRAME& f = *(__FRAME*)RES_PAIR_FIRST(__prolog_res); \
     AsyncFrame& __async = f.__async; \
     goto *(contptr_t*)RES_PAIR_SECOND(__prolog_res); \
-    __start__:;
+    __start__: new(&f) __FRAME;
 
 //! Starts definition of a synchronous function using the async calling convention
 #define async_def_sync(...) { \
@@ -174,7 +174,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 }
 
 //! Finished the execution of an async function immediately and returns the specified value
-#define async_return(value) return f.__epilog(__pCallee, (value))
+#define async_return(value) ({ f.~__FRAME(); return f.__epilog(__pCallee, (value)); })
 
 #define _async_yield(type, value) ({ __label__ next; __async.cont = &&next; return _ASYNC_RES(value, AsyncResult::type); next: false; })
 
