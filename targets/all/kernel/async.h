@@ -109,6 +109,7 @@ struct AsyncFrame
     {
         mono_t waitTimeout;     //!< Timeout for the wait operation
         intptr_t waitResult;    //!< Result of the wait operation
+        uintptr_t children;     //!< Child task execution status
     };
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
@@ -279,6 +280,13 @@ next: \
     auto res = fn(&__async.callee, ## __VA_ARGS__); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
     _ASYNC_RES_VALUE(res); })
+
+//! Spawns multiple tasks and awaits completion of all
+#define await_all(...) ({ \
+    __label__ next; \
+    __async.cont = &&next; \
+    return Task::_RunAll(__async, __VA_ARGS__); \
+next: __async.waitResult; })
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;

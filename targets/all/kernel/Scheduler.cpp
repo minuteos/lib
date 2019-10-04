@@ -32,7 +32,7 @@ Scheduler* Scheduler::s_current;
  * complete at any time and if another task is created in the same cycle,
  * it will be at the same address.
  */
-void Scheduler::Add(AsyncDelegate<> fn, mono_t delay)
+Task* Scheduler::_Add(AsyncDelegate<> fn, mono_t delay)
 {
     Task* t = MemPoolAlloc<Task>();
     t->fn = fn;
@@ -40,6 +40,7 @@ void Scheduler::Add(AsyncDelegate<> fn, mono_t delay)
     t->wait.cont = true;
     t->next = delayed;
     delayed = t;
+    return t;
 }
 
 async_res_t Scheduler::__CallStatic(void* fptr, AsyncFrame** pCallee)
@@ -89,6 +90,11 @@ mono_t Scheduler::Run()
                 // task has finished
                 case AsyncResult::Complete:
                     *pNext = task->next;
+                    if (task->wait.owner)
+                    {
+                        // notify owner that the task has completed
+                        SETBIT(task->wait.owner->wait.frame->waitResult, task->wait.index);
+                    }
                     MemPoolFree(task);
                     continue;
 

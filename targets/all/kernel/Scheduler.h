@@ -21,7 +21,7 @@ class Scheduler
 {
 public:
     //! Adds a task to the scheduler
-    void Add(AsyncDelegate<> fn, mono_t delay = 0);
+    ALWAYS_INLINE void Add(AsyncDelegate<> fn, mono_t delay = 0) { _Add(fn, delay); }
 
     //! Adds a task represented by a static function to the scheduler
     ALWAYS_INLINE void Add(async_fptr_t function, mono_t delay = 0)
@@ -55,6 +55,9 @@ public:
     ALWAYS_INLINE class Task& CurrentTask() { return *current; }
 
 private:
+    //! Adds a task to the scheduler, returning the Task instance
+    Task* _Add(AsyncDelegate<> fn, mono_t delay);
+
     class Task* active = NULL;      //!< Queue of running tasks
     class Task* delayed = NULL;     //!< Queue of unconditionally sleeping tasks
     class Task* waiting = NULL;     //!< Queue of tasks waiting for a value to change
@@ -64,6 +67,7 @@ private:
     static Scheduler* s_current;     //!< Currently active scheduler
 
     friend struct ::AsyncFrame;
+    friend class Task;
 
 public:
     //! Wrapper for static functions to match the delegate signature
