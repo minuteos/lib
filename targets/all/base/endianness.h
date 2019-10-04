@@ -12,13 +12,13 @@
 
 #ifdef __BYTE_ORDER__
 
-#if defined(__BIG_ENDIAN__) && (__BYTE_ORDER__ == __BIG_ENDIAN__)
-#define BIG_ENDIAN      1
-#define LITTLE_ENDIAN   0
-#elif defined(__LITTLE_ENDIAN__) && (__BYTE_ORDER__ == __LITTLE_ENDIAN__)
-#define BIG_ENDIAN      0
-#define LITTLE_ENDIAN   1
-#elif !(defined(BIG_ENDIAN) && defined(LITTLE_ENDIAN))
+#if defined(__ORDER_BIG_ENDIAN__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#define PLATFORM_BIG_ENDIAN      1
+#define PLATFORM_LITTLE_ENDIAN   0
+#elif defined(__ORDER_LITTLE_ENDIAN__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+#define PLATFORM_BIG_ENDIAN      0
+#define PLATFORM_LITTLE_ENDIAN   1
+#elif !(defined(PLATFORM_BIG_ENDIAN) && defined(PLATFORM_LITTLE_ENDIAN))
 #error Failed to determine platform endianness
 #endif
 
@@ -26,7 +26,7 @@
 
 // force specific byte order
 
-#if BIG_ENDIAN
+#if PLATFORM_BIG_ENDIAN
 #define TO_LE16(n)    BSWAP16(n)
 #define TO_BE16(n)    (n)
 #define TO_LE32(n)    BSWAP32(n)
