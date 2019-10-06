@@ -204,8 +204,8 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     __async.cont = &&next; \
     __async.waitPtr = (uintptr_t*)&(reg); \
     if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
-    auto res = __async._prepare_wait(AsyncResult::type, (mask), (expect)); \
-    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
+    { auto res = __async._prepare_wait(AsyncResult::type, (mask), (expect)); \
+    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async.waitResult; })
 
 #define _await_signal(type, reg, timeout) ({ \
@@ -213,8 +213,8 @@ next: __async.waitResult; })
     __async.cont = &&next; \
     __async.waitPtr = (uintptr_t*)&(reg); \
     if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
-    auto res = __async._prepare_wait(AsyncResult::type); \
-    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
+    { auto res = __async._prepare_wait(AsyncResult::type); \
+    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async.waitResult; })
 
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
