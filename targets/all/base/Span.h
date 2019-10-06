@@ -284,4 +284,4 @@ private:
 
 ALWAYS_INLINE Buffer Span::CopyTo(Buffer buf) const { auto len = std::min(buf.len, this->len); memcpy(buf.Pointer(), this->p, len); return Buffer(buf.Pointer(), len); }
 
-template<> constexpr Buffer::Buffer<Buffer>(Buffer& value) : Span(value.pair) {}
+template<> constexpr Buffer::Buffer(Buffer& value) : Span(value.pair) {}
