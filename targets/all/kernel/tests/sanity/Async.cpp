@@ -11,6 +11,7 @@
 #include <testrunner/TestCase.h>
 
 #include <kernel/async.h>
+#include <kernel/Scheduler.h>
 
 namespace   // prevent collisions
 {
@@ -58,44 +59,55 @@ TEST_CASE("01 Simple call")
 
 TEST_CASE("02 Masked waits")
 {
-    struct
+    static auto test = [this]()
     {
-        async(Test, int ms, int tick, int res) async_def()
+        struct
         {
-            if (await_mask_sec(x, 1, 2, 3))
+            async(Test, int ms, int tick, int res) async_def()
             {
-                if (!await_mask_not_ms(x, 4, 0, 6))
+                if (await_mask_sec(x, 1, 2, 3))
                 {
-                    await_mask(x, 0xFF, 0); // should pass immediately
+                    if (!await_mask_not_ms(x, 4, 0, 6))
+                    {
+                        await_mask(x, 0xFF, 0); // should pass immediately
+                    }
                 }
             }
-        }
-        async_end
+            async_end
 
-        int x = 0;
-        AsyncFrame* p = NULL;
-        async_res_t Step() { return Test(&p, 10, 20, 30); }
-    } t;
+            int x = 0;
+            AsyncFrame* p = NULL;
+            async_res_t Step() { return Test(&p, 10, 20, 30); }
+        } t;
 
-    auto res = t.Step();
-    AssertNotEqual(t.p, (AsyncFrame*)NULL);
-    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitSeconds);
-    AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
-    AssertEqual((int*)t.p->waitPtr, &t.x);
-    AssertEqual(t.p->waitTimeout, 3u);
-    t.p->waitResult = true;  // simulate success
+        auto res = t.Step();
+        AssertNotEqual(t.p, (AsyncFrame*)NULL);
+        AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitSeconds);
+        AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
+        AssertEqual((int*)t.p->waitPtr, &t.x);
+        AssertEqual(t.p->waitTimeout, 3u);
+        t.p->waitResult = true;  // simulate success
 
-    res = t.Step();
-    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitInvertedMilliseconds);
-    AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
-    AssertEqual((int*)t.p->waitPtr, &t.x);
-    AssertEqual(t.p->waitTimeout, 6u);
-    t.p->waitResult = false; // simulate timeout
+        res = t.Step();
+        AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitInvertedMilliseconds);
+        AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
+        AssertEqual((int*)t.p->waitPtr, &t.x);
+        AssertEqual(t.p->waitTimeout, 6u);
+        t.p->waitResult = false; // simulate timeout
 
-    res = t.Step();
-    AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Complete);
-    AssertEqual(_ASYNC_RES_VALUE(res), 0);
-    AssertEqual(t.p, (AsyncFrame*)NULL);
+        res = t.Step();
+        AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Complete);
+        AssertEqual(_ASYNC_RES_VALUE(res), 0);
+        AssertEqual(t.p, (AsyncFrame*)NULL);
+    };
+
+    kernel::Scheduler s;
+    s.Add([](AsyncFrame** p)
+    {
+        test();
+        return _ASYNC_RES(0, AsyncResult::Complete);
+    });
+    s.Run();
 }
 
 }
