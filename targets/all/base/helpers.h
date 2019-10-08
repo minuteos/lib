@@ -19,3 +19,6 @@
     ({ va_list va; va_start(va, last); func(__VA_ARGS__, va); va_end(va); })
 
 #define countof(arr)	(sizeof(arr) / sizeof((arr)[0]))
+
+//! Forces an expression to be compile-time evaluated
+template<typename T, T value> constexpr T force_constexpr() { return value; }
