@@ -20,5 +20,9 @@
 
 #define countof(arr)	(sizeof(arr) / sizeof((arr)[0]))
 
+#ifdef __cplusplus
+
 //! Forces an expression to be compile-time evaluated
 template<typename T, T value> constexpr T force_constexpr() { return value; }
+
+#endif
