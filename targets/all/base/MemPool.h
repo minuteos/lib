@@ -108,7 +108,7 @@ template<size_t size> ALWAYS_INLINE void* MemPoolAllocDynamic()
     }
     else
     {
-        return __MemPoolInstance<MemPoolSize<size>()>::s_instance.AllocDynamic();
+        return __MemPoolInstance<MemPoolSize<poolSize>()>::s_instance.AllocDynamic();
     }
 }
 template<typename T> ALWAYS_INLINE T* MemPoolAllocDynamic() { return (T*)MemPoolAllocDynamic<sizeof(T)>(); }
