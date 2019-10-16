@@ -49,6 +49,8 @@ public:
     constexpr Span(const void* start, const void* end) : p((const char*)start), len((const char*)end - (const char*)start) {}
     //! Constructs a Span covering a single object
     template<class T> constexpr Span(const T& value) : p((const char*)&value), len(sizeof(T)) {}
+    //! Constructs a Span covering a single object
+    template<class T> static Span Of(const T& value) { return Span((const char*)&value, sizeof(T)); }
 
     //! Constructs a Span from a Null-terminated string literal, excluding the terminator
     template<size_t n> constexpr Span(const char (&literal)[n]) : p(literal), len(n - 1)
@@ -63,6 +65,8 @@ public:
 
     //! Gets the pointer to the beginning of the Span
     const char* Pointer() const { return p; }
+    //! Gets the pointer to the beginning of the Span
+    template<class T> const T* Pointer() const { return (const T*)p; }
     //! Gets the length of the Span
     size_t Length() const { return len; }
 
@@ -80,6 +84,9 @@ public:
     ALWAYS_INLINE bool operator ==(Span other) const { return len == other.len && (p == other.p || !memcmp(p, other.p, len)); }
     //! Checks if the content of the Span differs from another Span
     ALWAYS_INLINE bool operator !=(Span other) const { return len != other.len || (p != other.p && memcmp(p, other.p, len)); }
+
+    //! Checks if the other span is contained entirely in the current Span
+    ALWAYS_INLINE bool Contains(Span other) const { return p <= other.p && p + len >= other.p + other.len; }
 
     //! Explicit indexer implementation to resolve possible ambiguity
     ALWAYS_INLINE constexpr const char operator[](size_t index) const { return p[index]; }
