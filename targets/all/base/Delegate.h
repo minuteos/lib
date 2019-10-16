@@ -89,7 +89,15 @@ public:
     }
 
     ALWAYS_INLINE constexpr TRes operator()(Args... args) { return fn(target, args...); }
+
+    ALWAYS_INLINE constexpr operator bool() const { return fn; }
 };
+
+template<class T, typename TRes, typename... Args>
+ALWAYS_INLINE constexpr Delegate<TRes, Args...> GetDelegate(TRes (*fn)(T* a0, Args...), T* arg0 = NULL)
+{
+    return Delegate<TRes, Args...>(fn, arg0);
+}
 
 template<class T, typename TRes, typename... Args>
 ALWAYS_INLINE constexpr Delegate<TRes, Args...> GetDelegate(T* target, TRes (T::*method)(Args...))
