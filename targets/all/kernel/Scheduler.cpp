@@ -16,7 +16,7 @@ namespace kernel
 //! Main scheduler instance
 Scheduler Scheduler::s_main;
 //! Currently active scheduler instance
-Scheduler* Scheduler::s_current;
+Scheduler* Scheduler::s_current = &s_main;
 
 /*!
  * Adds a new task to the scheduler
@@ -32,15 +32,20 @@ Scheduler* Scheduler::s_current;
  * complete at any time and if another task is created in the same cycle,
  * it will be at the same address.
  */
-Task* Scheduler::_Add(AsyncDelegate<> fn, mono_t delay)
+Task& Scheduler::Add(AsyncDelegate<> fn)
 {
     Task* t = MemPoolAlloc<Task>();
     t->fn = fn;
-    t->wait.until = CurrentTime() + MonoFromMilliseconds(delay);
+    return Add(t);
+}
+
+Task& Scheduler::Add(Task* t)
+{
+    t->wait.until = CurrentTime();
     t->wait.cont = true;
     t->next = delayed;
     delayed = t;
-    return t;
+    return *t;
 }
 
 async_res_t Scheduler::__CallStatic(void* fptr, AsyncFrame** pCallee)
@@ -90,12 +95,18 @@ mono_t Scheduler::Run()
                 // task has finished
                 case AsyncResult::Complete:
                     *pNext = task->next;
-                    if (task->wait.owner)
+                    if (task->onComplete)
                     {
-                        // notify owner that the task has completed
-                        SETBIT(task->wait.owner->wait.frame->waitResult, task->wait.index);
+                        task->onComplete(value);
                     }
-                    MemPoolFree(task);
+                    if (task->wait.dynamic)
+                    {
+                        MemPoolFreeDynamic(task);
+                    }
+                    else
+                    {
+                        MemPoolFree(task);
+                    }
                     continue;
 
                 // optional sleep (task will continue in the next loop while allowing sleep up to the specified duration)

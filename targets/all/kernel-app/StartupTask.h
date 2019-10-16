@@ -36,7 +36,7 @@ public:
     static void ScheduleAll()
     {
         for (auto t = InitList<StartupTask>::First(); t; t = t->Next())
-            Task::Run(t->task, t->delay);
+            Task::Run(t->task).DelayMilliseconds(t->delay);
     }
 };
 

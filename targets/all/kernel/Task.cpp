@@ -6,7 +6,7 @@
  * kernel/Task.cpp
  */
 
-#include "Task.h"
+#include <kernel/kernel.h>
 
 namespace kernel
 {
@@ -18,16 +18,17 @@ async_res_t Task::RunAll(::AsyncFrame& frame, const AsyncDelegate<>* delegates, 
 
     ASSERT(count <= MaxRunAll);
 
+    auto onComplete = GetDelegate(&frame, &AsyncFrame::_child_completed);
+
     for (size_t i = 0; i < count; i++)
     {
-        auto t = scheduler._Add(delegates[i], 0);
-        t->wait.index = i;
-        t->wait.owner = current;
+        scheduler.Add(delegates[i]).OnComplete(onComplete);
     }
 
     frame.waitPtr = &frame.children;
-    frame.children = 0;
-    current->wait.mask = current->wait.expect = MASK(count);
+    frame.children = count;
+    current->wait.mask = ~0u;
+    current->wait.expect = 0;
     return _ASYNC_RES(&frame, AsyncResult::Wait);
 }
 

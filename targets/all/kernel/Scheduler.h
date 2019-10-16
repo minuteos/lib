@@ -16,29 +16,38 @@
 namespace kernel
 {
 
+class Task;
+template<typename... Args> class TaskWithArgs;
+
 //! Simple cooperative task scheduler
 class Scheduler
 {
 public:
     //! Adds a task to the scheduler
-    ALWAYS_INLINE void Add(AsyncDelegate<> fn, mono_t delay = 0) { _Add(fn, delay); }
+    Task& Add(AsyncDelegate<> fn);
+
+    //! Adds a task with arguments to the scheduler
+    template<typename... Args> ALWAYS_INLINE Task& Add(AsyncDelegate<Args...> fn, Args... args)
+    {
+        return Add(new(MemPoolAllocDynamic<TaskWithArgs<Args...>>()) TaskWithArgs<Args...>(fn, args...));
+    }
 
     //! Adds a task represented by a static function to the scheduler
-    ALWAYS_INLINE void Add(async_fptr_t function, mono_t delay = 0)
+    ALWAYS_INLINE Task& Add(async_fptr_t function)
     {
-        Add(AsyncDelegate<>(&__CallStatic, (void*)function), delay);
+        return Add(AsyncDelegate<>(&__CallStatic, (void*)function));
     }
 
-    //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate,mono_t)
-    template<typename T> ALWAYS_INLINE void Add(T& target, async_methodptr_t<T> method, mono_t delay = 0)
+    //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate)
+    template<typename T, typename... Args> ALWAYS_INLINE Task& Add(T& target, async_methodptr_t<T, Args...> method, Args... args)
     {
-        Add(GetDelegate(&target, method), delay);
+        return Add(GetDelegate(&target, method), args...);
     }
 
-    //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate,mono_t)
-    template<typename T> ALWAYS_INLINE void Add(T* target, async_methodptr_t<T> method, mono_t delay = 0)
+    //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate)
+    template<typename T, typename... Args> ALWAYS_INLINE Task& Add(T* target, async_methodptr_t<T, Args...> method, Args... args)
     {
-        Add(GetDelegate(target, method), delay);
+        return Add(GetDelegate(target, method), args...);
     }
 
     //! Executes the scheduled tasks
@@ -55,8 +64,8 @@ public:
     ALWAYS_INLINE class Task& CurrentTask() { return *current; }
 
 private:
-    //! Adds a task to the scheduler, returning the Task instance
-    Task* _Add(AsyncDelegate<> fn, mono_t delay);
+    //! Adds a task to the scheduler
+    Task& Add(Task* task);
 
     class Task* active = NULL;      //!< Queue of running tasks
     class Task* delayed = NULL;     //!< Queue of unconditionally sleeping tasks

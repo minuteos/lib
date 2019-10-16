@@ -88,3 +88,8 @@ NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, uintptr_t mask
     kernel::Scheduler::s_current->current->wait.expect = expect;
     return _ASYNC_RES(this, type);
 }
+
+void AsyncFrame::_child_completed(intptr_t res)
+{
+    children--;
+}

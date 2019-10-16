@@ -109,7 +109,7 @@ struct AsyncFrame
     {
         mono_t waitTimeout;     //!< Timeout for the wait operation
         intptr_t waitResult;    //!< Result of the wait operation
-        uintptr_t children;     //!< Child task execution status
+        uintptr_t children;     //!< Count of child tasks still executing
     };
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
@@ -117,6 +117,8 @@ struct AsyncFrame
     async_res_t _prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect);
     //! Prepares the frame for a byte wait operation
     async_res_t _prepare_wait(AsyncResult type);
+    //! Decrements the running child count
+    void _child_completed(intptr_t res);
 };
 
 //! Asynchronous function prolog
@@ -294,4 +296,4 @@ template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFram
 //! Pointer to an asynchronous function
 typedef async_res_t (*async_fptr_t)(AsyncFrame**);
 //! Pointer to an asynchronous instance method
-template<class T> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**);
+template<class T, typename... Args> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**, Args... args);
