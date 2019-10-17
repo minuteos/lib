@@ -70,6 +70,8 @@ OUTTARGET = out/$(firstword $(TARGETS))/
 OUTDIR    = $(OUTTARGET)$(CONFIG)/
 OBJDIR    = $(OUTDIR)obj/
 OUTPUT    = $(OUTDIR)$(NAME)
+PRIMARY_EXT = .elf
+PRIMARY_OUTPUT = $(OUTPUT)$(PRIMARY_EXT)
 
 # Include directories are the directories which contain components
 INCLUDE_DIRS = $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS)
@@ -193,7 +195,7 @@ endif
 
 all: main
 
-main: prebuild $(OUTPUT).elf disassembly
+main: prebuild $(PRIMARY_OUTPUT) disassembly
 
 disassembly: $(OUTPUT).S $(OUTPUT).SS
 
@@ -243,15 +245,15 @@ $(OBJDIR)%.nopch.o: %.nopch.cpp | prebuild
 	$(info $(CXX) -c $< -o $@)
 	@$(CXX) -c $< $(CXX_OPT) -o $@
 
-$(OUTPUT).elf: $(OBJS) $(BLOBS) | prebuild
+$(PRIMARY_OUTPUT): $(OBJS) $(BLOBS) | prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(CXX) -o $@ $(sort $(OBJS) $(BLOBS)) $(LINK_OPT)
 	@$(SIZE) $@
 
-$(OUTPUT).S: $(OUTPUT).elf
+$(OUTPUT).S: $(PRIMARY_OUTPUT)
 	-$(OBJDUMP) -d $< >$@
 
-$(OUTPUT).SS: $(OUTPUT).elf
+$(OUTPUT).SS: $(PRIMARY_OUTPUT)
 	-$(OBJDUMP) -d -S $< >$@
 
 # Include generated dependency files, unless we're cleaning

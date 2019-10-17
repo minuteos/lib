@@ -95,7 +95,7 @@ define LAUNCH_TEMPLATE
         {
             "name": "Launch $(CONFIG)",
             "cwd": "$${workspaceRoot}",
-            "executable": "$(OUTPUT).elf",
+            "executable": "$(PRIMARY_OUTPUT)",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "jlink",
