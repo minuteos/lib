@@ -201,22 +201,47 @@ test: $(TESTRESULTS) $(TESTSUMMARY)
 
 objs: $(OBJS)
 
+prebuild:
+	$(info )
+	$(info Compilation flags:)
+	$(info DEFINES:  $(DEF_OPT))
+	$(info INCLUDE:  $(INC_OPT))
+	$(info ARCH:     $(ARCH_FLAGS))
+	$(info COMMON:   $(COMMON_FLAGS))
+	$(info OPTIMIZE: $(OPT_FLAGS))
+	$(info C only:   $(C_FLAGS) $(C_FLAGS_EXTRA))
+	$(info C++ only: $(CXX_FLAGS) $(CXX_FLAGS_EXTRA))
+	$(info )
+	$(info Source extensions:  $(SOURCE_EXTS))
+	$(info Source directories: $(SOURCE_DIRS))
+	$(info )
+
+$(OUTDIR):
+	@$(MKDIR) -p $(OUTDIR)
+
+$(OBJDIR):
+	@$(MKDIR) -p $(OBJDIR)
+
 $(OBJDIR)%.o: %.c | prebuild
 	@$(MKDIR) -p $(dir $@)
-	$(CC) -c $< $(CC_OPT) -o $@
+	$(info $(CC) -c $< -o $@)
+	@$(CC) -c $< $(CC_OPT) -o $@
 
 $(OBJDIR)%.o: %.S | prebuild
 	@$(MKDIR) -p $(dir $@)
-	$(CC) -c $< $(CC_OPT) -o $@
+	$(info $(CC) -c $< -o $@)
+	@$(CC) -c $< $(CC_OPT) -o $@
 
 $(OBJDIR)%.o: %.cpp $(PCH_FILE) | prebuild
 	@$(MKDIR) -p $(dir $@)
-	$(CXX) -c $< $(CXX_OPT) $(PCH_OPT) -o $@
+	$(info $(CXX) -c $< $(PCH_OPT) -o $@)
+	@$(CXX) -c $< $(CXX_OPT) $(PCH_OPT) -o $@
 
 $(OBJDIR)%.nopch.o: %.nopch.cpp | prebuild
 	$(error $<)
 	@$(MKDIR) -p $(dir $@)
-	$(CXX) -c $< $(CXX_OPT) -o $@
+	$(info $(CXX) -c $< -o $@)
+	@$(CXX) -c $< $(CXX_OPT) -o $@
 
 $(OUTPUT).elf: $(OBJS) $(BLOBS) | prebuild
 	@$(MKDIR) -p $(dir $@)
