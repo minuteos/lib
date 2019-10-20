@@ -41,8 +41,11 @@ Packed<_PMFDecodeResult> _PMFDecode(void* target, ptrdiff_t fptrOrVtOffset, ptrd
 template<typename TRes, typename... Args>
 class Delegate
 {
+public:
     typedef TRes (*fptr_t)(void* target, Args...);
+    template<typename T> using mthptr_t = TRes (T::*)(Args...);
 
+private:
     union
     {
         struct
