@@ -213,7 +213,9 @@ prebuild:
 	$(info OPTIMIZE: $(OPT_FLAGS))
 	$(info C only:   $(C_FLAGS) $(C_FLAGS_EXTRA))
 	$(info C++ only: $(CXX_FLAGS) $(CXX_FLAGS_EXTRA))
+	$(info PCH:      $(PCH_OPT))
 	$(info )
+	$(info Output root         $(OBJDIR))
 	$(info Source extensions:  $(SOURCE_EXTS))
 	$(info Source directories: $(SOURCE_DIRS))
 	$(info )
@@ -226,23 +228,23 @@ $(OBJDIR):
 
 $(OBJDIR)%.o: %.c | prebuild
 	@$(MKDIR) -p $(dir $@)
-	$(info $(CC) -c $< -o $@)
+	$(info $(CC) -c $<)
 	@$(CC) -c $< $(CC_OPT) -o $@
 
 $(OBJDIR)%.o: %.S | prebuild
 	@$(MKDIR) -p $(dir $@)
-	$(info $(CC) -c $< -o $@)
+	$(info $(CC) -c $<)
 	@$(CC) -c $< $(CC_OPT) -o $@
 
 $(OBJDIR)%.o: %.cpp $(PCH_FILE) | prebuild
 	@$(MKDIR) -p $(dir $@)
-	$(info $(CXX) -c $< $(PCH_OPT) -o $@)
+	$(info $(CXX) -c $<)
 	@$(CXX) -c $< $(CXX_OPT) $(PCH_OPT) -o $@
 
 $(OBJDIR)%.nopch.o: %.nopch.cpp | prebuild
 	$(error $<)
 	@$(MKDIR) -p $(dir $@)
-	$(info $(CXX) -c $< -o $@)
+	$(info $(CXX) -c $<)
 	@$(CXX) -c $< $(CXX_OPT) -o $@
 
 $(PRIMARY_OUTPUT): $(OBJS) $(BLOBS) | prebuild
