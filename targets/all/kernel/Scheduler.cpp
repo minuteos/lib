@@ -336,7 +336,23 @@ mono_t Scheduler::Run()
         if (maxSleep > 0)
         {
             // go to sleep
+            for (auto callback : preSleep.Manipulate())
+            {
+                if (callback.Element()(t, maxSleep))
+                {
+                    callback.Remove();
+                    goto noSleep;
+                }
+                mono_t timeSpent = CurrentTime() - t;
+                maxSleep -= timeSpent;
+                if (maxSleep <= 0)
+                {
+                    goto noSleep;
+                }
+                t += timeSpent;
+            }
             PLATFORM_SLEEP(t, maxSleep);
+noSleep:
             PLATFORM_ENABLE_INTERRUPTS();
         }
     }

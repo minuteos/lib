@@ -13,11 +13,15 @@
 #include <kernel/config.h>
 #include <kernel/async.h>
 
+#include <collections/LinkedList.h>
+
 namespace kernel
 {
 
 class Task;
 template<typename... Args> class TaskWithArgs;
+
+using PreSleepDelegate = Delegate<bool, mono_t, mono_t>;
 
 //! Simple cooperative task scheduler
 class Scheduler
@@ -50,6 +54,24 @@ public:
         return Add(GetDelegate(target, method), args...);
     }
 
+    //! Adds a pre-sleep callback to the scheduler
+    ALWAYS_INLINE void AddPreSleepCallback(PreSleepDelegate delegate) { preSleep.Push(delegate); }
+    //! Adds a pre-sleep callback represented by a function to the scheduler
+    ALWAYS_INLINE void AddPreSleepCallback(PreSleepDelegate::fptr_t function, void* arg0 = NULL) { AddPreSleepCallback(GetDelegate(function, arg0)); }
+    //! Syntactic helper for @ref Scheduler::AddPreSleepCallback(AsyncDelegate)
+    template<typename T> ALWAYS_INLINE void AddPreSleepCallback(T& target, PreSleepDelegate::mthptr_t<T> method) { AddPreSleepCallback(GetDelegate(&target, method)); }
+    //! Syntactic helper for @ref Scheduler::AddPreSleepCallback(AsyncDelegate)
+    template<typename T> ALWAYS_INLINE void AddPreSleepCallback(T* target, PreSleepDelegate::mthptr_t<T> method) { AddPreSleepCallback(GetDelegate(target, method)); }
+
+    //! Removes a pre-sleep callback from the scheduler
+    ALWAYS_INLINE void RemovePreSleepCallback(PreSleepDelegate delegate) { preSleep.Remove(delegate); }
+    //! Removes a pre-sleep callback represented by a function from the scheduler
+    ALWAYS_INLINE void RemovePreSleepCallback(PreSleepDelegate::fptr_t function, void* arg0 = NULL) { RemovePreSleepCallback(GetDelegate(function, arg0)); }
+    //! Syntactic helper for @ref Scheduler::RemovePreSleepCallback(AsyncDelegate)
+    template<typename T> ALWAYS_INLINE void RemovePreSleepCallback(T& target, PreSleepDelegate::mthptr_t<T> method) { RemovePreSleepCallback(GetDelegate(&target, method)); }
+    //! Syntactic helper for @ref Scheduler::RemovePreSleepCallback(AsyncDelegate)
+    template<typename T> ALWAYS_INLINE void RemovePreSleepCallback(T* target, PreSleepDelegate::mthptr_t<T> method) { RemovePreSleepCallback(GetDelegate(target, method)); }
+
     //! Executes the scheduled tasks
     mono_t Run();
 
@@ -71,6 +93,7 @@ private:
     class Task* delayed = NULL;     //!< Queue of unconditionally sleeping tasks
     class Task* waiting = NULL;     //!< Queue of tasks waiting for a value to change
     class Task* current = NULL;     //!< Currently running task
+    LinkedList<PreSleepDelegate> preSleep;  //!< List of callbacks called before sleep
 
     static Scheduler s_main;        //!< Main scheduler instance
     static Scheduler* s_current;     //!< Currently active scheduler
