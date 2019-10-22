@@ -59,9 +59,9 @@ public:
     }
 
     //! Constructs a Span from a @ref res_pair_t - used to force passing of return values via registers
-    ALWAYS_INLINE constexpr Span(res_pair_t pair) : pair(pair) {}
+    constexpr Span(res_pair_t pair) : pair(pair) {}
     //! Converts a Span to a @ref res_pair_t - used to force passing of return values via registers
-    ALWAYS_INLINE operator res_pair_t() const { return pair; }
+    constexpr operator res_pair_t() const { return pair; }
 
     //! Gets the pointer to the beginning of the Span
     const char* Pointer() const { return p; }
