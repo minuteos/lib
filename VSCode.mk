@@ -117,14 +117,17 @@ define LAUNCH_TEMPLATE
 }
 endef
 
+.vscode/:
+	@$(MKDIR) -p $@
+
 .vscode/c_cpp_properties.json: export TEMPLATE=$(C_CPP_PROPERTIES_TEMPLATE)
-.vscode/c_cpp_properties.json: FORCE
+.vscode/c_cpp_properties.json: .vscode/ FORCE
 	@$(ECHO) "$$TEMPLATE" >$@
 
 .vscode/tasks.json: export TEMPLATE=$(TASKS_TEMPLATE)
-.vscode/tasks.json:
+.vscode/tasks.json: .vscode/
 	@$(ECHO) "$$TEMPLATE" >$@
 
 .vscode/launch.json: export TEMPLATE=$(LAUNCH_TEMPLATE)
-.vscode/launch.json:
+.vscode/launch.json: .vscode/
 	@$(ECHO) "$$TEMPLATE" >$@
