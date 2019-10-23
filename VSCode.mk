@@ -111,7 +111,27 @@ define LAUNCH_TEMPLATE
                         "showOnStartup": true
                     }
                 ]
-            }
+            },
+        },
+        {
+            "name": "Attach $(CONFIG)",
+            "cwd": "$${workspaceRoot}",
+            "executable": "$(PRIMARY_OUTPUT)",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "$(EFM32_BT_DEVICE)",
+            "swoConfig": {
+                "enabled": true,
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console",
+                        "label": "SWV",
+                        "showOnStartup": true
+                    }
+                ]
+            },
         }
     ]
 }
