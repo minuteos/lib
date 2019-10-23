@@ -54,7 +54,7 @@ define TASKS_TEMPLATE
 		{
 			"label": "Build",
 			"type": "shell",
-			"command": "make",
+			"command": "make -j7",
 			"group": "build",
 			"presentation": {
 				"clear": true
@@ -63,7 +63,7 @@ define TASKS_TEMPLATE
 		{
 			"label": "Build Debug",
 			"type": "shell",
-			"command": "make CONFIG=Debug",
+			"command": "make -j7 CONFIG=Debug",
 			"group": {
 				"kind": "build",
 				"isDefault": true
