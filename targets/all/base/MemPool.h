@@ -41,7 +41,7 @@ class MemPool
     const size_t size;
 
 public:
-    MemPool(const size_t size) : free(NULL), size(size)
+    constexpr MemPool(const size_t size) : free(NULL), size(size)
     {
     }
 
