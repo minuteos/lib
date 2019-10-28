@@ -46,6 +46,12 @@
 #define PLATFORM_SLEEP(since, duration)
 #endif
 
+#if !defined(PLATFORM_DEEP_SLEEP_DISABLE) && !defined(PLATFORM_DEEP_SLEEP_ENABLE) && !defined(PLATFORM_DEEP_SLEEP_ENABLED)
+#define PLATFORM_DEEP_SLEEP_DISABLE()
+#define PLATFORM_DEEP_SLEEP_ENABLE()
+#define PLATFORM_DEEP_SLEEP_ENABLED() (0)
+#endif
+
 #include <type_traits>
 #include <limits>
 
