@@ -22,6 +22,8 @@ template<typename T> constexpr bool OVF_LT(T a, T b) { return OVF_DIFF(a, b) < 0
 template<typename T> constexpr bool OVF_LE(T a, T b) { return OVF_DIFF(a, b) <= 0; }
 template<typename T> constexpr bool OVF_GT(T a, T b) { return OVF_DIFF(a, b) > 0; }
 template<typename T> constexpr bool OVF_GE(T a, T b) { return OVF_DIFF(a, b) >= 0; }
+template<typename T> constexpr T OVF_MIN(T a, T b) { return OVF_LT(a, b) ? a : b; }
+template<typename T> constexpr T OVF_MAX(T a, T b) { return OVF_GT(a, b) ? a : b; }
 template<typename T> constexpr std::make_signed_t<T> OVF_MAX_DIFF() { return std::numeric_limits<std::make_signed_t<T>>::max(); }
 
 #endif
