@@ -204,7 +204,7 @@ mono_t Scheduler::Run()
                         }
                     }
 
-                    f->waitResult = false;
+                    // also sets waitResult to false (union with waitPtr)
                     f->waitPtr = 0;
 
                     // move task to the waiting queue

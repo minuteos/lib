@@ -103,12 +103,12 @@ struct AsyncFrame
     {
         AsyncFrame* callee; //!< Pointer to the frame of the asynchronous function being called
         uintptr_t* waitPtr; //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
+        intptr_t waitResult;    //!< Result of the wait operation
     };
     contptr_t cont;     //!< Pointer to the instruction where execution will continue
     union
     {
         mono_t waitTimeout;     //!< Timeout for the wait operation
-        intptr_t waitResult;    //!< Result of the wait operation
         uintptr_t children;     //!< Count of child tasks still executing
     };
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
@@ -119,6 +119,8 @@ struct AsyncFrame
     async_res_t _prepare_wait(AsyncResult type);
     //! Decrements the running child count
     void _child_completed(intptr_t res);
+    //! Returns the wait result and clears it
+    ALWAYS_INLINE intptr_t _read_waitResult() { auto res = waitResult; waitResult = 0; return res; }
 };
 
 //! Asynchronous function prolog
@@ -208,7 +210,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type, (mask), (expect)); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async.waitResult; })
+next: __async._read_waitResult(); })
 
 #define _await_signal(type, reg, timeout) ({ \
     __label__ next; \
@@ -217,7 +219,7 @@ next: __async.waitResult; })
     if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async.waitResult; })
+next: __async._read_waitResult(); })
 
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
 #define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, 0)
@@ -288,7 +290,7 @@ next: \
     __label__ next; \
     __async.cont = &&next; \
     return Task::_RunAll(__async, __VA_ARGS__); \
-next: __async.waitResult; })
+next: __async._read_waitResult(); })
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;
