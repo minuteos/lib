@@ -12,13 +12,18 @@
 
 #include <base/base.h>
 
+//! Helper for simple call forwarding of a function taking variable arguments to one taking a va_list
 #define va_call(func, last, ...) \
     ({ va_list va; va_start(va, last); auto res = func(__VA_ARGS__, va); va_end(va); res; })
 
+//! Helper for simple call forwarding of a function taking variable arguments to one taking a va_list and returning void
 #define va_call_void(func, last, ...) \
     ({ va_list va; va_start(va, last); func(__VA_ARGS__, va); va_end(va); })
 
+//! Gets the static count of elements in an array
 #define countof(arr)	(sizeof(arr) / sizeof((arr)[0]))
+//! Gets the static pointer to the end of an array
+#define endof(arr)      (&((arr)[countof(arr)]))
 
 #ifdef __cplusplus
 
