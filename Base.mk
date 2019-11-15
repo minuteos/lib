@@ -236,16 +236,15 @@ $(OBJDIR)%.o: %.S | prebuild
 	$(info $(CC) -c $<)
 	@$(CC) -c $< $(CC_OPT) -o $@
 
+$(OBJDIR)%.nopch.o: %.nopch.cpp | prebuild
+	@$(MKDIR) -p $(dir $@)
+	$(info $(CXX) -c $<   # without PCH)
+	@$(CXX) -c $< $(CXX_OPT) -o $@
+
 $(OBJDIR)%.o: %.cpp $(PCH_FILE) | prebuild
 	@$(MKDIR) -p $(dir $@)
 	$(info $(CXX) -c $<)
 	@$(CXX) -c $< $(CXX_OPT) $(PCH_OPT) -o $@
-
-$(OBJDIR)%.nopch.o: %.nopch.cpp | prebuild
-	$(error $<)
-	@$(MKDIR) -p $(dir $@)
-	$(info $(CXX) -c $<)
-	@$(CXX) -c $< $(CXX_OPT) -o $@
 
 $(PRIMARY_OUTPUT): $(OBJS) $(BLOBS) | prebuild
 	@$(MKDIR) -p $(dir $@)
