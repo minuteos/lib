@@ -252,10 +252,10 @@ $(PRIMARY_OUTPUT): $(OBJS) $(BLOBS) | prebuild
 	@$(SIZE) $@
 
 $(OUTPUT).S: $(PRIMARY_OUTPUT)
-	-$(OBJDUMP) -d $< >$@
+	-$(OBJDUMP) -d $< > $@
 
 $(OUTPUT).SS: $(PRIMARY_OUTPUT)
-	-$(OBJDUMP) -d -S $< >$@
+	-$(OBJDUMP) -d -S $< > $@
 
 # Include generated dependency files, unless we're cleaning
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
