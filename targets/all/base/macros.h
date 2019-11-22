@@ -33,6 +33,14 @@
 #define NO_INLINE
 #endif
 
+#ifndef DEBUG_NO_INLINE
+#if DEBUG
+#define DEBUG_NO_INLINE NO_INLINE
+#else
+#define DEBUG_NO_INLINE
+#endif
+#endif
+
 #ifndef OPTIMIZE_SIZE
 #define OPTIMIZE_SIZE
 #endif
