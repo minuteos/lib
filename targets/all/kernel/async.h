@@ -172,6 +172,9 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 #define async_def_sync(...) { \
     struct __FRAME { async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } __VA_ARGS__; } f; \
 
+//! Defines a simple synchronous function immediately returning a value, using the async calling convention
+#define async_def_return(value) { return _ASYNC_RES(value, AsyncResult::Complete); }
+
 //! Terminates the definition of an async function. See @ref async_def for details
 #define async_end \
     async_return(0); \
