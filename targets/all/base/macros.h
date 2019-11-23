@@ -22,6 +22,8 @@
 
 #if __GNUC__ && !__clang__
 #define OPTIMIZE_SIZE   __attribute__((optimize("-Os")))
+#define OPTIMIZE        __attribute__((optimize("-O3"), optimize("-Os")))
+#define OPTIMIZE_SPEED  __attribute__((optimize("-O3")))
 #endif
 
 // safe fallbacks
@@ -46,7 +48,11 @@
 #endif
 
 #ifndef OPTIMIZE
-#define OPTIMIZE        OPTIMIZE_SIZE
+#define OPTIMIZE
+#endif
+
+#ifndef OPTIMIZE_SPEED
+#define OPTIMIZE_SPEED
 #endif
 
 #ifndef UNUSED
