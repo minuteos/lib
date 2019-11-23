@@ -175,10 +175,10 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                     // hexadecimal data
                     Span data = va_arg(va, res_pair_t);
                     str = data;
-                    for (unsigned i = 0; i < data.Length(); i++)
+                    for (int i = (left ? data.Length() - 1 : 0); i != (left ? -1 : (int)data.Length()); i += (left ? -1 : 1))
                     {
-                        output(context, l_hex[(uint8_t)data[i] >> 4] | hexLower);
-                        output(context, l_hex[(uint8_t)data[i] & 15] | hexLower);
+                        output(context, l_hex[data.Element<uint8_t>(i) >> 4] | hexLower);
+                        output(context, l_hex[data.Element<uint8_t>(i) & 15] | hexLower);
                         outputCount += 2;
                     }
                     break;
