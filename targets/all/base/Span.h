@@ -67,6 +67,8 @@ public:
     const char* Pointer() const { return p; }
     //! Gets the pointer to the beginning of the Span
     template<class T> const T* Pointer() const { return (const T*)p; }
+    //! Gets the reference to the element of the Span with the specified index
+    template<class T> const T& Element(size_t index = 0) const { return ((const T*)p)[index]; }
     //! Gets the length of the Span
     size_t Length() const { return len; }
 
