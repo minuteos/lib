@@ -59,21 +59,21 @@ public:
     }
 
     //! Constructs a Span from a @ref res_pair_t - used to force passing of return values via registers
-    constexpr Span(res_pair_t pair) : pair(pair) {}
+    ALWAYS_INLINE constexpr Span(res_pair_t pair) : pair(pair) {}
     //! Converts a Span to a @ref res_pair_t - used to force passing of return values via registers
-    constexpr operator res_pair_t() const { return pair; }
+    ALWAYS_INLINE constexpr operator res_pair_t() const { return pair; }
 
     //! Gets the pointer to the beginning of the Span
-    const char* Pointer() const { return p; }
+    ALWAYS_INLINE const char* Pointer() const { return p; }
     //! Gets the pointer to the beginning of the Span
-    template<class T> const T* Pointer() const { return (const T*)p; }
+    template<class T> ALWAYS_INLINE const T* Pointer() const { return (const T*)p; }
     //! Gets the reference to the element of the Span with the specified index
-    template<class T> const T& Element(size_t index = 0) const { return ((const T*)p)[index]; }
+    template<class T> ALWAYS_INLINE const T& Element(size_t index = 0) const { return ((const T*)p)[index]; }
     //! Gets the length of the Span
-    size_t Length() const { return len; }
+    ALWAYS_INLINE size_t Length() const { return len; }
 
     //! Gets the pointer to the beginning of the Span
-    constexpr operator const char*() const { return p; }
+    ALWAYS_INLINE constexpr operator const char*() const { return p; }
     //! Span is convertible to any constant pointer
     template<typename T> ALWAYS_INLINE constexpr operator const T*() const { return (const T*)p; }
 
