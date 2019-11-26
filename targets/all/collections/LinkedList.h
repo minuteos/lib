@@ -50,12 +50,13 @@ public:
 
         constexpr bool operator==(const Node& node) const { return *p == &node; }
 
-        void Insert(const T& element)
+        T& Insert(const T& element)
         {
             auto node = MemPoolAlloc<Node>();
             node->next = *p;
             node->element = element;
             *p = node;
+            return node->element;
         }
 
         void Remove()
@@ -77,7 +78,7 @@ public:
 
     Manipulator Manipulate() { return Manipulator(this); }
 
-    void Push(const T& element) { Manipulate().Insert(element); }
+    T& Push(const T& element) { return Manipulate().Insert(element); }
 
     bool Remove(const T& element)
     {
