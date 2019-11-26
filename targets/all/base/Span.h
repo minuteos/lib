@@ -243,11 +243,11 @@ public:
     ALWAYS_INLINE int32_t ReadIntBE32(int32_t defVal = 0) const { return ReadInt(0x34, defVal); }
 
 private:
-    static res_pair_t Sub(Span s, size_t start, size_t len);
-    static res_pair_t Slice(Span s, int start, int end);
+    static RES_PAIR_DECL(Sub, Span s, size_t start, size_t len);
+    static RES_PAIR_DECL(Slice, Span s, int start, int end);
 
-    static res_pair_t Split(Span& s, char separator);
-    static res_pair_t Consume(Span& s, char separator);
+    static RES_PAIR_DECL(Split, Span& s, char separator);
+    static RES_PAIR_DECL(Consume, Span& s, char separator);
 
     ALWAYS_INLINE int ParseInt(int base, int defVal, bool stopAtInvalid) const { return ParseInt(*this, stopAtInvalid ? base : base ? -base : -1, defVal); }
     static int ParseInt(Span s, int baseStopAtInvalid, int defVal);

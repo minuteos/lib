@@ -124,9 +124,9 @@ struct AsyncFrame
 };
 
 //! Asynchronous function prolog
-extern res_pair_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec);
+extern RES_PAIR_DECL(_async_prolog, AsyncFrame** pCallee, const AsyncSpec* spec);
 //! Asynchronous function epilog
-extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
+extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 
 //! Declaration of an async function
 #define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
