@@ -52,11 +52,11 @@ public:
     //! Runs a new task on the main scheduler
     ALWAYS_INLINE static Task& Run(AsyncDelegate<> fn);
     //! Runs a new task on the main scheduler
-    template<typename... Args> ALWAYS_INLINE static Task& Run(AsyncDelegate<Args...> fn, Args... args);
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(AsyncDelegate<Args...> fn, AArgs&&... args);
     //! Runs a new task on the main scheduler
-    template<typename T, typename... Args> ALWAYS_INLINE static Task& Run(T& target, async_methodptr_t<T, Args...> method, Args... args);
+    template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args);
     //! Runs a new task on the main scheduler
-    template<typename T, typename... Args> ALWAYS_INLINE static Task& Run(T* target, async_methodptr_t<T, Args...> method, Args... args);
+    template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args);
 
     //! Delays the start of the task by the specified number of ticks, can be used only before the task is started
     ALWAYS_INLINE Task& DelayTicks(mono_t ticks) { ASSERT(!top); wait.until += ticks; return *this; }
@@ -118,8 +118,8 @@ namespace kernel
 
 ALWAYS_INLINE Task& Task::Run(async_fptr_t fn) { return Scheduler::Current().Add(fn); }
 ALWAYS_INLINE Task& Task::Run(AsyncDelegate<> fn) { return Scheduler::Current().Add(fn); }
-template<typename... Args> Task& Task::Run(AsyncDelegate<Args...> fn, Args... args) { return Scheduler::Main().Add(fn, args...); }
-template<typename T, typename... Args> ALWAYS_INLINE Task& Task::Run(T& target, async_methodptr_t<T, Args...> method, Args... args) { return Scheduler::Main().Add(target, method, args...); }
-template<typename T, typename... Args> ALWAYS_INLINE Task& Task::Run(T* target, async_methodptr_t<T, Args...> method, Args... args) { return Scheduler::Main().Add(target, method, args...); }
+template<typename... Args, typename... AArgs> Task& Task::Run(AsyncDelegate<Args...> fn, AArgs&&... args) { return Scheduler::Main().Add(fn, std::forward<AArgs>(args)...); }
+template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Task::Run(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args) { return Scheduler::Main().Add(target, method, std::forward<AArgs>(args)...); }
+template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Task::Run(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args) { return Scheduler::Main().Add(target, method, std::forward<AArgs>(args)...); }
 
 }

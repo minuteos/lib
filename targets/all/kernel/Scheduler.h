@@ -15,6 +15,8 @@
 
 #include <collections/LinkedList.h>
 
+#include <utility>
+
 namespace kernel
 {
 
@@ -31,9 +33,9 @@ public:
     Task& Add(AsyncDelegate<> fn);
 
     //! Adds a task with arguments to the scheduler
-    template<typename... Args> ALWAYS_INLINE Task& Add(AsyncDelegate<Args...> fn, Args... args)
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE Task& Add(AsyncDelegate<Args...> fn, AArgs&&... args)
     {
-        return Add(new(MemPoolAllocDynamic<TaskWithArgs<Args...>>()) TaskWithArgs<Args...>(fn, args...));
+        return Add(new(MemPoolAllocDynamic<TaskWithArgs<Args...>>()) TaskWithArgs<Args...>(fn, std::forward<AArgs>(args)...));
     }
 
     //! Adds a task represented by a static function to the scheduler
@@ -43,15 +45,15 @@ public:
     }
 
     //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate)
-    template<typename T, typename... Args> ALWAYS_INLINE Task& Add(T& target, async_methodptr_t<T, Args...> method, Args... args)
+    template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Add(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args)
     {
-        return Add(GetDelegate(&target, method), args...);
+        return Add(GetDelegate(&target, method), std::forward<AArgs>(args)...);
     }
 
     //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate)
-    template<typename T, typename... Args> ALWAYS_INLINE Task& Add(T* target, async_methodptr_t<T, Args...> method, Args... args)
+    template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Add(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args)
     {
-        return Add(GetDelegate(target, method), args...);
+        return Add(GetDelegate(target, method), std::forward<AArgs>(args)...);
     }
 
     //! Adds a pre-sleep callback to the scheduler
