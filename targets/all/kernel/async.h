@@ -279,6 +279,17 @@ next: __async._read_waitResult(); })
 //! Waits for the acquisition of the specified bits for the specified number of platform-dependent ticks
 #define await_acquire_ticks(reg, mask, ticks) _await_mask(WaitAcquireTicks, reg, mask, 0, ticks)
 
+//! Waits indefinitely for the inverse acquisition of the specified bits
+#define await_acquire_zero(reg, mask)   _await_mask(WaitAcquire, reg, mask, mask, 0)
+//! Waits for the inverse acquisition of the specified bits until the specified instant
+#define await_acquire_zero_until(reg, mask, until) _await_mask(WaitAcquireUntil, reg, mask, mask, until)
+//! Waits for the inverse acquisition of the specified bits for the specified number of milliseconds
+#define await_acquire_zero_ms(reg, mask, ms) _await_mask(WaitAcquireMilliseconds, reg, mask, mask, ms)
+//! Waits for the inverse acquisition of the specified bits for the specified number of seconds
+#define await_acquire_zero_sec(reg, mask, sec) _await_mask(WaitAcquireSeconds, reg, mask, mask, sec)
+//! Waits for the inverse acquisition of the specified bits for the specified number of platform-dependent ticks
+#define await_acquire_zero_ticks(reg, mask, ticks) _await_mask(WaitAcquireTicks, reg, mask, mask, ticks)
+
 //! Calls another async function
 #define await(fn, ...) ({ \
     __label__ next; \
