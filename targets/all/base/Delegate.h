@@ -43,6 +43,7 @@ class Delegate
 {
 public:
     typedef TRes (*fptr_t)(void* target, Args...);
+    template<typename T> using tfptr_t = TRes (*)(T* target, Args...);
     template<typename T> using mthptr_t = TRes (T::*)(Args...);
 
 private:
@@ -78,6 +79,9 @@ private:
 
 public:
     ALWAYS_INLINE constexpr Delegate(fptr_t fn = NULL, void* arg0 = NULL) : target(arg0), fn(fn) {}
+
+    template<class T>
+    ALWAYS_INLINE constexpr Delegate(tfptr_t<T> fn, T* arg0 = NULL) : target(arg0), fn((fptr_t)fn) {}
 
     template<class T>
     ALWAYS_INLINE constexpr Delegate(T* target, TRes (T::*method)(Args...))
