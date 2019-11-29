@@ -211,7 +211,7 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
     __async.cont = &&next; \
     __async.waitPtr = (uintptr_t*)&(reg); \
     if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
-    { auto res = __async._prepare_wait(AsyncResult::type, (mask), (expect)); \
+    { auto res = __async._prepare_wait(AsyncResult::type, (uintptr_t)(mask), (uintptr_t)(expect)); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async._read_waitResult(); })
 
