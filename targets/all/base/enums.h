@@ -16,7 +16,9 @@
 /*! This has to be used for private enums within classes */
 #define DECLARE_FLAG_ENUM(enumType) \
     friend enumType constexpr operator |(enumType a, enumType b); \
+    friend enumType operator |=(enumType& a, enumType b); \
     friend enumType operator &(enumType a, enumType b); \
+    friend enumType operator &=(enumType& a, enumType b); \
     friend enumType operator *(enumType a, bool b); \
     friend enumType operator *(bool a, enumType b); \
     friend enumType operator ~(enumType a); \
@@ -25,7 +27,9 @@
 //! Defines operators suitable for an enumeration containing flags
 #define DEFINE_FLAG_ENUM(enumType) \
     ALWAYS_INLINE enumType constexpr operator |(enumType a, enumType b) { return (enumType)((int)a | (int)b); } \
+    ALWAYS_INLINE enumType operator |=(enumType& a, enumType b) { return a = a | b; } \
     ALWAYS_INLINE enumType operator &(enumType a, enumType b) { return (enumType)((int)a & (int)b); } \
+    ALWAYS_INLINE enumType operator &=(enumType& a, enumType b) { return a = a & b; } \
     ALWAYS_INLINE enumType operator *(enumType a, bool b) { return (enumType)((int)a * (int)b); } \
     ALWAYS_INLINE enumType operator *(bool a, enumType b) { return (enumType)((int)a * (int)b); } \
     ALWAYS_INLINE enumType operator ~(enumType a) { return (enumType)(~(int)a); } \
