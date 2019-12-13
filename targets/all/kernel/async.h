@@ -303,8 +303,22 @@ next: \
 #define await_all(...) ({ \
     __label__ next; \
     __async.cont = &&next; \
-    return Task::_RunAll(__async, __VA_ARGS__); \
+    return ::kernel::Task::_RunAll(__async, __VA_ARGS__); \
 next: __async._read_waitResult(); })
+
+//! Begins a block where multiple tasks can be spawned dynamically and then awaited
+#define await_multiple_init() ({ \
+    __async.children = 0; \
+})
+
+//! Adds a task to the group that will be awaited at once
+#define await_multiple_add(...) ({ \
+    __async.children++; \
+    ::kernel::Task::Run(__VA_ARGS__).OnComplete(GetDelegate(&__async, &AsyncFrame::_child_completed)); \
+})
+
+//! Waits for all the tasks added using await_multiple_add() to complete
+#define await_multiple() await_mask(__async.children, ~0u, 0)
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;
