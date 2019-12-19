@@ -22,6 +22,8 @@ else
   endif
 endif
 
+LAUNCH_OUTPUT ?= PRIMARY_OUTPUT
+
 .PHONY: sense vscode
 
 sense: .vscode/c_cpp_properties.json
@@ -95,14 +97,15 @@ define LAUNCH_TEMPLATE
         {
             "name": "Launch $(CONFIG)",
             "cwd": "$${workspaceRoot}",
-            "executable": "$(PRIMARY_OUTPUT)",
+            "executable": "$(LAUNCH_OUTPUT)",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "jlink",
             "preLaunchTask": "Build $(CONFIG)",
-            "device": "$(EFM32_BT_DEVICE)",
+            "device": "$(JLINK_DEVICE)",
             "swoConfig": {
                 "enabled": true,
+                "swoFrequency": 1000000,
                 "decoders": [
                     {
                         "port": 0,
@@ -116,13 +119,14 @@ define LAUNCH_TEMPLATE
         {
             "name": "Attach $(CONFIG)",
             "cwd": "$${workspaceRoot}",
-            "executable": "$(PRIMARY_OUTPUT)",
+            "executable": "$(LAUNCH_OUTPUT)",
             "request": "attach",
             "type": "cortex-debug",
             "servertype": "jlink",
-            "device": "$(EFM32_BT_DEVICE)",
+            "device": "$(JLINK_DEVICE)",
             "swoConfig": {
                 "enabled": true,
+                "swoFrequency": 1000000,
                 "decoders": [
                     {
                         "port": 0,
