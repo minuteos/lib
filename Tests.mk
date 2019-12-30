@@ -17,8 +17,8 @@ OUTTEST = $(OUTDIR)tests/
 t_stripout = $(patsubst $(OUTTEST)%,%,$(1))
 
 TEST_OUTPUTS  := $(addprefix $(OUTTEST),$(TEST_SUITES))
-TEST_BINARIES := $(foreach t,$(TEST_OUTPUTS),$(addsuffix $(call dirname,$(t)).elf,$t))
-TEST_RESULTS  := $(TEST_BINARIES:.elf=.testres)
+TEST_BINARIES := $(foreach t,$(TEST_OUTPUTS),$(addsuffix $(call dirname,$(t))$(PRIMARY_EXT),$t))
+TEST_RESULTS  := $(TEST_BINARIES:$(PRIMARY_EXT)=.testres)
 TEST_SUMMARY  := $(OUTTEST)summary.testres
 
 $(TEST_SUMMARY): $(TEST_RESULTS)
@@ -37,7 +37,7 @@ $(TEST_BINARIES):
 	$(info )
 	@$(MAKE) -f $(BASE_DIR)Test.mk OUTDIR=$(dir $@) TEST=$(patsubst $(OUTTEST)%,%,$(dir $@)) main
 
-%.testres: %.elf
+%.testres: %$(PRIMARY_EXT)
 	$(info )
 	$(info *** Running test suite '$(patsubst $(OUTTEST)%,%,$(dir $@))')
 	$(info )
