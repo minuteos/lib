@@ -59,7 +59,7 @@ TEST_CASE("01 Simple call")
 
 TEST_CASE("02 Masked waits")
 {
-    static auto test = [this]()
+    static auto test = []()
     {
         struct
         {

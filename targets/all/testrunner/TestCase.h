@@ -25,35 +25,36 @@ protected:
     virtual int Line() const = 0;
 
 public:
-    void _Assert(int line, bool condition) { if (!condition) _Fail(line); }
-    template<typename T1, typename T2> void _AssertEqual(int line, T1 o1, T2 o2) { if (o1 != o2) _Fail(line, [this,o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
-    template<typename T1, typename T2> void _AssertNotEqual(int line, T1 o1, T2 o2) { if (o1 == o2) _Fail(line, [this,o1,o2] { Print(o1); Print(" == "); Print(o2); }); }
-    template<typename T1, typename T2> void _AssertLessThan(int line, T1 o1, T2 o2) { if (o1 >= o2) _Fail(line, [this,o1,o2] { Print(o1); Print(" >= "); Print(o2); }); }
-    template<typename T1, typename T2> void _AssertGreaterThan(int line, T1 o1, T2 o2) { if (o1 <= o2) _Fail(line, [this,o1,o2] { Print(o1); Print(" <= "); Print(o2); }); }
-    template<typename T1, typename T2> void _AssertLessOrEqual(int line, T1 o1, T2 o2) { if (o1 > o2) _Fail(line, [this,o1,o2] { Print(o1); Print(" > "); Print(o2); }); }
-    template<typename T1, typename T2> void _AssertGreaterOrEqual(int line, T1 o1, T2 o2) { if (o1 < o2) _Fail(line, [this,o1,o2] { Print(o1); Print(" < "); Print(o2); }); }
-    void _AssertEqualString(int line, const char* s1, const char* s2) { if (strcmp(s1, s2)) _Fail(line, [this,s1,s2] { Print(s1); Print(" != "); Print(s2); }); }
-    void _AssertNotEqualString(int line, const char* s1, const char* s2) { if (!strcmp(s1, s2)) _Fail(line, [this,s1,s2] { Print(s1); Print(" == "); Print(s2); }); }
-    void _Fail(int line);
-    void _Fail(int line, const char* reason);
-    void _Fail(int line, const char* format, ...);
-    void _Fail(int line, std::function<void(void)> reasonPrint);
+    static void _Assert(int line, bool condition) { if (!condition) _Fail(line); }
+    template<typename T1, typename T2> static void _AssertEqual(int line, T1 o1, T2 o2) { if (o1 != o2) _Fail(line, [o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertNotEqual(int line, T1 o1, T2 o2) { if (o1 == o2) _Fail(line, [o1,o2] { Print(o1); Print(" == "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertLessThan(int line, T1 o1, T2 o2) { if (o1 >= o2) _Fail(line, [o1,o2] { Print(o1); Print(" >= "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertGreaterThan(int line, T1 o1, T2 o2) { if (o1 <= o2) _Fail(line, [o1,o2] { Print(o1); Print(" <= "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertLessOrEqual(int line, T1 o1, T2 o2) { if (o1 > o2) _Fail(line, [o1,o2] { Print(o1); Print(" > "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertGreaterOrEqual(int line, T1 o1, T2 o2) { if (o1 < o2) _Fail(line, [o1,o2] { Print(o1); Print(" < "); Print(o2); }); }
+    static void _AssertEqualString(int line, const char* s1, const char* s2) { if (strcmp(s1, s2)) _Fail(line, [s1,s2] { Print(s1); Print(" != "); Print(s2); }); }
+    static void _AssertNotEqualString(int line, const char* s1, const char* s2) { if (!strcmp(s1, s2)) _Fail(line, [s1,s2] { Print(s1); Print(" == "); Print(s2); }); }
+    static void _Fail(int line);
+    static void _Fail(int line, const char* reason);
+    static void _Fail(int line, const char* format, ...);
+    static void _Fail(int line, std::function<void(void)> reasonPrint);
 
-    void Print(const char* text) { printf("%s", text); }
-    void Print(int value) { printf("%d", value); }
-    void Print(Span value) { printf("%.*s", (int)value.Length(), value.Pointer()); }
-    template<typename T> void Print(const T* ptr) { printf("%p", ptr); }
-    template<typename T> void Print(T* ptr) { printf("%p", ptr); }
+    static void Print(const char* text) { printf("%s", text); }
+    static void Print(int value) { printf("%d", value); }
+    static void Print(Span value) { printf("%.*s", (int)value.Length(), value.Pointer()); }
+    template<typename T> static void Print(const T* ptr) { printf("%p", ptr); }
+    template<typename T> static void Print(T* ptr) { printf("%p", ptr); }
     // everything else is printed as an integer
-    template<typename T> void Print(T value) { printf("%ld", (long)value); }
+    template<typename T> static void Print(T value) { printf("%ld", (long)value); }
 
 private:
     bool Execute();
 
     static TestCase* s_first;
     static TestCase* s_last;
+    static TestCase* s_cur;
+    static jmp_buf* s_failJump;
     TestCase* next;
-    jmp_buf* failJump;
 };
 
 #define Assert(...) _Assert(__LINE__, ## __VA_ARGS__)

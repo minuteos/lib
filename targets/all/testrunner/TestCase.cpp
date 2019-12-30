@@ -12,6 +12,8 @@
 
 TestCase* TestCase::s_first = NULL;
 TestCase* TestCase::s_last = NULL;
+TestCase* TestCase::s_cur = NULL;
+jmp_buf* TestCase::s_failJump = NULL;
 
 TestCase::TestCase()
 {
@@ -48,7 +50,8 @@ bool TestCase::Execute()
         return true;
     }
 
-    failJump = &fail;
+    s_failJump = &fail;
+    s_cur = this;
 #ifdef Ckernel
     __testrunner_time = 0;
 #endif
@@ -60,15 +63,15 @@ bool TestCase::Execute()
 void TestCase::_Fail(int line)
 {
     puts("FAIL");
-    printf("  assertion at %s:%d\n", File(), line);
-    longjmp(*failJump, 1);
+    printf("  assertion at %s:%d\n", s_cur->File(), line);
+    longjmp(*s_failJump, 1);
 }
 
 void TestCase::_Fail(int line, const char* reason)
 {
     printf("FAIL (%s)\n", reason);
-    printf("  assertion at %s:%d\n", File(), line);
-    longjmp(*failJump, 1);
+    printf("  assertion at %s:%d\n", s_cur->File(), line);
+    longjmp(*s_failJump, 1);
 }
 
 void TestCase::_Fail(int line, const char* format, ...)
@@ -79,8 +82,8 @@ void TestCase::_Fail(int line, const char* format, ...)
     vprintf(format, va);
     puts(")");
     va_end(va);
-    printf("  assertion at %s:%d\n", File(), line);
-    longjmp(*failJump, 1);
+    printf("  assertion at %s:%d\n", s_cur->File(), line);
+    longjmp(*s_failJump, 1);
 }
 
 void TestCase::_Fail(int line, std::function<void(void)> reason)
@@ -88,6 +91,6 @@ void TestCase::_Fail(int line, std::function<void(void)> reason)
     printf("FAIL (");
     reason();
     puts(")");
-    printf("  assertion at %s:%d\n", File(), line);
-    longjmp(*failJump, 1);
+    printf("  assertion at %s:%d\n", s_cur->File(), line);
+    longjmp(*s_failJump, 1);
 }
