@@ -22,6 +22,7 @@ namespace kernel
 
 class Task;
 template<typename... Args> class TaskWithArgs;
+template<typename... Args> class TaskFnWithArgs;
 
 using PreSleepDelegate = Delegate<bool, mono_t, mono_t>;
 
@@ -42,6 +43,12 @@ public:
     ALWAYS_INLINE Task& Add(async_fptr_t function)
     {
         return Add(AsyncDelegate<>(&__CallStatic, (void*)function));
+    }
+
+    //! Adds a task represented by a static function with arguments to the scheduler
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE Task& Add(async_fptr_args_t<Args...> function, AArgs&&... args)
+    {
+        return Add(new(MemPoolAllocDynamic<TaskFnWithArgs<Args...>>()) TaskFnWithArgs<Args...>(function, std::forward<AArgs>(args)...));
     }
 
     //! Syntactic helper for @ref Scheduler::Add(AsyncDelegate)

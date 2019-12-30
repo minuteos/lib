@@ -52,6 +52,8 @@ public:
     //! Runs a new task on the main scheduler
     ALWAYS_INLINE static Task& Run(AsyncDelegate<> fn);
     //! Runs a new task on the main scheduler
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(async_fptr_args_t<Args...> fn, AArgs&&... args);
+    //! Runs a new task on the main scheduler
     template<typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(AsyncDelegate<Args...> fn, AArgs&&... args);
     //! Runs a new task on the main scheduler
     template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args);
@@ -77,6 +79,7 @@ public:
     friend class Scheduler;
     friend struct ::AsyncFrame;
     template<typename... Args> friend class TaskWithArgs;
+    template<typename... Args> friend class TaskFnWithArgs;
 };
 
 template<size_t N> struct _CallWithArgs
@@ -108,6 +111,23 @@ private:
     async(Call) { return _CallWithArgs<sizeof...(Args)>::Call(delegate, __pCallee, args); }
 };
 
+template<typename... Args> class TaskFnWithArgs : public Task
+{
+    async_fptr_args_t<Args...> f;
+    std::tuple<Args...> args;
+
+public:
+    TaskFnWithArgs(async_fptr_args_t<Args...> f, Args... args)
+        : f(f), args(args...)
+    {
+        wait.dynamic = true;
+        fn = GetDelegate(this, &TaskFnWithArgs<Args...>::Call);
+    }
+
+private:
+    async(Call) { return _CallWithArgs<sizeof...(Args)>::Call(f, __pCallee, args); }
+};
+
 
 }
 
@@ -118,6 +138,7 @@ namespace kernel
 
 ALWAYS_INLINE Task& Task::Run(async_fptr_t fn) { return Scheduler::Current().Add(fn); }
 ALWAYS_INLINE Task& Task::Run(AsyncDelegate<> fn) { return Scheduler::Current().Add(fn); }
+template<typename... Args, typename... AArgs> Task& Task::Run(async_fptr_args_t<Args...> fn, AArgs&&... args) { return Scheduler::Main().Add(fn, std::forward<AArgs>(args)...); }
 template<typename... Args, typename... AArgs> Task& Task::Run(AsyncDelegate<Args...> fn, AArgs&&... args) { return Scheduler::Main().Add(fn, std::forward<AArgs>(args)...); }
 template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Task::Run(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args) { return Scheduler::Main().Add(target, method, std::forward<AArgs>(args)...); }
 template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Task::Run(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args) { return Scheduler::Main().Add(target, method, std::forward<AArgs>(args)...); }

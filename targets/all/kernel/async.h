@@ -325,5 +325,7 @@ template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFram
 
 //! Pointer to an asynchronous function
 typedef async_res_t (*async_fptr_t)(AsyncFrame**);
+//! Pointer to an asynchronous function with arguments
+template<typename... Args> using async_fptr_args_t = async_res_t (*)(AsyncFrame**, Args... args);
 //! Pointer to an asynchronous instance method
 template<class T, typename... Args> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**, Args... args);
