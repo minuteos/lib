@@ -48,6 +48,8 @@ public:
     void* Alloc();
     void Free(void* block);
 
+    const uintptr_t* WatchPointer() const { return (const uintptr_t*)&free; }
+
 private:
     void* AllocDynamic();
     void* AllocNew();

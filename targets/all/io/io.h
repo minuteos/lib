@@ -10,3 +10,8 @@
 
 #include <io/InputStream.h>
 #include <io/OutputStream.h>
+
+#include <io/Pipe.h>
+#include <io/PipeReader.h>
+#include <io/PipeWriter.h>
+#include <io/DuplexPipe.h>
