@@ -12,15 +12,7 @@
 #   Generates the c_cpp_properties.json file corresponding to the make invocation
 #
 
-ifeq ($(OS),Windows_NT)
-  VSCODE_OS=Win32
-else
-  ifeq ($(shell uname -s),Linux)
-    VSCODE_OS=Linux
-  else
-    VSCODE_OS=Mac
-  endif
-endif
+VSCODE_OS = $(subst Windows,Win32,$(subst Darwin,Mac,$(HOST_OS)))
 
 LAUNCH_OUTPUT ?= PRIMARY_OUTPUT
 
@@ -54,9 +46,9 @@ define TASKS_TEMPLATE
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Build",
+			"label": "Build Release",
 			"type": "shell",
-			"command": "make -j7",
+			"command": "make -j7 CONFIG=Release",
 			"group": "build",
 			"presentation": {
 				"clear": true
@@ -75,9 +67,9 @@ define TASKS_TEMPLATE
 			}
 		},
 		{
-			"label": "Clean",
+			"label": "Clean Release",
 			"type": "shell",
-			"command": ["make clean"],
+			"command": ["make clean CONFIG=Release"],
 			"group": "test"
 		},
 		{

@@ -18,6 +18,7 @@ BASE_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 BASE_DIR = $(dir $(BASE_MAKEFILE))
 
 include $(BASE_DIR)Functions.mk
+include $(BASE_DIR)Host.mk
 
 #
 # Let's provide some defaults
