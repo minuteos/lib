@@ -34,3 +34,6 @@ diropt = $(addprefix $(1),$(2:/=))
 
 # removes duplicates from the set
 uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
+
+# escapes space characters
+escspace = $(subst $() $(),\ ,$(1))
