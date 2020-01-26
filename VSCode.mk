@@ -14,7 +14,7 @@
 
 VSCODE_OS = $(subst Windows,Win32,$(subst Darwin,Mac,$(HOST_OS)))
 
-LAUNCH_OUTPUT ?= PRIMARY_OUTPUT
+LAUNCH_OUTPUT ?= $(PRIMARY_OUTPUT)
 
 .PHONY: sense vscode
 
