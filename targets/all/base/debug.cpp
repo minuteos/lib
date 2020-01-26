@@ -24,21 +24,15 @@ void DBG_AssertFailed(const char* file, unsigned line)
     for (;;);
 }
 
-void CDBG_PutCharDirect(unsigned channel, char ch)
-{
-    PLATFORM_DBG_CHAR(channel, ch);
-}
-
 void DBG_PutChar(char ch)
 {
-    if (PLATFORM_DBG_ACTIVE(0))
-        PLATFORM_DBG_CHAR(0, ch);
+    PLATFORM_DBG_CHAR(0, ch);
 }
 
 void DBG_PrintF(const char* format, ...)
 {
     if (PLATFORM_DBG_ACTIVE(0))
-        va_call(vformat, format, (format_output)CDBG_PutCharDirect, 0, format);
+        va_call(vformat, format, (format_output)CDBG_PutChar, 0, format);
 }
 
 void DBG_DebugPrintF(const char* format, ...)
@@ -51,16 +45,15 @@ void DBG_DebugPrintFC(const char* component, const char* format, ...)
     va_call_void(DebugPrintFV, format, 0, component, format);
 }
 
-void CDBG_PutChar(unsigned channel, char ch)
+OPTIMIZE void CDBG_PutChar(unsigned channel, char ch)
 {
-    if (PLATFORM_DBG_ACTIVE(channel))
-        PLATFORM_DBG_CHAR(channel, ch);
+    PLATFORM_DBG_CHAR(channel, ch);
 }
 
 void CDBG_PrintF(unsigned channel, const char* format, ...)
 {
     if (PLATFORM_DBG_ACTIVE(channel))
-        va_call(vformat, format, (format_output)CDBG_PutCharDirect, (void*)(uintptr_t)channel, format);
+        va_call(vformat, format, (format_output)CDBG_PutChar, (void*)(uintptr_t)channel, format);
 }
 
 void CDBG_DebugPrintF(unsigned channel, const char* format, ...)
@@ -135,7 +128,7 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
         PLATFORM_DBG_CHAR(channel, ' ');
     }
 
-    vformat((format_output)CDBG_PutCharDirect, (void*)(uintptr_t)channel, format, va);
+    vformat((format_output)CDBG_PutChar, (void*)(uintptr_t)channel, format, va);
 }
 
 #endif
