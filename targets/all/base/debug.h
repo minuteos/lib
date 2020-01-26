@@ -49,6 +49,10 @@ extern void DebugPrintFV(unsigned channel, const char* component, const char* fo
 #define _CDBG(ch, ...)              CDBG_PrintF(ch, __VA_ARGS__)
 #define _CDBGCHAR(ch, c)            CDBG_PutChar(ch, c)
 
+#define CDBG8(ch, c)                PLATFORM_DBG_CHAR(ch, c)
+#define CDBG16(ch, h)               PLATFORM_DBG_HALFWORD(ch, h)
+#define CDBG32(ch, w)               PLATFORM_DBG_WORD(ch, unsafe_cast<uint32_t>(w))
+
 #else
 
 #define ASSERT(expr)
@@ -64,6 +68,10 @@ extern void DebugPrintFV(unsigned channel, const char* component, const char* fo
 #define CDBGC(ch, component, ...)
 #define _CDBG(ch, ...)
 #define _CDBGCHAR(ch, c)
+
+#define CDBG8(ch, h)
+#define CDBG16(ch, h)
+#define CDBG32(ch, h)
 
 #endif
 
