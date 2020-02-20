@@ -66,6 +66,8 @@ public:
     ALWAYS_INLINE Task& DelayMilliseconds(mono_t ms) { ASSERT(!top); wait.until += MonoFromMilliseconds(ms); return *this; }
     //! Delays the start of the task by the specified number of seconds, can be used only before the task is started
     ALWAYS_INLINE Task& DelaySeconds(mono_t sec) { ASSERT(!top); wait.until += MonoFromSeconds(sec); return *this; }
+    //! Delays the start of the task until the specified instant, can be used only before the task is started
+    ALWAYS_INLINE Task& DelayUntil(mono_t instant) { ASSERT(!top); wait.until = instant; return *this; }
 
     //! Configures a delegate that is called when the task completes; can be used only before the task is started
     ALWAYS_INLINE Task& OnComplete(Delegate<void, intptr_t> delegate) { ASSERT(!top); onComplete = delegate; return *this; }
