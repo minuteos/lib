@@ -18,6 +18,8 @@
 #include <kernel/Scheduler.h>
 #include <kernel/Task.h>
 
+#include <kernel/PeriodicWakeup.h>
+
 #ifdef Ckernel_app
 #include <kernel-app/kernel.h>
 #endif
