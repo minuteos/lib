@@ -160,7 +160,11 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
  */
 #define async_def(...) { \
     __label__ __start__; \
-    struct __FRAME { AsyncFrame __async; async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } __VA_ARGS__; }; \
+    struct __FRAME { AsyncFrame __async; \
+        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } \
+        void __continue(void* cont) { __async.cont = cont; } \
+        void __requireContinue(void* cont) { __async.cont = cont; } \
+        __VA_ARGS__; }; \
     static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
     auto __prolog_res = _async_prolog(__pCallee, &__spec); \
     __FRAME& f = *(__FRAME*)RES_PAIR_FIRST(__prolog_res); \
@@ -170,10 +174,31 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 
 //! Starts definition of a synchronous function using the async calling convention
 #define async_def_sync(...) { \
-    struct __FRAME { async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } __VA_ARGS__; } f; \
+    struct __FRAME { \
+        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
+        __VA_ARGS__; } f; \
 
 //! Defines a simple synchronous function immediately returning a value, using the async calling convention
 #define async_def_return(value) { return _ASYNC_RES(value, AsyncResult::Complete); }
+
+//! Defines a lightweight asynchronous function without a persistent frame and automatic continuation, just call count
+#define async_def_lite(...) { \
+    struct __FRAME { \
+        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { *pCallee = NULL; return _ASYNC_RES(result, AsyncResult::Complete); } \
+        void __continue(void* cont) { /* discard */ } \
+        __VA_ARGS__; } f; \
+    UNUSED const uintptr_t async_count = (*(uintptr_t*)__pCallee)++; \
+    AsyncFrame& __async = *(AsyncFrame*)__pCallee;
+
+//! Defines a lightweight asynchronous function called just once
+#define async_def_once(...) { \
+    if (*__pCallee) { *__pCallee = NULL; return _ASYNC_RES(0, AsyncResult::Complete); } \
+    *__pCallee = (AsyncFrame*)__pCallee; \
+    struct __FRAME { \
+        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { *pCallee = NULL; return _ASYNC_RES(result, AsyncResult::Complete); } \
+        void __continue(void* cont) { /* discard */ } \
+        __VA_ARGS__; } f; \
+    AsyncFrame& __async = *(AsyncFrame*)__pCallee;
 
 //! Terminates the definition of an async function. See @ref async_def for details
 #define async_end \
@@ -183,7 +208,7 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 //! Finished the execution of an async function immediately and returns the specified value
 #define async_return(value) ({ f.~__FRAME(); return f.__epilog(__pCallee, (value)); })
 
-#define _async_yield(type, value) ({ __label__ next; __async.cont = &&next; return _ASYNC_RES(value, AsyncResult::type); next: false; })
+#define _async_yield(type, value) ({ __label__ next; (void)__async; f.__continue(&&next); return _ASYNC_RES(value, AsyncResult::type); next: false; })
 
 //! Yields execution to other tasks, but will continue as soon as possible
 #define async_yield() _async_yield(SleepTicks, 0)
@@ -208,16 +233,16 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 
 #define _await_mask(type, reg, mask, expect, timeout) ({ \
     __label__ next; \
-    __async.cont = &&next; \
+    f.__continue(&&next); \
     __async.waitPtr = (uintptr_t*)&(reg); \
-    if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
+    if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) f.__async.waitTimeout = (timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type, (uintptr_t)(mask), (uintptr_t)(expect)); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async._read_waitResult(); })
 
 #define _await_signal(type, reg, timeout) ({ \
     __label__ next; \
-    __async.cont = &&next; \
+    f.__continue(&&next); \
     __async.waitPtr = (uintptr_t*)&(reg); \
     if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type); \
@@ -293,7 +318,7 @@ next: __async._read_waitResult(); })
 //! Calls another async function
 #define await(fn, ...) ({ \
     __label__ next; \
-    __async.cont = &&next; \
+    f.__requireContinue(&&next); \
 next: \
     auto res = fn(&__async.callee, ## __VA_ARGS__); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
@@ -302,7 +327,7 @@ next: \
 //! Spawns multiple tasks and awaits completion of all
 #define await_all(...) ({ \
     __label__ next; \
-    __async.cont = &&next; \
+    f.__requireContinue(&&next); \
     return ::kernel::Task::_RunAll(__async, __VA_ARGS__); \
 next: __async._read_waitResult(); })
 
