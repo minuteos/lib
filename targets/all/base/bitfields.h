@@ -22,7 +22,7 @@ template<typename T> ALWAYS_INLINE constexpr T MODBIT(T& target, unsigned n, boo
 
 ALWAYS_INLINE constexpr unsigned MASK(unsigned bits, unsigned offset = 0) { return ((1 << bits) - 1) << offset; }
 template<typename T> ALWAYS_INLINE constexpr T GETMASK(const T& value, unsigned bits, unsigned offset = 0) { return value & MASK(bits, offset); }
-template<typename T> ALWAYS_INLINE constexpr T MODMASK(T& target, unsigned mask, unsigned value) { return (target = (target & ~mask) | value); }
-template<typename T> ALWAYS_INLINE constexpr T MODMASK_SAFE(T& target, unsigned mask, unsigned value) { return (target = (target & ~mask) | (value & mask)); }
+template<typename T> ALWAYS_INLINE constexpr T MODMASK(T& target, unsigned mask, unsigned value) { return (T)(target = (target & ~mask) | value); }
+template<typename T> ALWAYS_INLINE constexpr T MODMASK_SAFE(T& target, unsigned mask, unsigned value) { return (T)(target = (target & ~mask) | (value & mask)); }
 
 #endif

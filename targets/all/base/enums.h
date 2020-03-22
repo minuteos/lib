@@ -19,6 +19,8 @@
     friend enumType operator |=(enumType& a, enumType b); \
     friend enumType operator &(enumType a, enumType b); \
     friend enumType operator &=(enumType& a, enumType b); \
+    friend enumType operator ^(enumType a, enumType b); \
+    friend enumType operator ^=(enumType& a, enumType b); \
     friend enumType operator *(enumType a, bool b); \
     friend enumType operator *(bool a, enumType b); \
     friend enumType operator ~(enumType a); \
@@ -30,6 +32,8 @@
     ALWAYS_INLINE enumType operator |=(enumType& a, enumType b) { return a = a | b; } \
     ALWAYS_INLINE enumType operator &(enumType a, enumType b) { return (enumType)((int)a & (int)b); } \
     ALWAYS_INLINE enumType operator &=(enumType& a, enumType b) { return a = a & b; } \
+    ALWAYS_INLINE enumType operator ^(enumType a, enumType b) { return (enumType)((int)a ^ (int)b); } \
+    ALWAYS_INLINE enumType operator ^=(enumType& a, enumType b) { return a = a ^ b; } \
     ALWAYS_INLINE enumType operator *(enumType a, bool b) { return (enumType)((int)a * (int)b); } \
     ALWAYS_INLINE enumType operator *(bool a, enumType b) { return (enumType)((int)a * (int)b); } \
     ALWAYS_INLINE enumType operator ~(enumType a) { return (enumType)(~(int)a); } \
