@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <kernel/config.h>
+#include <base/base.h>
 
 #include <base/MemPool.h>
 #include <base/ResultPair.h>
@@ -91,7 +91,7 @@ constexpr static bool operator &&(AsyncResult type, AsyncResult flag)
 //! Static definition of an asynchronous function
 struct AsyncSpec
 {
-    MemPool* pool;      //!< Memory pool used to allocate function frames, or NULL for oversized frames
+    class MemPool* pool;//!< Memory pool used to allocate function frames, or NULL for oversized frames
     size_t frameSize;   //!< Size of the frames required by the function
     contptr_t start;    //!< Pointer to the first actual instruction
 };
