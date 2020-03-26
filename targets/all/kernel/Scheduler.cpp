@@ -75,6 +75,10 @@ mono_t Scheduler::Run()
 
     for (;;)
     {
+#ifdef PLATFORM_WATCHDOG_HIT
+        PLATFORM_WATCHDOG_HIT();
+#endif
+
         mono_t t = CurrentTime();
         mono_signed_t maxSleep = MONO_SIGNED_MAX;
         Task** pNext;
