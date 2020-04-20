@@ -21,7 +21,12 @@
 void DBG_AssertFailed(const char* file, unsigned line)
 {
     DBG("ASSERT FAILED: %s(%u)\n", file, line);
-    for (;;);
+    for (;;)
+    {
+#if DEBUG
+        PLATFORM_WATCHDOG_HIT();
+#endif
+    }
 }
 
 void DBG_PutChar(char ch)
