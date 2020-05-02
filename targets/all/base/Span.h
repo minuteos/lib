@@ -91,7 +91,13 @@ public:
     ALWAYS_INLINE bool Contains(Span other) const { return p <= other.p && p + len >= other.p + other.len; }
 
     //! Explicit indexer implementation to resolve possible ambiguity
-    ALWAYS_INLINE constexpr const char operator[](size_t index) const { return p[index]; }
+    ALWAYS_INLINE constexpr const char operator[](int index) const { return p[index]; }
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const char operator[](unsigned index) const { return p[index]; }
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const char operator[](long index) const { return p[index]; }
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const char operator[](unsigned long index) const { return p[index]; }
 
     //! Copies the content of the Span to another memory location, returns a Span representing the copy
     Span CopyTo(void* p) const { memmove(p, this->p, len); return Span(p, len); }
