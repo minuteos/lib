@@ -249,6 +249,9 @@ next: __async._read_waitResult(); })
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async._read_waitResult(); })
 
+//! Represents an infinite timeout for all wait operations
+#define ASYNC_NO_TIMEOUT    (~0u)
+
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
 #define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, 0)
 //! Waits for the value at the specified memory location to become the expected value (after masking) until the specified instant

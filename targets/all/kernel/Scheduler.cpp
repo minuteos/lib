@@ -185,6 +185,10 @@ mono_t Scheduler::Run()
                         task->wait.until = f->waitTimeout;
                         task->wait.cont = true;
                     }
+                    else if (f->waitTimeout == ASYNC_NO_TIMEOUT)
+                    {
+                        task->wait.cont = false;
+                    }
                     else
                     {
                         mono_t timeout = f->waitTimeout;
