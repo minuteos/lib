@@ -59,17 +59,30 @@
 #define UNUSED
 #endif
 
+#ifdef __cplusplus
+#define _CONSTEXPR  constexpr
+#else
+#define _CONSTEXPR
+#endif
+
 #ifndef BSWAP16
-ALWAYS_INLINE static uint16_t BSWAP16(uint16_t n)
+ALWAYS_INLINE static _CONSTEXPR uint16_t BSWAP16(uint16_t n)
 {
     return (n >> 8) | (n << 8);
 }
 #endif
 
 #ifndef BSWAP32
-ALWAYS_INLINE static uint32_t BSWAP32(uint32_t n)
+ALWAYS_INLINE static _CONSTEXPR uint32_t BSWAP32(uint32_t n)
 {
     return (BSWAP16(n) << 16) | BSWAP16(n >> 16);
+}
+#endif
+
+#ifndef BSWAP24
+ALWAYS_INLINE static _CONSTEXPR uint32_t BSWAP24(uint32_t n)
+{
+    return BSWAP32(n << 8);
 }
 #endif
 
