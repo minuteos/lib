@@ -37,3 +37,6 @@ uniq = $(if $1,$(firstword $1) $(call uniq,$(filter-out $(firstword $1),$1)))
 
 # escapes space characters
 escspace = $(subst $() $(),\ ,$(1))
+
+# unescapes space characters
+unescspace = $(subst $()\ $(),$() $(),$(1))
