@@ -19,6 +19,7 @@
 #include <kernel/Task.h>
 
 #include <kernel/PeriodicWakeup.h>
+#include <kernel/ResetCause.h>
 
 #ifdef Ckernel_app
 #include <kernel-app/kernel.h>
