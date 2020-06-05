@@ -277,6 +277,10 @@ public:
 
     //! Gets the pointer to the beginning of the Buffer
     constexpr char* Pointer() const { return (char*)p; }
+    //! Gets the pointer to the beginning of the Buffer
+    template<class T> ALWAYS_INLINE T* Pointer() const { return (T*)p; }
+    //! Gets the reference to the element of the Buffer with the specified index
+    template<class T> ALWAYS_INLINE T& Element(size_t index = 0) const { return ((T*)p)[index]; }
 
     //! Explicit indexer implementation to resolve possible ambiguity
     ALWAYS_INLINE constexpr char& operator[](size_t index) const { return ((char*)p)[index]; }
