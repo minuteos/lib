@@ -20,7 +20,7 @@ namespace io
 class OutputStream
 {
 public:
-    virtual async(Write, Span span, unsigned msTimeout = 0) = 0;
+    virtual async(Write, Span span, Timeout timeout = Timeout::Infinite) = 0;
 };
 
 }

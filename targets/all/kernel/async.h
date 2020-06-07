@@ -16,6 +16,8 @@
 #include <base/ResultPair.h>
 #include <base/Delegate.h>
 
+#include <kernel/Timeout.h>
+
 typedef const void* contptr_t;  //!< Pointer to the next instruction to be executed
 typedef res_pair_t async_res_t; //!< Intermediate result tuple (type and associated value) of asynchronous function execution
 
@@ -23,52 +25,30 @@ typedef res_pair_t async_res_t; //!< Intermediate result tuple (type and associa
 enum struct AsyncResult : intptr_t
 {
     Complete,               //!< Execution has completed, value contains the result
+    SleepTimeout,           //!< Allow sleep until the specified timeout elapses
     SleepUntil,             //!< Allow sleep until the specified instant
     SleepTicks,             //!< Allow sleep for the specified number of platform-dependent monotonic ticks
     SleepSeconds,           //!< Allow sleep for the specified number of seconds
     SleepMilliseconds,      //!< Allow sleep for the specified number of milliseconds
+    DelayTimeout,           //!< Unconditional sleep until the specified timeout elapses
     DelayUntil,             //!< Unconditional sleep until the specified instant
     DelayTicks,             //!< Unconditional sleep for the specified number of platform-dependent monotonic ticks
     DelaySeconds,           //!< Unconditional sleep for the specified number of seconds
     DelayMilliseconds,      //!< Unconditional sleep for the specified number of milliseconds
 
-    _WaitTimeoutUntil = 0x4,
-    _WaitTimeoutTicks = 0x5,
-    _WaitTimeoutSeconds = 0x6,
-    _WaitTimeoutMilliseconds = 0x7,
-    _WaitTimeoutMask = 0x4,
-    _WaitTimeoutTypeMask = 0x7,
-    _WaitInvertedMask = 0x8,
-    _WaitAcquireMask = 0x10,
-    _WaitSignalMask = 0x20,
+    WaitMultiple,           //!< Wait for multiple child tasks to finish
 
-    Wait = 0x40,            //!< Wait for a specific word to change to an expected value
-    WaitUntil = Wait | _WaitTimeoutUntil,
-    WaitTicks = Wait | _WaitTimeoutTicks,
-    WaitMilliseconds = Wait | _WaitTimeoutMilliseconds,
-    WaitSeconds = Wait | _WaitTimeoutSeconds,
+    _WaitInvertedMask = 0x1,
+    _WaitAcquireMask = 0x2,
+    _WaitSignalMask = 0x4,
+
+    Wait = 0x10,            //!< Wait for a specific word to change to an expected value
     WaitInverted = Wait | _WaitInvertedMask,
-    WaitInvertedUntil = WaitInverted | _WaitTimeoutUntil,
-    WaitInvertedTicks = WaitInverted | _WaitTimeoutTicks,
-    WaitInvertedMilliseconds = WaitInverted | _WaitTimeoutMilliseconds,
-    WaitInvertedSeconds = WaitInverted | _WaitTimeoutSeconds,
     WaitAcquire = Wait | _WaitAcquireMask,
-    WaitAcquireUntil = WaitAcquire | _WaitTimeoutUntil,
-    WaitAcquireTicks = WaitAcquire | _WaitTimeoutTicks,
-    WaitAcquireMilliseconds = WaitAcquire | _WaitTimeoutMilliseconds,
-    WaitAcquireSeconds = WaitAcquire | _WaitTimeoutSeconds,
     WaitSignal = Wait | _WaitSignalMask | _WaitInvertedMask,
-    WaitSignalUntil = WaitSignal | _WaitTimeoutUntil,
-    WaitSignalTicks = WaitSignal | _WaitTimeoutTicks,
-    WaitSignalMilliseconds = WaitSignal | _WaitTimeoutMilliseconds,
-    WaitSignalSeconds = WaitSignal | _WaitTimeoutSeconds,
     WaitInvertedSignal = Wait | _WaitSignalMask,
-    WaitInvertedSignalUntil = WaitInvertedSignal | _WaitTimeoutUntil,
-    WaitInvertedSignalTicks = WaitInvertedSignal | _WaitTimeoutTicks,
-    WaitInvertedSignalMilliseconds = WaitInvertedSignal | _WaitTimeoutMilliseconds,
-    WaitInvertedSignalSeconds = WaitInvertedSignal | _WaitTimeoutSeconds,
 
-    _WaitEnd = 0x7F
+    _WaitEnd = 0x17
 };
 
 //! Extracts the value from the result tuple
@@ -108,7 +88,7 @@ struct AsyncFrame
     contptr_t cont;     //!< Pointer to the instruction where execution will continue
     union
     {
-        mono_t waitTimeout;     //!< Timeout for the wait operation
+        mono_t waitTimeout;     //!< Timeout for the wait operation (actually a Timeout::value)
         uintptr_t children;     //!< Count of child tasks still executing
     };
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
@@ -213,6 +193,8 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 //! Yields execution to other tasks, but will continue as soon as possible
 #define async_yield() _async_yield(SleepTicks, 0)
 
+//! Delays execution until the specified timeout elapses
+#define async_delay_timeout(timeout)  _async_yield(DelayTimeout, Timeout::__raw_value(timeout))
 //! Delays execution until the specified instant
 #define async_delay_until(until)  _async_yield(DelayUntil, (until))
 //! Delays execution for the specified number of milliseconds
@@ -222,6 +204,8 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 //! Delays execution for the specified number of platform-dependent monotonic ticks
 #define async_delay_ticks(ticks)  _async_yield(DelayTicks, (ticks))
 
+//! Allows the system to sleep until the specified timeout elapses, but execution will continue as soon as the system wakes up for any reason
+#define async_sleep_timeout(timeout)  _async_yield(SleepTimeout, Timeout::__raw_value(timeout))
 //! Allows the system to sleep until the specified instant, but execution will continue as soon as the system wakes up for any reason
 #define async_sleep_until(until)  _async_yield(SleepUntil, (until))
 //! Allows the system to sleep for the specified number of milliseconds, but execution will continue as soon as the system wakes up for any reason
@@ -235,7 +219,7 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
     __label__ next; \
     f.__continue(&&next); \
     __async.waitPtr = (uintptr_t*)&(reg); \
-    if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) f.__async.waitTimeout = (timeout); \
+    __async.waitTimeout = Timeout::__raw_value(timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type, (uintptr_t)(mask), (uintptr_t)(expect)); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async._read_waitResult(); })
@@ -244,79 +228,88 @@ next: __async._read_waitResult(); })
     __label__ next; \
     f.__continue(&&next); \
     __async.waitPtr = (uintptr_t*)&(reg); \
-    if (AsyncResult::type && AsyncResult::_WaitTimeoutMask) __async.waitTimeout = (timeout); \
+    __async.waitTimeout = Timeout::__raw_value(timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
 next: __async._read_waitResult(); })
 
-//! Represents an infinite timeout for all wait operations
-#define ASYNC_NO_TIMEOUT    (~0u)
-
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
-#define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, 0)
+#define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, Timeout::Infinite)
+//! Waits for the value at the specified memory location to become the expected value (after masking) with the specified timeout
+#define await_mask_timeout(reg, mask, expect, timeout) _await_mask(Wait, reg, mask, expect, timeout)
 //! Waits for the value at the specified memory location to become the expected value (after masking) until the specified instant
-#define await_mask_until(reg, mask, expect, until) _await_mask(WaitUntil, reg, mask, expect, until)
+#define await_mask_until(reg, mask, expect, until) _await_mask(Wait, reg, mask, expect, Timeout::Absolute(until))
 //! Waits for the value at the specified memory location to become the expected value (after masking) for the specified number of milliseconds
-#define await_mask_ms(reg, mask, expect, ms) _await_mask(WaitMilliseconds, reg, mask, expect, ms)
+#define await_mask_ms(reg, mask, expect, ms) _await_mask(Wait, reg, mask, expect, Timeout::Milliseconds(ms))
 //! Waits for the value at the specified memory location to become the expected value (after masking) for the specified number of seconds
-#define await_mask_sec(reg, mask, expect, sec) _await_mask(WaitSeconds, reg, mask, expect, sec)
+#define await_mask_sec(reg, mask, expect, sec) _await_mask(Wait, reg, mask, expect, Timeout::Seconds(sec))
 //! Waits for the value at the specified memory location to become the expected value (after masking) for the specified number of platform-dependent ticks
-#define await_mask_ticks(reg, mask, expect, ticks) _await_mask(WaitTicks, reg, mask, expect, ticks)
+#define await_mask_ticks(reg, mask, expect, ticks) _await_mask(Wait, reg, mask, expect, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the value at the specified memory location to become other than the expected value (after masking)
-#define await_mask_not(reg, mask, expect)   _await_mask(WaitInverted, reg, mask, expect, 0)
+#define await_mask_not(reg, mask, expect)   _await_mask(WaitInverted, reg, mask, expect, Timeout::Infinite)
+//! Waits for the value at the specified memory location to become other than the expected value (after masking) with the specified timeout
+#define await_mask_not_timeout(reg, mask, expect, timeout) _await_mask(WaitInverted, reg, mask, expect, timeout)
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) until the specified instant
-#define await_mask_not_until(reg, mask, expect, until) _await_mask(WaitInvertedUntil, reg, mask, expect, until)
+#define await_mask_not_until(reg, mask, expect, until) _await_mask(WaitInverted, reg, mask, expect, Timeout::Absolute(until))
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of milliseconds
-#define await_mask_not_ms(reg, mask, expect, ms) _await_mask(WaitInvertedMilliseconds, reg, mask, expect, ms)
+#define await_mask_not_ms(reg, mask, expect, ms) _await_mask(WaitInverted, reg, mask, expect, Timeout::Milliseconds(ms))
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of seconds
-#define await_mask_not_sec(reg, mask, expect, sec) _await_mask(WaitInvertedSeconds, reg, mask, expect, sec)
+#define await_mask_not_sec(reg, mask, expect, sec) _await_mask(WaitInverted, reg, mask, expect, Timeout::Seconds(sec))
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of platform-dependent ticks
-#define await_mask_not_ticks(reg, mask, expect, ticks) _await_mask(WaitInvertedTicks, reg, mask, expect, ticks)
+#define await_mask_not_ticks(reg, mask, expect, ticks) _await_mask(WaitInverted, reg, mask, expect, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the byte at the specified memory location to become non-zero
-#define await_signal(sig) _await_signal(WaitSignal, sig, 0)
+#define await_signal(sig) _await_signal(WaitSignal, sig, Timeout::Infinite)
+//! Waits for the byte at the specified memory location to become non-zero with the specified timeout
+#define await_signal_timeout(sig, timeout) _await_signal(WaitSignal, sig, timeout)
 //! Waits for the byte at the specified memory location to become non-zero until the specified instant
-#define await_signal_until(sig, until) _await_signal(WaitSignalUntil, sig, until)
+#define await_signal_until(sig, until) _await_signal(WaitSignal, sig, Timeout::Absolute(until))
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of milliseconds
-#define await_signal_ms(sig, ms) _await_signal(WaitSignalMilliseconds, sig, ms)
+#define await_signal_ms(sig, ms) _await_signal(WaitSignal, sig, Timeout::Milliseconds(ms))
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of seconds
-#define await_signal_sec(sig, sec) _await_signal(WaitSignalSeconds, sig, sec)
+#define await_signal_sec(sig, sec) _await_signal(WaitSignal, sig, Timeout::Seconds(sec))
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of platform-dependent ticks
-#define await_signal_ticks(sig, ticks) _await_signal(WaitSignalTicks, sig, ticks)
+#define await_signal_ticks(sig, ticks) _await_signal(WaitSignal, sig, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the byte at the specified memory location to become zero
-#define await_signal_off(sig) _await_signal(WaitInvertedSignal, sig, 0)
+#define await_signal_off(sig) _await_signal(WaitInvertedSignal, sig, Timeout::Infinite)
+//! Waits for the byte at the specified memory location to become zero with the specified timeout
+#define await_signal_off_timeout(sig, timeout) _await_signal(WaitInvertedSignal, sig, timeout)
 //! Waits for the byte at the specified memory location to become zero until the specified instant
-#define await_signal_off_until(sig, until) _await_signal(WaitInvertedSignalUntil, sig, until)
+#define await_signal_off_until(sig, until) _await_signal(WaitInvertedSignal, sig, Timeout::Absolute(until))
 //! Waits for the byte at the specified memory location to become zero for the specified number of milliseconds
-#define await_signal_off_ms(sig, ms) _await_signal(WaitInvertedSignalMilliseconds, sig, ms)
+#define await_signal_off_ms(sig, ms) _await_signal(WaitInvertedSignal, sig, Timeout::Milliseconds(ms))
 //! Waits for the byte at the specified memory location to become zero for the specified number of seconds
-#define await_signal_off_sec(sig, sec) _await_signal(WaitInvertedSignalSeconds, sig, sec)
+#define await_signal_off_sec(sig, sec) _await_signal(WaitInvertedSignal, sig, Timeout::Seconds(sec))
 //! Waits for the byte at the specified memory location to become zero for the specified number of platform-dependent ticks
-#define await_signal_off_ticks(sig, ticks) _await_signal(WaitInvertedSignalTicks, sig, ticks)
+#define await_signal_off_ticks(sig, ticks) _await_signal(WaitInvertedSignal, sig, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the acquisition of the specified bits
-#define await_acquire(reg, mask)   _await_mask(WaitAcquire, reg, mask, 0, 0)
+#define await_acquire(reg, mask)   _await_mask(WaitAcquire, reg, mask, 0, Timeout::Infinite)
+//! Waits for the acquisition of the specified bits with the specified timeout
+#define await_acquire_timeout(reg, mask, timeout) _await_mask(WaitAcquire, reg, mask, 0, timeout)
 //! Waits for the acquisition of the specified bits until the specified instant
-#define await_acquire_until(reg, mask, until) _await_mask(WaitAcquireUntil, reg, mask, 0, until)
+#define await_acquire_until(reg, mask, until) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Absolute(until))
 //! Waits for the acquisition of the specified bits for the specified number of milliseconds
-#define await_acquire_ms(reg, mask, ms) _await_mask(WaitAcquireMilliseconds, reg, mask, 0, ms)
+#define await_acquire_ms(reg, mask, ms) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Milliseconds(ms))
 //! Waits for the acquisition of the specified bits for the specified number of seconds
-#define await_acquire_sec(reg, mask, sec) _await_mask(WaitAcquireSeconds, reg, mask, 0, sec)
+#define await_acquire_sec(reg, mask, sec) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Seconds(sec))
 //! Waits for the acquisition of the specified bits for the specified number of platform-dependent ticks
-#define await_acquire_ticks(reg, mask, ticks) _await_mask(WaitAcquireTicks, reg, mask, 0, ticks)
+#define await_acquire_ticks(reg, mask, ticks) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the inverse acquisition of the specified bits
-#define await_acquire_zero(reg, mask)   _await_mask(WaitAcquire, reg, mask, mask, 0)
+#define await_acquire_zero(reg, mask)   _await_mask(WaitAcquire, reg, mask, mask, Timeout::Infinite)
+//! Waits for the inverse acquisition of the specified bits with the specified timeout
+#define await_acquire_zero_timeout(reg, mask, timeout) _await_mask(WaitAcquire, reg, mask, mask, timeout)
 //! Waits for the inverse acquisition of the specified bits until the specified instant
-#define await_acquire_zero_until(reg, mask, until) _await_mask(WaitAcquireUntil, reg, mask, mask, until)
+#define await_acquire_zero_until(reg, mask, until) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Absolute(until))
 //! Waits for the inverse acquisition of the specified bits for the specified number of milliseconds
-#define await_acquire_zero_ms(reg, mask, ms) _await_mask(WaitAcquireMilliseconds, reg, mask, mask, ms)
+#define await_acquire_zero_ms(reg, mask, ms) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Milliseconds(ms))
 //! Waits for the inverse acquisition of the specified bits for the specified number of seconds
-#define await_acquire_zero_sec(reg, mask, sec) _await_mask(WaitAcquireSeconds, reg, mask, mask, sec)
+#define await_acquire_zero_sec(reg, mask, sec) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Seconds(sec))
 //! Waits for the inverse acquisition of the specified bits for the specified number of platform-dependent ticks
-#define await_acquire_zero_ticks(reg, mask, ticks) _await_mask(WaitAcquireTicks, reg, mask, mask, ticks)
+#define await_acquire_zero_ticks(reg, mask, ticks) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Ticks(ticks))
 
 //! Calls another async function
 #define await(fn, ...) ({ \
@@ -346,7 +339,7 @@ next: __async._read_waitResult(); })
 })
 
 //! Waits for all the tasks added using await_multiple_add() to complete
-#define await_multiple() await_mask(__async.children, ~0u, 0)
+#define await_multiple() _async_yield(WaitMultiple, &f)
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;

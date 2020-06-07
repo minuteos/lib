@@ -28,8 +28,8 @@ public:
         : pipe(reader.pipe) {}
     constexpr PipeReader(const DuplexPipe& pipe);
 
-    async(Read, mono_t waitUntil = 0) { ASSERT(pipe); return async_forward(pipe->ReaderRead, waitUntil); }
-    async(ReadUntil, uint8_t b, mono_t waitUntil = 0) { ASSERT(pipe); return async_forward(pipe->ReaderReadUntil, b, waitUntil); }
+    async(Read, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, timeout); }
+    async(ReadUntil, uint8_t b, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderReadUntil, b, timeout); }
     void Examined(size_t count) { ASSERT(pipe); pipe->ReaderExamined(count); }
     void Advance(size_t count) { ASSERT(pipe); pipe->ReaderAdvance(count); }
 

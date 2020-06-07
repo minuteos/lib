@@ -20,7 +20,7 @@ namespace io
 class InputStream
 {
 public:
-    virtual async(Read, Buffer buffer, unsigned msTimeout = 0) = 0;
+    virtual async(Read, Buffer buffer, Timeout timeout = Timeout::Infinite) = 0;
 };
 
 }

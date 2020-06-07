@@ -37,21 +37,18 @@ void Pipe::Cleanup()
     woff = 1;
 }
 
-async(Pipe::Completed, mono_t waitUntil)
-async_def()
+async(Pipe::Completed, Timeout timeout)
+async_def(
+    Timeout timeout
+)
 {
+    f.timeout = timeout.MakeAbsolute();
+
     while (!IsCompleted())
     {
-        if (waitUntil)
+        if (!await_mask_not_timeout(total, ~0u, total, f.timeout))
         {
-            if (!await_mask_not_until(total, ~0u, total, waitUntil))
-            {
-                break;
-            }
-        }
-        else
-        {
-            await_mask_not(total, ~0u, total);
+            break;
         }
     }
 
@@ -59,14 +56,18 @@ async_def()
 }
 async_end
 
-async(Pipe::WriterWrite, Span data, mono_t waitUntil)
-async_def(size_t written)
+async(Pipe::WriterWrite, Span data, Timeout timeout)
+async_def(
+    Timeout timeout;
+    size_t written
+)
 {
     size_t count;
+    f.timeout = timeout.MakeAbsolute();
 
     while (f.written < data.Length())
     {
-        count = await(WriterAllocate, 1, data.Length() - f.written, waitUntil);
+        count = await(WriterAllocate, 1, data.Length() - f.written, f.timeout);
         if (count == 0)
         {
             break;
@@ -81,7 +82,7 @@ async_def(size_t written)
 }
 async_end
 
-async(Pipe::WriterAllocate, size_t min, size_t req, mono_t waitUntil)
+async(Pipe::WriterAllocate, size_t min, size_t req, Timeout timeout)
 async_def()
 {
     ASSERT(!IsClosed());
@@ -95,7 +96,7 @@ async_def()
     //need to allocate a new segment
     MYTRACE("W: allocating new segment (%u-%u)", min, req);
     PipeSegment* seg;
-    seg = (PipeSegment*)await(allocator.AllocateSegment, min, req, waitUntil);
+    seg = (PipeSegment*)await(allocator.AllocateSegment, min, req, timeout);
     if (!seg)
     {
         MYTRACE("W: could not allocate new segment");
@@ -133,23 +134,20 @@ void Pipe::WriterAdvance(size_t count)
     total += count;
 }
 
-async(Pipe::ReaderRead, mono_t waitUntil)
-async_def()
+async(Pipe::ReaderRead, Timeout timeout)
+async_def(
+    Timeout timeout;
+)
 {
+    f.timeout = timeout.MakeAbsolute();
+
     while (avail == exam && !IsClosed())
     {
         MYTRACE("R: waiting for data...");
         // wait for more data to become available
-        if (waitUntil)
+        if (!await_mask_not_timeout(total, ~0u, total, f.timeout))
         {
-            if (!await_mask_not_until(total, ~0u, total, waitUntil))
-            {
-                break;
-            }
-        }
-        else
-        {
-            await_mask_not(total, ~0u, total);
+            break;
         }
     }
 
@@ -158,13 +156,19 @@ async_def()
 }
 async_end
 
-async(Pipe::ReaderReadUntil, uint8_t b, mono_t waitUntil)
-async_def(PipeSegment* seg; size_t off;)
+async(Pipe::ReaderReadUntil, uint8_t b, Timeout timeout)
+async_def(
+    Timeout timeout;
+    PipeSegment* seg;
+    size_t off;
+)
 {
+    f.timeout = timeout.MakeAbsolute();
+
     if (!rseg)
     {
         // read initial data
-        if (!await(ReaderRead, waitUntil))
+        if (!await(ReaderRead, f.timeout))
         {
             async_return(0);
         }
@@ -180,7 +184,7 @@ async_def(PipeSegment* seg; size_t off;)
         if (!remain)
         {
             // need more data
-            await(ReaderRead, waitUntil);
+            await(ReaderRead, f.timeout);
             if (!(remain = (avail - exam)))
             {
                 async_return(0);

@@ -16,7 +16,7 @@ namespace io
 class PipeAllocator
 {
 public:
-    virtual async(AllocateSegment, size_t min, size_t req, mono_t waitUntil) = 0;
+    virtual async(AllocateSegment, size_t min, size_t req, Timeout timeout) = 0;
 
 private:
     static PipeAllocator* s_default;

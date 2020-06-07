@@ -114,17 +114,32 @@ mono_t Scheduler::Run()
                     continue;
 
                 // optional sleep (task will continue in the next loop while allowing sleep up to the specified duration)
+                case AsyncResult::SleepTimeout: sleep = Timeout(value).Relative(t); break;
                 case AsyncResult::SleepUntil: sleep = value - t; break;
                 case AsyncResult::SleepMilliseconds: sleep = MonoFromMilliseconds(value); break;
                 case AsyncResult::SleepSeconds: sleep = MonoFromSeconds(value); break;
                 case AsyncResult::SleepTicks: sleep = value; break;
 
                 // unconditional sleep (delay)
-                case AsyncResult::DelayUntil...AsyncResult::DelayMilliseconds:
+                case AsyncResult::DelayTimeout...AsyncResult::DelayMilliseconds:
                 {
                     if (type == AsyncResult::DelayUntil)
                     {
+                        task->wait.cont = true;
                         task->wait.until = value;
+                    }
+                    else if (type == AsyncResult::DelayTimeout)
+                    {
+                        Timeout timeout = value;
+                        if (task->wait.cont && timeout.IsRelative())
+                        {
+                            task->wait.until += timeout.Relative();
+                        }
+                        else
+                        {
+                            task->wait.cont = true;
+                            task->wait.until = timeout.ToMono(t);
+                        }
                     }
                     else
                     {
@@ -155,6 +170,23 @@ mono_t Scheduler::Run()
                     continue;
                 }
 
+                // waiting for multiple tasks to finish
+                case AsyncResult::WaitMultiple:
+                {
+                    AsyncFrame* f = task->wait.frame = (AsyncFrame*)value;
+                    task->wait.ptr = &f->children;
+                    task->wait.expect = 0;
+                    task->wait.mask = ~0u;
+                    task->wait.invert = false;
+                    task->wait.acquire = false;
+                    task->wait.cont = false;
+                    // move task to the waiting queue
+                    *pNext = task->next;
+                    task->next = waiting;
+                    waiting = task;
+                    continue;
+                }
+
                 // waiting for a value to change
                 case AsyncResult::Wait...AsyncResult::_WaitEnd:
                 {
@@ -176,40 +208,20 @@ mono_t Scheduler::Run()
                     task->wait.acquire = type && AsyncResult::_WaitAcquireMask;
                     task->wait.frame = f;
 
-                    if (!(type && AsyncResult::_WaitTimeoutMask))
+                    Timeout timeout = f->waitTimeout;
+                    if (timeout.IsInfinite())
                     {
                         task->wait.cont = false;
                     }
-                    else if ((type & AsyncResult::_WaitTimeoutTypeMask) == AsyncResult::_WaitTimeoutUntil)
+                    else if (task->wait.cont && timeout.IsRelative())
                     {
-                        task->wait.until = f->waitTimeout;
-                        task->wait.cont = true;
-                    }
-                    else if (f->waitTimeout == ASYNC_NO_TIMEOUT)
-                    {
-                        task->wait.cont = false;
+                        // continue where previous delay ended
+                        task->wait.until += timeout.Relative();
                     }
                     else
                     {
-                        mono_t timeout = f->waitTimeout;
-                        switch (type & AsyncResult::_WaitTimeoutTypeMask)
-                        {
-                            case AsyncResult::_WaitTimeoutMilliseconds: timeout = MonoFromMilliseconds(timeout); break;
-                            case AsyncResult::_WaitTimeoutSeconds: timeout = MonoFromSeconds(timeout); break;
-                            case AsyncResult::_WaitTimeoutTicks: break;
-                            default: ASSERT(false); break; // cannot happen
-                        }
-
-                        if (task->wait.cont)
-                        {
-                            // continue where previous delay ended
-                            task->wait.until += timeout;
-                        }
-                        else
-                        {
-                            task->wait.cont = true;
-                            task->wait.until = t + timeout;
-                        }
+                        task->wait.cont = true;
+                        task->wait.until = timeout.ToMono(t);
                     }
 
                     // also sets waitResult to false (union with waitPtr)
@@ -223,6 +235,8 @@ mono_t Scheduler::Run()
                 }
 
                 default:
+                    DBG("INVALID WAIT TYPE: %X", type);
+                    ASSERT(false);
                     sleep = 0;
                     break;
             }

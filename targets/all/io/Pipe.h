@@ -35,7 +35,7 @@ public:
     bool IsClosed() const { return !wseg && woff; }
     bool IsEmpty() const { return !avail; }
     bool IsCompleted() const { return !avail && IsClosed(); }
-    async(Completed, mono_t until = 0);
+    async(Completed, Timeout timeout = Timeout::Infinite);
 
 private:
     PipeAllocator& allocator;       //!< Allocator used for new segments
@@ -51,13 +51,14 @@ private:
 
     void WriterAdvance(size_t count);
     void WriterEnqueue(PipeSegment* segment);
-    async(WriterAllocate, size_t min, size_t req, mono_t waitUntil);
-    async(WriterWrite, Span data, mono_t waitUntil);
+    async(WriterAllocate, size_t min, size_t req, Timeout timeout);
+    async(WriterWrite, Span data, Timeout timeout);
+    size_t WriterWrite(Span data) { size_t length = data.CopyTo(WriterBuffer()).Length(); WriterAdvance(length); return length; }
     Buffer WriterBuffer() { ASSERT(wseg && woff < wseg->length); return Buffer((uint8_t*)wseg->data + woff, wseg->length - woff); }
     void WriterClose() { wseg = NULL; woff = 1; total++; }
 
-    async(ReaderRead, mono_t waitUntil);
-    async(ReaderReadUntil, uint8_t b, mono_t waitUntil);
+    async(ReaderRead, Timeout timeout);
+    async(ReaderReadUntil, uint8_t b, Timeout timeout);
     void ReaderAdvance(size_t count);
     void ReaderExamined(size_t count);
     size_t ReaderAvailable() const { return avail; }

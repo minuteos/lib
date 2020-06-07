@@ -8,6 +8,8 @@
  * Monotonic time conversions
  */
 
+#pragma once
+
 #include <kernel/config.h>
 
 #include <ratio>

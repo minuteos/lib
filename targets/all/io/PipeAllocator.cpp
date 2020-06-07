@@ -81,9 +81,13 @@ class DefaultPipeAllocator : public PipeAllocator
     };
 
 public:
-    virtual async(AllocateSegment, size_t min, size_t req, mono_t waitUntil)
-    async_def()
+    virtual async(AllocateSegment, size_t min, size_t req, Timeout timeout)
+    async_def(
+        Timeout timeout;
+    )
     {
+        f.timeout = timeout.MakeAbsolute();
+
         for (;;)
         {
             const uintptr_t* mon;
@@ -97,31 +101,18 @@ public:
             if (mon)
             {
                 MYTRACE("Monitoring location %p", mon);
-                if (waitUntil)
-                {
-                    if (!await_mask_not_until(*mon, ~0, *mon, waitUntil))
-                    {
-                        async_return(0);
-                    }
-                }
-                else
-                {
-                    await_mask_not(*mon, ~0, *mon);
-                }
-            }
-            else if (waitUntil)
-            {
-                MYTRACE("Waiting for a while...");
-                if (OVF_LE(waitUntil, MONO_CLOCKS))
+                if (!await_mask_not_timeout(*mon, ~0, *mon, f.timeout))
                 {
                     async_return(0);
                 }
-
-                async_sleep_until(waitUntil);
+            }
+            else if (f.timeout.Elapsed())
+            {
+                async_return(0);
             }
             else
             {
-                async_sleep_ms(100);
+                async_sleep_timeout(f.timeout);
             }
         }
     }
