@@ -26,12 +26,12 @@ protected:
 
 public:
     static void _Assert(int line, bool condition) { if (!condition) _Fail(line); }
-    template<typename T1, typename T2> static void _AssertEqual(int line, T1 o1, T2 o2) { if (o1 != o2) _Fail(line, [o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
-    template<typename T1, typename T2> static void _AssertNotEqual(int line, T1 o1, T2 o2) { if (o1 == o2) _Fail(line, [o1,o2] { Print(o1); Print(" == "); Print(o2); }); }
-    template<typename T1, typename T2> static void _AssertLessThan(int line, T1 o1, T2 o2) { if (o1 >= o2) _Fail(line, [o1,o2] { Print(o1); Print(" >= "); Print(o2); }); }
-    template<typename T1, typename T2> static void _AssertGreaterThan(int line, T1 o1, T2 o2) { if (o1 <= o2) _Fail(line, [o1,o2] { Print(o1); Print(" <= "); Print(o2); }); }
-    template<typename T1, typename T2> static void _AssertLessOrEqual(int line, T1 o1, T2 o2) { if (o1 > o2) _Fail(line, [o1,o2] { Print(o1); Print(" > "); Print(o2); }); }
-    template<typename T1, typename T2> static void _AssertGreaterOrEqual(int line, T1 o1, T2 o2) { if (o1 < o2) _Fail(line, [o1,o2] { Print(o1); Print(" < "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertEqual(int line, T1 o1, T2 o2) { if (!(o1 == o2)) _Fail(line, [o1,o2] { Print(o1); Print(" != "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertNotEqual(int line, T1 o1, T2 o2) { if (!(o1 != o2)) _Fail(line, [o1,o2] { Print(o1); Print(" == "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertLessThan(int line, T1 o1, T2 o2) { if (!(o1 < o2)) _Fail(line, [o1,o2] { Print(o1); Print(" >= "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertGreaterThan(int line, T1 o1, T2 o2) { if (!(o1 > o2)) _Fail(line, [o1,o2] { Print(o1); Print(" <= "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertLessOrEqual(int line, T1 o1, T2 o2) { if (!(o1 <= o2)) _Fail(line, [o1,o2] { Print(o1); Print(" > "); Print(o2); }); }
+    template<typename T1, typename T2> static void _AssertGreaterOrEqual(int line, T1 o1, T2 o2) { if (!(o1 >= o2)) _Fail(line, [o1,o2] { Print(o1); Print(" < "); Print(o2); }); }
     static void _AssertEqualString(int line, const char* s1, const char* s2) { if (strcmp(s1, s2)) _Fail(line, [s1,s2] { Print(s1); Print(" != "); Print(s2); }); }
     static void _AssertNotEqualString(int line, const char* s1, const char* s2) { if (!strcmp(s1, s2)) _Fail(line, [s1,s2] { Print(s1); Print(" == "); Print(s2); }); }
     static void _Fail(int line);
