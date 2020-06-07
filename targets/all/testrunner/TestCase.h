@@ -41,11 +41,14 @@ public:
 
     static void Print(const char* text) { printf("%s", text); }
     static void Print(int value) { printf("%d", value); }
-    static void Print(Span value) { printf("%.*s", (int)value.Length(), value.Pointer()); }
+    static void Print(unsigned int value) { printf("%u", value); }
+    static void Print(long value) { printf("%ld", value); }
+    static void Print(unsigned long value) { printf("%lu", value); }
+    static void Print(Span value) { for (char c: value) printf("%02X", c); }
     template<typename T> static void Print(const T* ptr) { printf("%p", ptr); }
     template<typename T> static void Print(T* ptr) { printf("%p", ptr); }
-    // everything else is printed as an integer
-    template<typename T> static void Print(T value) { printf("%ld", (long)value); }
+    // everything else is printed as raw data
+    template<typename T> static void Print(T value) { Print(Span::Of(value)); }
 
 private:
     bool Execute();
