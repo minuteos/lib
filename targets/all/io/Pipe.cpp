@@ -296,4 +296,15 @@ void Pipe::ReaderAdvance(size_t count)
     wseg = NULL;
 }
 
+int Pipe::ReaderPeek(size_t offset) const
+{
+    for (auto seg = rseg; seg; seg = seg->next)
+    {
+        if (offset < seg->length)
+            return seg->data[offset];
+        offset -= seg->length;
+    }
+    return -1;
+}
+
 }
