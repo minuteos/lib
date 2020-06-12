@@ -23,7 +23,7 @@ void DBG_AssertFailed(const char* file, unsigned line)
     DBG("ASSERT FAILED: %s(%u)\n", file, line);
     for (;;)
     {
-#if DEBUG
+#if DEBUG && defined(PLATFORM_WATCHDOG_HIT)
         PLATFORM_WATCHDOG_HIT();
 #endif
     }
