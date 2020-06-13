@@ -40,6 +40,12 @@ void DBG_PrintF(const char* format, ...)
         va_call(vformat, format, (format_output)CDBG_PutChar, 0, format);
 }
 
+void DBG_PrintFV(const char* format, va_list va)
+{
+    if (PLATFORM_DBG_ACTIVE(0))
+        vformat((format_output)CDBG_PutChar, 0, format, va);
+}
+
 void DBG_DebugPrintF(const char* format, ...)
 {
     va_call_void(DebugPrintFV, format, 0, NULL, format);
