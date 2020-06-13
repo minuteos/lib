@@ -73,6 +73,7 @@ NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type)
 
 NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect)
 {
+    expect &= mask;
     bool match = (*waitPtr & mask) == expect;
     if (match != (type && AsyncResult::_WaitInvertedMask))
     {

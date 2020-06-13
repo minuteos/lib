@@ -65,7 +65,7 @@ TEST_CASE("02 Masked waits")
         {
             async(Test, int ms, int tick, int res) async_def()
             {
-                if (await_mask_sec(x, 1, 2, 3))
+                if (await_mask_sec(x, 1, 1, 3))
                 {
                     if (!await_mask_not_ms(x, 4, 0, 6))
                     {
