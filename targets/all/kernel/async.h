@@ -180,6 +180,19 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
         __VA_ARGS__; } f; \
     AsyncFrame& __async = *(AsyncFrame*)__pCallee;
 
+//! Defines an asynchronous function with variable args that forwards to another async function with va_list
+#define async_def_va(func, last, ...) { \
+    va_list __va; va_start(__va, last); \
+    auto res = func(__pCallee, ## __VA_ARGS__, __va); \
+    va_end(__va); return res; }
+
+//! Defines an asynchronous function with variable args that forwards to another async function
+//! with va_list not being the last argument, but specified explicitly
+#define async_def_va_ext(func, last, ...) { \
+    va_list va; va_start(va, last); \
+    auto res = func(__pCallee, ## __VA_ARGS__); \
+    va_end(va); return res; }
+
 //! Terminates the definition of an async function. See @ref async_def for details
 #define async_end \
     async_return(0); \
