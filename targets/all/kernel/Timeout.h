@@ -68,6 +68,8 @@ public:
     constexpr bool operator ==(const Timeout& other) const { return value == other.value; }
     constexpr bool operator !=(const Timeout& other) const { return value != other.value; }
 
+    constexpr Timeout operator ||(const Timeout& other) const { return value ? *this : other; }
+
 private:
     constexpr Timeout(mono_t value)
         : value(value) {}
