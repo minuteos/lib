@@ -40,7 +40,7 @@ TEST_CASE("01 Simple Pipe")
             AssertEqual(n, 4u);
             AssertEqual(r.Available(), 4u);
             AssertEqual(r.IsComplete(), true);
-            AssertEqual(r.FirstSpan(), Span("TEST"));
+            Assert(r.Matches("TEST"));
             r.Advance(n);
         }
         async_end
@@ -78,13 +78,12 @@ TEST_CASE("02 Multi Write")
             AssertEqual(n, 2u);
             AssertEqual(r.Available(), 2u);
             AssertEqual(r.IsComplete(), false);
-            AssertEqual(r.FirstSpan(), Span("TE"));
-            r.Examined(n);
-            n = await(r.Read);
+            Assert(r.Matches("TE"));
+            n = await(r.Read, 3);
             AssertEqual(n, 4u);
             AssertEqual(r.Available(), 4u);
             AssertEqual(r.IsComplete(), true);
-            AssertEqual(r.FirstSpan(), Span("TEST"));
+            Assert(r.Matches("TEST"));
             r.Advance(n);
         }
         async_end
@@ -118,13 +117,13 @@ TEST_CASE("03 Read Until")
             size_t n;
             n = await(r.ReadUntil, '\n');
             AssertEqual(n, 7u);
-            AssertEqual(r.FirstSpan().Left(n), Span("Line 1\n"));
+            Assert(r.Matches("Line 1\n"));
             r.Advance(n);
             n = await(r.ReadUntil, '\n');
             AssertEqual(n, 0u);
             AssertEqual(r.IsComplete(), true);
             AssertEqual(r.Available(), 6u);
-            AssertEqual(r.FirstSpan(), Span("Line 2")); // no terminator
+            Assert(r.Matches("Line 2")); // no terminator
             r.Advance(6);
         }
         async_end

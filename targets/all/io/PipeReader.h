@@ -28,15 +28,22 @@ public:
         : pipe(reader.pipe) {}
     constexpr PipeReader(const DuplexPipe& pipe);
 
-    async(Read, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, timeout); }
+    async(Read, size_t count = 1, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, count, timeout); }
     async(ReadUntil, uint8_t b, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderReadUntil, b, timeout); }
-    void Examined(size_t count) { ASSERT(pipe); pipe->ReaderExamined(count); }
+    Span GetSpan(size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderSpan(offset); }
     void Advance(size_t count) { ASSERT(pipe); pipe->ReaderAdvance(count); }
+    void AdvanceTo(PipePosition position) { ASSERT(pipe); pipe->ReaderAdvanceTo(position); }
 
+    PipePosition Position() const { ASSERT(pipe); return pipe->ReaderPosition(); }
     size_t Available() const { ASSERT(pipe); return pipe->ReaderAvailable(); }
-    Span FirstSpan() const { ASSERT(pipe); return pipe->ReaderFirstSpan(); }
     bool IsComplete() const { ASSERT(pipe); return pipe->ReaderComplete(); }
     int Peek(size_t offset) const { ASSERT(pipe); return pipe->ReaderPeek(offset); }
+    size_t LengthUntil(PipePosition position) const { ASSERT(pipe); return pipe->ReaderLengthUntil(position); }
+
+    bool Matches(Span data, size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderMatches(data, offset); }
+
+    Pipe::Iterator begin() const { ASSERT(pipe); return pipe->ReaderIteratorBegin(); }
+    Pipe::Iterator end() const { ASSERT(pipe); return pipe->ReaderIteratorEnd(); }
 
 private:
     Pipe* pipe;

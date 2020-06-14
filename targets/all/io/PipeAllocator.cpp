@@ -48,10 +48,9 @@ private:
 class DynamicPipeSegment : PipeSegment
 {
 public:
-    static PipeSegment* TryAlloc(size_t min, size_t req, const uintptr_t*& mon)
+    static PipeSegment* TryAlloc(size_t size, const uintptr_t*& mon)
     {
-        size_t size = (req + 7) & ~7;
-        if (auto mem = malloc(size))
+        if (auto mem = malloc(size + sizeof(DynamicPipeSegment)))
         {
             return new(mem) DynamicPipeSegment(size);
         }
@@ -61,7 +60,7 @@ public:
 
 private:
     DynamicPipeSegment(size_t size)
-        : PipeSegment((const uint8_t*)(this + 1), size - sizeof(*this))
+        : PipeSegment((const uint8_t*)(this + 1), size)
     {
     }
 
@@ -75,13 +74,13 @@ class DefaultPipeAllocator : public PipeAllocator
 {
     enum
     {
-        PoolSize32 = 32 - sizeof(PoolPipeSegment<32>),
-        PoolSize64 = 64 - sizeof(PoolPipeSegment<64>),
-        PoolSizeMax = MEMPOOL_MAX_SIZE - sizeof(PoolPipeSegment<MEMPOOL_MAX_SIZE>),
+        PoolPayload64 = 64 - sizeof(PoolPipeSegment<64>),
+        PoolPayloadMax = MEMPOOL_MAX_SIZE - sizeof(PoolPipeSegment<MEMPOOL_MAX_SIZE>),
+        DynamicPayloadMax = 1024,
     };
 
 public:
-    virtual async(AllocateSegment, size_t min, size_t req, Timeout timeout)
+    virtual async(AllocateSegment, size_t hint, Timeout timeout)
     async_def(
         Timeout timeout;
     )
@@ -92,7 +91,7 @@ public:
         {
             const uintptr_t* mon;
             mon = NULL;
-            if (auto seg = TryAllocateSegment(min, req, mon))
+            if (auto seg = TryAllocateSegment(hint, mon))
             {
                 async_return(intptr_t(seg));
             }
@@ -119,24 +118,22 @@ public:
     async_end
 
 private:
-    static PipeSegment* TryAllocateSegment(size_t min, size_t req, const uintptr_t*& mon)
+    static PipeSegment* TryAllocateSegment(size_t hint, const uintptr_t*& mon)
     {
-        if (req <= PoolSize32)
-        {
-            return PoolPipeSegment<32>::TryAlloc(mon);
-        }
-
-        if (req <= PoolSize64)
+        if (hint <= PoolPayload64)
         {
             return PoolPipeSegment<64>::TryAlloc(mon);
         }
 
-        if (req <= PoolSizeMax)
+        if (hint <= PoolPayloadMax)
         {
             return PoolPipeSegment<MEMPOOL_MAX_SIZE>::TryAlloc(mon);
         }
 
-        return DynamicPipeSegment::TryAlloc(min, req, mon);
+        if (hint > DynamicPayloadMax)
+            hint = DynamicPayloadMax;
+
+        return DynamicPipeSegment::TryAlloc(hint, mon);
     }
 };
 
