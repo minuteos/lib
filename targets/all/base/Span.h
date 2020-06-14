@@ -275,6 +275,9 @@ public:
     //! Constructs a Buffer covering a single object
     template<class T> constexpr Buffer(T& value) : Span((char*)&value, sizeof(T)) {}
 
+    //! Constructs a Buffer from a @ref res_pair_t - used to force passing of return values via registers
+    ALWAYS_INLINE constexpr Buffer(res_pair_t pair) : Span(pair) {}
+
     //! Gets the pointer to the beginning of the Buffer
     constexpr char* Pointer() const { return (char*)p; }
     //! Gets the pointer to the beginning of the Buffer
