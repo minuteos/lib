@@ -60,6 +60,9 @@ public:
     //! Runs a new task on the main scheduler
     template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE static Task& Run(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args);
 
+    //! Gets a reference to the current task
+    ALWAYS_INLINE static Task& Current();
+
     //! Delays the start of the task by the specified number of ticks, can be used only before the task is started
     ALWAYS_INLINE Task& DelayTicks(mono_t ticks) { ASSERT(!top); wait.until += ticks; return *this; }
     //! Delays the start of the task by the specified number of milliseconds, can be used only before the task is started
@@ -144,5 +147,6 @@ template<typename... Args, typename... AArgs> Task& Task::Run(async_fptr_args_t<
 template<typename... Args, typename... AArgs> Task& Task::Run(AsyncDelegate<Args...> fn, AArgs&&... args) { return Scheduler::Main().Add(fn, std::forward<AArgs>(args)...); }
 template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Task::Run(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args) { return Scheduler::Main().Add(target, method, std::forward<AArgs>(args)...); }
 template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE Task& Task::Run(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args) { return Scheduler::Main().Add(target, method, std::forward<AArgs>(args)...); }
+ALWAYS_INLINE Task& Task::Current() { return Scheduler::Current().CurrentTask(); }
 
 }
