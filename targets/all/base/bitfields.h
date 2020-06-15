@@ -25,4 +25,6 @@ template<typename T> ALWAYS_INLINE constexpr T GETMASK(const T& value, unsigned 
 template<typename T> ALWAYS_INLINE constexpr T MODMASK(T& target, unsigned mask, unsigned value) { return (T)(target = (target & ~mask) | value); }
 template<typename T> ALWAYS_INLINE constexpr T MODMASK_SAFE(T& target, unsigned mask, unsigned value) { return (T)(target = (target & ~mask) | (value & mask)); }
 
+template<typename T> constexpr unsigned MASKOF(const T& value = T()) { return MASK(sizeof(T) * 8); }
+
 #endif
