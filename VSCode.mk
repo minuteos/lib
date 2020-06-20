@@ -35,7 +35,11 @@ define C_CPP_PROPERTIES_TEMPLATE
 				$(foreach d,$(DEFINES),"$d",)
 				""
 			],
-			"compilerPath": "$(CC)"
+			"compilerPath": "$(TOOLCHAIN_PATH)$(CXX)",
+			"intelliSenseMode": "gcc-x64",
+			"cStandard": "gnu11",
+			"cppStandard": "gnu++14",
+			"macFrameworkPath": []
 		}
 	]
 }
