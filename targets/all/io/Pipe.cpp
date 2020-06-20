@@ -16,13 +16,32 @@
 //#define PIPE_TRACE  1
 
 #if PIPE_TRACE
+#define MYTRACEX(...)            DBGCL("pipe", __VA_ARGS__)
 #define MYTRACE(fmt, ...)        DBGCL("pipe", "[%p] " fmt, this, ## __VA_ARGS__)
 #else
+#define MYTRACEX(...)
 #define MYTRACE(...)
 #endif
 
 namespace io
 {
+
+struct PipeReferencedSegment : PipeSegment
+{
+    PipeReferencedSegment(PipeSegment* inner, const uint8_t* data, size_t length)
+        : PipeSegment(data, length), inner(inner)
+    {
+        inner->Reference();
+    }
+
+    virtual void Destroy()
+    {
+        inner->Release();
+        MemPoolFree<PipeReferencedSegment>(this);
+    }
+
+    PipeSegment* inner;
+};
 
 void Pipe::Cleanup()
 {
@@ -36,10 +55,10 @@ void Pipe::Cleanup()
         MYTRACE("R: released segment %p", seg);
         seg = next;
     }
-    rseg = wseg = NULL;
-    roff = 0;
+    rseg = NULL;
+    pwseg = NULL;
+    roff = woff = 0;
     rpos = apos = wpos;
-    woff = 1;
 }
 
 void Pipe::Reset()
@@ -49,9 +68,11 @@ void Pipe::Reset()
     {
         Cleanup();
     }
-    rseg = wseg = NULL;
+    rseg = NULL;
+    pwseg = &rseg;
     rpos = apos = wpos = 0;
     roff = woff = total = 0;
+    WriterSignal();
 }
 
 async(Pipe::Completed, Timeout timeout)
@@ -88,10 +109,10 @@ async_def(
             async_return(-f.written);
         }
 
-        ASSERT(wseg);
-        ASSERT(wseg->length > woff);
-        size_t count = std::min(data.Length() - f.written, wseg->length - woff);
-        memcpy((uint8_t*)wseg->data + woff, data.Pointer() + f.written, count);
+        ASSERT(pwseg && *pwseg);
+        ASSERT((*pwseg)->length > woff);
+        size_t count = std::min(data.Length() - f.written, (*pwseg)->length - woff);
+        memcpy((uint8_t*)(*pwseg)->data + woff, data.Pointer() + f.written, count);
         f.written += count;
         WriterAdvance(count);
     }
@@ -133,7 +154,7 @@ async_def(
 
         auto before = f.written;
         f.length = 0;
-        f.seg = wseg;
+        f.seg = *pwseg;
         f.offset = woff;
         va_list va2;
         va_copy(va2, va);
@@ -141,6 +162,145 @@ async_def(
         va_end(va2);
         WriterAdvance(f.written - before);
     } while (f.written < f.length);
+
+    async_return(f.written);
+}
+async_end
+
+void Pipe::WriterInsert(PipeSegment* seg)
+{
+    if (woff)
+    {
+        // cut current write segment, either discarding the remainder or re-linking if it makes sense
+        if (woff < (*pwseg)->length)
+        {
+            size_t remaining = (*pwseg)->length - woff;
+            void* splitMem;
+            if (remaining <= sizeof(PipeReferencedSegment) || !(splitMem = MemPoolAlloc<PipeReferencedSegment>()))
+            {
+                MYTRACE("W: discarding last %d bytes from current write segment", remaining);
+                apos -= remaining;
+            }
+            else
+            {
+                MYTRACE("W: splitting off last %d bytes from current write segment", remaining);
+                auto seg = new(splitMem) PipeReferencedSegment(*pwseg, (*pwseg)->data + woff, remaining);
+                (*pwseg)->next = seg;
+            }
+            (*pwseg)->length = woff;
+        }
+
+        pwseg = &(*pwseg)->next;
+        woff = 0;
+    }
+
+    ASSERT(!seg->next);
+    seg->next = *pwseg;
+    *pwseg = seg;
+    pwseg = &seg->next;
+    MYTRACE("W: inserted %d byte segment %p @ %d", seg->length, seg, wpos);
+    wpos += seg->length;
+    apos += seg->length;
+    total += seg->length;
+    WriterSignal();
+}
+
+async(Pipe::Copy, Pipe& from, Pipe& to, size_t offset, size_t length, Timeout timeout)
+async_def(
+    Timeout timeout;
+    size_t written;
+    PipeSegment* seg;
+    size_t offset;
+)
+{
+    f.timeout = timeout.MakeAbsolute();
+
+    ASSERT(from.ReaderAvailable() >= offset + length);
+
+    f.seg = from.rseg;
+    f.offset = from.roff + offset;
+
+    while (f.offset >= f.seg->length)
+    {
+        f.offset -= f.seg->length;
+        f.seg = f.seg->next;
+        ASSERT(f.seg);
+    }
+
+    while (f.written < length)
+    {
+        if (auto mem = MemPoolAlloc<PipeReferencedSegment>())
+        {
+            // reference part of source segment in the destination pipe
+            auto seg = new(mem) PipeReferencedSegment(f.seg, f.seg->data + f.offset, std::min(length - f.written, f.seg->length - f.offset));
+            MYTRACEX("[%p] > [%p] COPY: referenced bytes %d+%d from segment %p", &from, &to, f.offset, seg->length, f.seg);
+            f.offset += seg->length;
+            if (f.offset >= f.seg->length)
+            {
+                f.offset -= f.seg->length;
+                f.seg = f.seg->next;
+                ASSERT(f.seg);
+            }
+            to.WriterInsert(seg);
+            f.written += seg->length;
+        }
+        else
+        {
+            auto& mon = *MemPoolGet<PipeReferencedSegment>()->WatchPointer();
+            if (!await_mask_not_timeout(mon, ~0u, mon, timeout))
+            {
+                break;
+            }
+        }
+    }
+
+    async_return(f.written);
+}
+async_end
+
+async(Pipe::Move, Pipe& from, Pipe& to, size_t length, Timeout timeout)
+async_def(
+    Timeout timeout;
+    size_t written;
+)
+{
+    f.timeout = timeout.MakeAbsolute();
+    
+    ASSERT(from.ReaderAvailable() >= length);
+
+    while (f.written < length)
+    {
+        ASSERT(from.rseg);
+
+        PipeSegment* seg;
+        if (!from.roff && from.rseg->length < length - f.written)
+        {
+            // transfer an entire segment from source to destination
+            seg = from.rseg;
+            seg->Reference();
+            MYTRACEX("[%p] > [%p] MOVE: transfered entire %d byte segment %p", &from, &to, from.rseg->length, from.rseg);
+        }
+        else if (auto mem = MemPoolAlloc<PipeReferencedSegment>())
+        {
+            // reference part of source segment in the destination pipe
+            seg = new(mem) PipeReferencedSegment(from.rseg, from.rseg->data + from.roff, std::min(length - f.written, from.rseg->length - from.roff));
+            MYTRACEX("[%p] > [%p] MOVE: referenced bytes %d+%d from segment %p", &from, &to, from.roff, seg->length, from.rseg);
+        }
+        else
+        {
+            auto& mon = *MemPoolGet<PipeReferencedSegment>()->WatchPointer();
+            if (!await_mask_not_timeout(mon, ~0u, mon, timeout))
+            {
+                break;
+            }
+            continue;
+        }
+
+        from.ReaderAdvance(seg->length);
+        ASSERT(from.rseg != seg);
+        to.WriterInsert(seg);
+        f.written += seg->length;
+    }
 
     async_return(f.written);
 }
@@ -166,26 +326,17 @@ async_def()
 
     MYTRACE("W: allocated %u byte segment %p", seg->length, seg);
 
-    if (wseg)
+    if (auto* last = *pwseg)
     {
         // append the new segment after the last segment
-        auto* last = wseg;
         while (last->next) last = last->next;
         last->next = seg;
-        if (woff == wseg->length)
-        {
-            // make the allocated space available immediately
-            ASSERT(wseg->next == seg);
-            wseg = wseg->next;
-            woff = 0;
-        }
     }
     else
     {
-        // if this is the first segment being written, initialize the reader as well
-        ASSERT(!rseg);
-        rseg = seg;
-        wseg = seg;
+        // if this is the first segment being written, it must point to rseg
+        ASSERT(rseg || pwseg == &rseg);
+        *pwseg = seg;
         woff = 0;
     }
 
@@ -196,31 +347,27 @@ async_end
 
 void Pipe::WriterAdvance(size_t count)
 {
-    ASSERT(wseg);
+    ASSERT(*pwseg);
     ASSERT(wpos + count <= apos);
     MYTRACE("W: %u bytes written", count);
     woff += count;
     wpos += count;
     total += count;
-    while (woff > wseg->length)
+    WriterSignal();
+    while (woff >= (*pwseg)->length)
     {
-        woff -= wseg->length;
-        wseg = wseg->next;
-        ASSERT(wseg);
-    }
-    if (woff == wseg->length && wseg->next)
-    {
-        wseg = wseg->next;
-        woff = 0;
+        woff -= (*pwseg)->length;
+        pwseg = &(*pwseg)->next;
     }
 }
 
 void Pipe::WriterClose()
 {
     MYTRACE("W: pipe closed @ %u", wpos);
-    wseg = NULL;
-    woff = 1;
+    pwseg = NULL;
+    woff = 0;
     total++;
+    WriterSignal();
 
     if (IsEmpty())
     {
@@ -359,6 +506,11 @@ void Pipe::ReaderAdvance(size_t count)
     for (;;)
     {
         auto next = last->next;
+        if (pwseg == &last->next)
+        {
+            pwseg = &rseg;
+        }
+        last->next = NULL;
         last->Release();
         MYTRACE("R: released segment %p", last);
 
@@ -383,9 +535,9 @@ void Pipe::ReaderAdvance(size_t count)
 
     // all segments have been released, release write segment as well
     ASSERT(!count);
-    ASSERT(wseg == last);
+    ASSERT(pwseg == &rseg);
     MYTRACE("R: all segments released");
-    rseg = wseg = NULL;
+    rseg = NULL;
     roff = woff = 0;
 }
 
@@ -444,7 +596,7 @@ res_pair_t Pipe::ReaderSpan(size_t offset) const
 res_pair_t Pipe::WriterBuffer(size_t offset) const
 {
     ASSERT(wpos + offset <= apos);
-    return GetSpan(wseg, woff + offset, ~0u);
+    return GetSpan(*pwseg, woff + offset, ~0u);
 }
 
 res_pair_t Pipe::GetSpan(PipeSegment* seg, size_t offset, size_t count)

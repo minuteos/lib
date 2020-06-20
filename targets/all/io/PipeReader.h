@@ -16,6 +16,7 @@ namespace io
 {
 
 class DuplexPipe;
+class PipeWriter;
 
 class PipeReader
 {
@@ -30,6 +31,8 @@ public:
 
     async(Read, size_t count = 1, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, count, timeout); }
     async(ReadUntil, uint8_t b, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderReadUntil, b, timeout); }
+    async(CopyTo, io::PipeWriter writer, size_t offset, size_t count, Timeout timeout = Timeout::Infinite);
+    async(MoveTo, io::PipeWriter writer, size_t count, Timeout timeout = Timeout::Infinite);
     Span GetSpan(size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderSpan(offset); }
     void Advance(size_t count) { ASSERT(pipe); pipe->ReaderAdvance(count); }
     void AdvanceTo(PipePosition position) { ASSERT(pipe); pipe->ReaderAdvanceTo(position); }
@@ -42,11 +45,31 @@ public:
 
     bool Matches(Span data, size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderMatches(data, offset); }
 
-    Pipe::Iterator begin() const { ASSERT(pipe); return pipe->ReaderIteratorBegin(); }
-    Pipe::Iterator end() const { ASSERT(pipe); return pipe->ReaderIteratorEnd(); }
+    ALWAYS_INLINE constexpr Pipe::Iterator begin() const { ASSERT(pipe); return pipe->ReaderIteratorBegin(); }
+    ALWAYS_INLINE constexpr Pipe::Iterator end() const { ASSERT(pipe); return pipe->ReaderIteratorEnd(); }
+
+    ALWAYS_INLINE constexpr Pipe::Iterator Enumerate(size_t length) const { ASSERT(pipe); return pipe->ReaderIteratorBegin(length); }
 
 private:
     Pipe* pipe;
+
+    friend class PipeWriter;
 };
 
+}
+
+#include <io/PipeWriter.h>
+
+inline async(io::PipeReader::CopyTo, io::PipeWriter writer, size_t offset, size_t length, Timeout timeout)
+{
+    ASSERT(pipe);
+    ASSERT(writer.pipe);
+    return async_forward(Pipe::Copy, *pipe, *writer.pipe, offset, length, timeout);
+}
+
+inline async(io::PipeReader::MoveTo, io::PipeWriter writer, size_t length, Timeout timeout)
+{
+    ASSERT(pipe);
+    ASSERT(writer.pipe);
+    return async_forward(Pipe::Move, *pipe, *writer.pipe, length, timeout);
 }

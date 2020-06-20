@@ -45,6 +45,8 @@ public:
 
 private:
     Pipe* pipe;
+
+    friend class PipeReader;
 };
 
 }

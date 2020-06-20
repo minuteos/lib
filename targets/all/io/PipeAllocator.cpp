@@ -39,7 +39,7 @@ private:
     {
     }
 
-    virtual void Release()
+    virtual void Destroy()
     {
         MemPoolFree<size>(this);
     }
@@ -64,7 +64,7 @@ private:
     {
     }
 
-    virtual void Release()
+    virtual void Destroy()
     {
         free(this);
     }

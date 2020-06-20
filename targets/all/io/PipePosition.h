@@ -31,6 +31,7 @@ public:
     constexpr bool operator !=(PipePosition other) const { return pos != other.pos; }
 
     constexpr PipePosition& operator +=(ptrdiff_t offset) { pos += offset; return *this; }
+    constexpr PipePosition& operator -=(ptrdiff_t offset) { pos -= offset; return *this; }
 
     constexpr size_t LengthUntil(PipePosition other) const { return other.pos <= pos ? 0 : other.pos - pos; }
 

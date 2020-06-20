@@ -17,14 +17,19 @@ class PipeSegment
 {
 protected:
     PipeSegment(const uint8_t* data, size_t length)
-        : data(data), length(length) {}
+        : data(data), length(length), refs(0) {}
+
+public:
+    void Reference() { refs++; }
+    bool Release() { if (!(refs--)) { Destroy(); return true; } return false; }
 
 private:
-    virtual void Release() = 0;
+    virtual void Destroy() = 0;
 
     PipeSegment* next = NULL;
     const uint8_t* data;
-    size_t length;
+    uint16_t length;
+    uint16_t refs;
 
     friend class Pipe;
 };

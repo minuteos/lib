@@ -33,9 +33,10 @@ public:
     }
 
     size_t Unprocessed() const { return wpos - rpos; }
-    bool IsClosed() const { return !wseg && woff; }
+    bool IsClosed() const { return !pwseg; }
     bool IsEmpty() const { return rpos == wpos; }
     bool IsCompleted() const { return IsEmpty() && IsClosed(); }
+    void BindSignal(bool* sig) { wsignal = sig; }
     async(Completed, Timeout timeout = Timeout::Infinite);
     void Reset();
 
@@ -48,25 +49,31 @@ public:
         {
             if (--remaining)
             {
-                if (++offset >= seg->length)
+                if (!++segRemaining)
                 {
                     seg = seg->next;
-                    offset = 0;
+                    segRemaining = -seg->length;
+                    segEnd = seg->data - segRemaining;
                 }
             }
             return *this;
         }
-        ALWAYS_INLINE constexpr char operator *() const { return seg->data[offset]; }
+        ALWAYS_INLINE constexpr char operator *() const { return segEnd[segRemaining]; }
         ALWAYS_INLINE constexpr ptrdiff_t operator -(const Iterator& other) const { return other.remaining - remaining; }
+
+        ALWAYS_INLINE constexpr Iterator begin() const { return *this; }
+        ALWAYS_INLINE constexpr Iterator end() const { return Iterator(); }
 
     private:
         constexpr Iterator()
-            : seg(NULL), offset(0), remaining(0) {}
+            : seg(NULL), segEnd(NULL), segRemaining(0), remaining(0) {}
         constexpr Iterator(PipeSegment* seg, size_t offset, size_t remaining)
-            : seg(seg), offset(offset), remaining(remaining) {}
+            : seg(seg), segEnd(seg->data + seg->length), segRemaining(offset - seg->length), remaining(remaining) {}
 
         PipeSegment* seg;
-        size_t offset, remaining;
+        const uint8_t* segEnd;
+        int segRemaining;
+        size_t remaining;
 
         friend class Pipe;
     };
@@ -75,12 +82,13 @@ private:
     PipeAllocator& allocator;       //!< Allocator used for new segments
     PipeSegment* rseg = NULL;       //!< Pointer to the current read segment (head)
     size_t roff = 0;                //!< Offset into the current read segment
-    PipeSegment* wseg = NULL;       //!< Pointer to the first write segment
+    PipeSegment** pwseg = &rseg;    //!< Pointer to pointer to current write segment (typically next member of last written segment)
     size_t woff = 0;                //!< Offset into the first write segment
     PipePosition rpos = 0;          //!< Read position
     PipePosition wpos = 0;          //!< Write position
     PipePosition apos = 0;          //!< Maximum allocated position
     size_t total = 0;               //!< Number of bytes moved through the pipe in total, also incremented when closed
+    bool* wsignal = NULL;           //!< External signal activated when new data is written to the pipe
 
     void Cleanup();
 
@@ -95,7 +103,9 @@ private:
     Buffer WriterBufferAt(PipePosition position) { return WriterBuffer(wpos.LengthUntil(position)); }
     void WriterAdvance(size_t count);
     void WriterAdvanceTo(PipePosition position) { if (auto count = wpos.LengthUntil(position)) WriterAdvance(count); }
+    void WriterInsert(PipeSegment* seg);
     void WriterClose();
+    void WriterSignal() { if (wsignal) { *wsignal = true; } }
 
     PipePosition ReaderPosition() const { return rpos; }
     size_t ReaderAvailable() const { return wpos - rpos; }
@@ -110,10 +120,14 @@ private:
     size_t ReaderLengthUntil(PipePosition position) const { return rpos.LengthUntil(position); }
     bool ReaderMatches(Span data, size_t offset) const;
 
-    Iterator ReaderIteratorBegin() { return Iterator(rseg, roff, wpos - rpos); }
-    Iterator ReaderIteratorEnd() { return Iterator(); }
+    constexpr Iterator ReaderIteratorBegin() const { return Iterator(rseg, roff, wpos - rpos); }
+    constexpr Iterator ReaderIteratorBegin(size_t length) const { return Iterator(rseg, roff, std::min(length, size_t(wpos - rpos))); }
+    constexpr Iterator ReaderIteratorEnd() const { return Iterator(); }
 
     static RES_PAIR_DECL(GetSpan, PipeSegment* seg, size_t offset, size_t count);
+
+    static async(Copy, Pipe& from, Pipe& to, size_t offset, size_t length, Timeout timeout);
+    static async(Move, Pipe& from, Pipe& to, size_t length, Timeout timeout);
 
     friend class PipeWriter;
     friend class PipeReader;
