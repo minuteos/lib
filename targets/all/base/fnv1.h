@@ -26,3 +26,30 @@ constexpr uint32_t fnv1a(const char* s, size_t len, uint32_t hash)
 {
     return len ? fnv1a(s + 1, len - 1, (hash ^ s[0]) * FNV1_PRIME) : hash;
 }
+
+#ifdef __cplusplus
+
+struct FNV1a
+{
+public:
+    constexpr FNV1a() : hash(FNV1_BASIS) {}
+    constexpr FNV1a(const char* s) : hash(fnv1a(s)) {}
+    constexpr FNV1a(const char* s, size_t len) : hash(fnv1a(s, len, FNV1_BASIS)) {}
+
+    constexpr FNV1a& operator +=(char c) { hash = (hash ^ c) * FNV1_PRIME; return *this; }
+    constexpr FNV1a operator +(char c) const { return (hash ^ c) * FNV1_PRIME; return *this; }
+
+    constexpr bool operator ==(const FNV1a& other) { return hash == other.hash; }
+    constexpr bool operator ==(uint32_t hash) { return this->hash == hash; }
+    constexpr bool operator !=(const FNV1a& other) { return hash != other.hash; }
+    constexpr bool operator !=(uint32_t hash) { return this->hash != hash; }
+
+    constexpr operator uint32_t() const { return hash; }
+
+private:
+    constexpr FNV1a(uint32_t hash) : hash(hash) {}
+
+    uint32_t hash;
+};
+
+#endif
