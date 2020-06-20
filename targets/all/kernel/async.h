@@ -352,7 +352,11 @@ next: __async._read_waitResult(); })
 })
 
 //! Waits for all the tasks added using await_multiple_add() to complete
-#define await_multiple() _async_yield(WaitMultiple, &f)
+#define await_multiple() ({ \
+    __label__ next; \
+    f.__requireContinue(&&next); \
+    return _ASYNC_RES(&__async, AsyncResult::WaitMultiple); \
+next: __async._read_waitResult(); })
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;
