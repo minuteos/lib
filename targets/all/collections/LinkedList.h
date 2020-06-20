@@ -59,6 +59,14 @@ public:
             return node->element;
         }
 
+        T& InsertNew()
+        {
+            auto node = MemPoolAlloc<Node>();
+            node->next = *p;
+            *p = node;
+            return node->element;
+        }
+
         void Remove()
         {
             Node* n = *p;
@@ -79,6 +87,7 @@ public:
     Manipulator Manipulate() { return Manipulator(this); }
 
     T& Push(const T& element) { return Manipulate().Insert(element); }
+    T& PushNew() { return Manipulate().InsertNew(); }
 
     bool Remove(const T& element)
     {
