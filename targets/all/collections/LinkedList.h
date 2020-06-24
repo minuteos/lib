@@ -81,9 +81,17 @@ public:
         friend class LinkedList;
     };
 
-    Iterator begin() { return first; }
-    Iterator end() { return NULL; }
+    Iterator begin() const { return first; }
+    Iterator end() const { return NULL; }
 
+    template<typename F> T* Find(F&& predicate) const
+    {
+        for (auto& element: *this)
+        {
+            if (predicate(element)) { return &element; }
+        }
+        return NULL;
+    }
     Manipulator Manipulate() { return Manipulator(this); }
 
     T& Push(const T& element) { return Manipulate().Insert(element); }
