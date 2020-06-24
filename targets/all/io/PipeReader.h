@@ -29,11 +29,13 @@ public:
         : pipe(reader.pipe) {}
     constexpr PipeReader(const DuplexPipe& pipe);
 
-    async(Read, size_t count = 1, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, count, timeout); }
-    async(ReadUntil, uint8_t b, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderReadUntil, b, timeout); }
+    async(Require, size_t count = 1, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRequire, count, timeout); }
+    async(RequireUntil, uint8_t b, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRequireUntil, b, timeout); }
+    async(Read, Buffer buffer, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, buffer.Pointer(), buffer.Length(), timeout); }
     async(CopyTo, io::PipeWriter writer, size_t offset, size_t count, Timeout timeout = Timeout::Infinite);
     async(MoveTo, io::PipeWriter writer, size_t count, Timeout timeout = Timeout::Infinite);
     Span GetSpan(size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderSpan(offset); }
+    Span Read(Buffer buffer) { ASSERT(pipe); return pipe->ReaderRead(buffer.Pointer(), buffer.Length()); }
     void Advance(size_t count) { ASSERT(pipe); pipe->ReaderAdvance(count); }
     void AdvanceTo(PipePosition position) { ASSERT(pipe); pipe->ReaderAdvanceTo(position); }
 

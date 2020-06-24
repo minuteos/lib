@@ -33,7 +33,7 @@ public:
     size_t Available() const { ASSERT(pipe); return pipe->WriterAvailable(); }
     size_t AvailableAfter(PipePosition pos) const { ASSERT(pipe); return pipe->WriterAvailableAfter(pos); }
     async(Allocate, size_t block, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterAllocate, block, timeout); }
-    async(Write, Span data, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterWrite, data, timeout); }
+    async(Write, Span data, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterWrite, data.Pointer(), data.Length(), timeout); }
     async(WriteF, const char* format, ...) async_def_va(WriteFV, format, Timeout::Infinite, format);
     async(WriteFTimeout, Timeout timeout, const char* format, ...) async_def_va(WriteFV, format, timeout, format);
     async(WriteFV, Timeout timeout, const char* format, va_list va) { ASSERT(pipe); return async_forward(pipe->WriterWriteFV, timeout, format, va); }

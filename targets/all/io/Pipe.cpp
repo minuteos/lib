@@ -94,7 +94,7 @@ async_def(
 }
 async_end
 
-async(Pipe::WriterWrite, Span data, Timeout timeout)
+async(Pipe::WriterWrite, const char* data, size_t length, Timeout timeout)
 async_def(
     Timeout timeout;
     size_t written
@@ -102,17 +102,17 @@ async_def(
 {
     f.timeout = timeout.MakeAbsolute();
 
-    while (data.Length() > f.written)
+    while (f.written < length)
     {
-        if (wpos == apos && !await(WriterAllocate, data.Length() - f.written, f.timeout))
+        if (wpos == apos && !await(WriterAllocate, length - f.written, f.timeout))
         {
             async_return(-f.written);
         }
 
         ASSERT(pwseg && *pwseg);
         ASSERT((*pwseg)->length > woff);
-        size_t count = std::min(data.Length() - f.written, (*pwseg)->length - woff);
-        memcpy((uint8_t*)(*pwseg)->data + woff, data.Pointer() + f.written, count);
+        size_t count = std::min(length - f.written, (*pwseg)->length - woff);
+        memcpy((uint8_t*)(*pwseg)->data + woff, data + f.written, count);
         f.written += count;
         WriterAdvance(count);
     }
@@ -265,7 +265,7 @@ async_def(
 )
 {
     f.timeout = timeout.MakeAbsolute();
-    
+
     ASSERT(from.ReaderAvailable() >= length);
 
     while (f.written < length)
@@ -376,7 +376,7 @@ void Pipe::WriterClose()
     }
 }
 
-async(Pipe::ReaderRead, size_t count, Timeout timeout)
+async(Pipe::ReaderRequire, size_t count, Timeout timeout)
 async_def(
     Timeout timeout;
 )
@@ -398,7 +398,7 @@ async_def(
 }
 async_end
 
-async(Pipe::ReaderReadUntil, uint8_t b, Timeout timeout)
+async(Pipe::ReaderRequireUntil, uint8_t b, Timeout timeout)
 async_def(
     Timeout timeout;
     PipeSegment* seg;
@@ -411,7 +411,7 @@ async_def(
     if (!rseg)
     {
         // read initial data
-        if (!await(ReaderRead, 1, f.timeout))
+        if (!await(ReaderRequire, 1, f.timeout))
         {
             async_return(0);
         }
@@ -427,7 +427,7 @@ async_def(
         if (!remain)
         {
             // need more data
-            await(ReaderRead, f.epos - rpos + 1, f.timeout);
+            await(ReaderRequire, f.epos - rpos + 1, f.timeout);
             if (!(remain = (wpos - f.epos)))
             {
                 async_return(0);
@@ -472,73 +472,111 @@ async_def(
 }
 async_end
 
-void Pipe::ReaderAdvance(size_t count)
+async(Pipe::ReaderRead, char* data, size_t length, Timeout timeout)
+async_def(
+    Timeout timeout;
+    size_t read;
+)
+{
+    f.timeout = timeout.MakeAbsolute();
+
+    while (f.read < length)
+    {
+        auto avail = ReaderAvailable();
+        if (!avail)
+        {
+            await(ReaderRequire, 1, timeout);
+            if (!(avail = ReaderAvailable()))
+                break;
+        }
+        f.read += Span(ReaderRead(data + f.read, std::min(length - f.read, ReaderAvailable()))).Length();
+    }
+
+    async_return(f.read);
+}
+async_end
+
+res_pair_t Pipe::ReaderRead(char* buffer, size_t count)
 {
     if (!count)
-        return;
+        return Span(buffer, 0u);
 
     ASSERT(rpos + count <= wpos);
     ASSERT(rseg);
     MYTRACE("R: %u bytes read", count);
     rpos += count;
 
-    if (IsCompleted())
-    {
-        // early release of all segments
-        MYTRACE("R: pipe completed, early cleanup");
-        Cleanup();
-        return;
-    }
-
+    auto bufferStart = buffer;
     size_t remain = rseg->length - roff;
     if (remain > count)
     {
         // more left in the current segment
+        if (buffer)
+        {
+            memcpy(buffer, rseg->data + roff, count);
+            buffer += count;
+        }
         roff += count;
         MYTRACE("R: %u bytes remaining in current segment", rseg->length - roff);
-        return;
     }
-
-    // release segments that are no longer needed
-    count -= remain;
-    auto last = rseg;
-
-    for (;;)
+    else
     {
-        auto next = last->next;
-        if (pwseg == &last->next)
+        // release segments that are no longer needed
+        if (buffer)
         {
-            pwseg = &rseg;
+            memcpy(buffer, rseg->data + roff, remain);
+            buffer += remain;
         }
-        last->next = NULL;
-        last->Release();
-        MYTRACE("R: released segment %p", last);
+        count -= remain;
+        auto last = rseg;
 
-        if (!next)
+        for (;;)
         {
-            // all segments released
-            break;
-        }
+            auto next = last->next;
+            if (pwseg == &last->next)
+            {
+                pwseg = &rseg;
+            }
+            last->next = NULL;
+            last->Release();
+            MYTRACE("R: released segment %p", last);
 
-        last = next;
-        if (count < last->length)
-        {
-            // part of the segment remains
-            rseg = last;
-            roff = count;
-            MYTRACE("R: continuing in segment %p offset %u", rseg, roff);
-            return;
-        }
+            if (!next)
+            {
+                // all segments have been released
+                ASSERT(!count);
+                ASSERT(pwseg == &rseg);
+                MYTRACE("R: all segments released");
+                rseg = NULL;
+                roff = woff = 0;
+                break;
+            }
 
-        count -= last->length;
+            last = next;
+            if (count < last->length)
+            {
+                // part of the segment remains
+                if (buffer)
+                {
+                    memcpy(buffer, last->data, count);
+                    buffer += count;
+                }
+                rseg = last;
+                roff = count;
+                MYTRACE("R: continuing in segment %p offset %u", rseg, roff);
+                break;
+            }
+            else if (buffer)
+            {
+                memcpy(buffer, last->data, last->length);
+                buffer += last->length;
+            }
+
+            count -= last->length;
+        }
     }
 
-    // all segments have been released, release write segment as well
-    ASSERT(!count);
-    ASSERT(pwseg == &rseg);
-    MYTRACE("R: all segments released");
-    rseg = NULL;
-    roff = woff = 0;
+    return Span(bufferStart, buffer);
 }
 
 int Pipe::ReaderPeek(size_t offset) const

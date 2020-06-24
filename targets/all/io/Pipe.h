@@ -97,7 +97,7 @@ private:
     size_t WriterAvailable() const { return apos - wpos; }
     size_t WriterAvailableAfter(PipePosition position) const { ASSERT(position >= wpos); return position.LengthUntil(apos); }
     async(WriterAllocate, size_t block, Timeout timeout);
-    async(WriterWrite, Span data, Timeout timeout);
+    async(WriterWrite, const char* data, size_t length, Timeout timeout);
     async(WriterWriteFV, Timeout timeout, const char* format, va_list va);
     RES_PAIR_DECL_EX(WriterBuffer, const, size_t offset);
     Buffer WriterBufferAt(PipePosition position) { return WriterBuffer(wpos.LengthUntil(position)); }
@@ -109,11 +109,13 @@ private:
 
     PipePosition ReaderPosition() const { return rpos; }
     size_t ReaderAvailable() const { return wpos - rpos; }
-    async(ReaderRead, size_t count, Timeout timeout);
-    async(ReaderReadUntil, uint8_t b, Timeout timeout);
+    async(ReaderRequire, size_t count, Timeout timeout);
+    async(ReaderRequireUntil, uint8_t b, Timeout timeout);
+    async(ReaderRead, char* buffer, size_t length, Timeout timeout);
     RES_PAIR_DECL_EX(ReaderSpan, const, size_t offset);
     Span ReaderSpanAt(PipePosition position) const { return ReaderSpan(rpos.LengthUntil(position)); }
-    void ReaderAdvance(size_t count);
+    RES_PAIR_DECL(ReaderRead, char* buffer, size_t length);
+    void ReaderAdvance(size_t count) { ReaderRead(NULL, count); }
     void ReaderAdvanceTo(PipePosition position) { if (auto count = rpos.LengthUntil(position)) ReaderAdvance(count); }
     bool ReaderComplete() const { return IsClosed(); }
     int ReaderPeek(size_t offset) const;
