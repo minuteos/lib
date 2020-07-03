@@ -182,8 +182,9 @@ mono_t Scheduler::Run()
                     task->wait.cont = false;
                     // move task to the waiting queue
                     *pNext = task->next;
-                    task->next = waiting;
-                    waiting = task;
+                    task->next = NULL;
+                    *nextWaiting = task;
+                    nextWaiting = &task->next;
                     continue;
                 }
 
@@ -229,8 +230,9 @@ mono_t Scheduler::Run()
 
                     // move task to the waiting queue
                     *pNext = task->next;
-                    task->next = waiting;
-                    waiting = task;
+                    task->next = NULL;
+                    *nextWaiting = task;
+                    nextWaiting = &task->next;
                     continue;
                 }
 
@@ -354,6 +356,7 @@ mono_t Scheduler::Run()
 
             pNext = &task->next;
         }
+        nextWaiting = pNext;
 
         if (maxSleep > 0)
         {

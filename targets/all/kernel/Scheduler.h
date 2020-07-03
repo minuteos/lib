@@ -101,6 +101,7 @@ private:
     class Task* active = NULL;      //!< Queue of running tasks
     class Task* delayed = NULL;     //!< Queue of unconditionally sleeping tasks
     class Task* waiting = NULL;     //!< Queue of tasks waiting for a value to change
+    class Task** nextWaiting = &waiting;    //!< Insertion pointer for the next waiting task
     class Task* current = NULL;     //!< Currently running task
     LinkedList<PreSleepDelegate> preSleep;  //!< List of callbacks called before sleep
 

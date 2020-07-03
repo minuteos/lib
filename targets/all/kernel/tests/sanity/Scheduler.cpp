@@ -269,4 +269,55 @@ TEST_CASE("05 Async calls")
     AssertLessThan(endTime, MonoFromMilliseconds(21));
 }
 
+TEST_CASE("06 Acquire Order")
+{
+    static int n = 0;
+
+    struct Test : SequenceRecorder
+    {
+        async(Task, char id) async_def()
+        {
+            await_acquire(n, 1);
+            Mark(id);
+            async_delay_ms(10);
+            Mark(id);
+            n = 0;
+        }
+        async_end
+    } t;
+
+    Scheduler s;
+    s.Add(t, &Test::Task, 'A');
+    s.Add(t, &Test::Task, 'B');
+    s.Add(t, &Test::Task, 'C');
+    auto endTime = MonoToMilliseconds(s.Run());
+
+    AssertEqualString(t, "A@0,A@10,B@10,B@20,C@20,C@30");
+    AssertEqual(endTime, 30);
+}
+
+
+TEST_CASE("07 Delay Order")
+{
+    struct Test : SequenceRecorder
+    {
+        async(Task, char id) async_def()
+        {
+            Mark(id);
+            async_delay_ms(10);
+            Mark(id);
+        }
+        async_end
+    } t;
+
+    Scheduler s;
+    s.Add(t, &Test::Task, 'A');
+    s.Add(t, &Test::Task, 'B');
+    s.Add(t, &Test::Task, 'C');
+    auto endTime = MonoToMilliseconds(s.Run());
+
+    AssertEqualString(t, "A@0,B@0,C@0,A@10,B@10,C@10");
+    AssertEqual(endTime, 10);
+}
+
 }
