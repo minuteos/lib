@@ -299,6 +299,9 @@ public:
     //! Returns a new Buffer consisting of the original Buffer with up to n bytes removed from the end
     ALWAYS_INLINE Buffer RemoveRight(size_t n) const { return _FromSpan(Span::RemoveRight(n)); }
 
+    //! Fills the entire bufer with the specified value
+    ALWAYS_INLINE Buffer Fill(int value) const { memset(Pointer(), value, len); return *this; }
+
 private:
     //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
     ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((char*)span.p, span.len); }
