@@ -30,4 +30,7 @@
 //! Forces an expression to be compile-time evaluated
 template<typename T, T value> constexpr T force_constexpr() { return value; }
 
+//! Cause a value to never be zero
+template<typename T> constexpr T nonzero(T value) { return value ? value : 1; }
+
 #endif
