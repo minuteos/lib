@@ -22,7 +22,7 @@
 #endif
 
 #ifndef MEMPOOL_GRANULARITY
-#define MEMPOOL_GRANULARITY     (2 * sizeof(intptr_t))
+#define MEMPOOL_GRANULARITY     (4 * sizeof(intptr_t))
 #endif
 
 struct MemPoolEntry
