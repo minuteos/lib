@@ -139,6 +139,8 @@ public:
     ALWAYS_INLINE Span ConsumeLeft(size_t n) { auto res = Left(n); p += res.len; len -= res.len; return res; }
     //! Returns a new Span consisting of up to n bytes from the end of the original Span. The bytes are removed from the target Span
     ALWAYS_INLINE Span ConsumeRight(size_t n) { auto res = Right(n); len -= res.len; return res; }
+    //! Returns an element of the specified type from the start of the original Span. The size of the element is removed from the Span
+    template<typename T> ALWAYS_INLINE T Consume() { return ConsumeLeft(sizeof(T)).Element<T>(); }
 
     //! Splits off the part of the span up to the specified @p separator
     /*!
