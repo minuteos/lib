@@ -75,7 +75,7 @@ PRIMARY_EXT = .elf
 PRIMARY_OUTPUT = $(OUTPUT)$(PRIMARY_EXT)
 
 # Include directories are the directories which contain components
-INCLUDE_DIRS = $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS)
+INCLUDE_DIRS = $(INCLUDE_OVERRIDE_DIRS) $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS)
 
 # Source directories are all component directories
 SOURCE_DIRS = $(sort $(SOURCE_DIR) $(TARGET_DIRS) $(COMPONENT_DIRS))
