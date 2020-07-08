@@ -101,5 +101,8 @@ ALWAYS_INLINE static _CONSTEXPR uint32_t BSWAP24(uint32_t n)
 #define CONCAT(a, b) _CONCAT(a, b)
 #define _CONCAT(a, b) a ## b
 
+#define STRINGIFY(a) _STRINGIFY(a)
+#define _STRINGIFY(a) #a
+
 //! create an identifier unique within the compilation unit
 #define UNIQUE(base)    CONCAT(base, __COUNTER__)
