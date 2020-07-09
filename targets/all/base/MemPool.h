@@ -58,7 +58,11 @@ private:
     template<size_t> friend void* MemPoolAlloc();
     template<size_t> friend void* MemPoolAllocDynamic();
 
+#if MEMPOOL_NO_MALLOC
+    static void** AllocLarge(size_t size) { return NULL; }
+#else
     static void** AllocLarge(size_t size);
+#endif
 };
 
 // calculates the size of the pool to be used for an arbitrary size/type

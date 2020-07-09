@@ -65,12 +65,14 @@ void* MemPool::AllocNew()
     return mem;
 }
 
+#if !MEMPOOL_NO_MALLOC
 void** MemPool::AllocLarge(size_t size)
 {
     void* mem = malloc(size);
     inline_memzero(mem, size);
     return (void**)mem;
 }
+#endif
 
 void MemPool::Free(void* mem)
 {
@@ -87,6 +89,8 @@ void MemPoolFreeDynamic(void* mem)
     auto ptr = (class MemPool**)mem - 1;
     if (*ptr)
         (*ptr)->Free(ptr);
+#if !MEMPOOL_NO_MALLOC
     else
         free(ptr);
+#endif
 }
