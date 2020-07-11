@@ -16,6 +16,26 @@
 #define PLATFORM_DBG_CHAR(...)
 #endif
 
+#if TRACE || MINITRACE
+
+void DBG_PutChar(char ch)
+{
+    PLATFORM_DBG_CHAR(0, ch);
+}
+
+void DBG_PutString(const char* s)
+{
+    if (PLATFORM_DBG_ACTIVE(0))
+    {
+        while (auto c = *s++)
+        {
+            PLATFORM_DBG_CHAR(0, c);
+        }
+    }
+}
+
+#endif
+
 #if TRACE
 
 void DBG_AssertFailed(const char* file, unsigned line)
@@ -27,11 +47,6 @@ void DBG_AssertFailed(const char* file, unsigned line)
         PLATFORM_WATCHDOG_HIT();
 #endif
     }
-}
-
-void DBG_PutChar(char ch)
-{
-    PLATFORM_DBG_CHAR(0, ch);
 }
 
 void DBG_PrintF(const char* format, ...)

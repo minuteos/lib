@@ -26,6 +26,7 @@ BEGIN_EXTERN_C
 extern void DBG_AssertFailed(const char* file, unsigned line);
 
 extern void DBG_PutChar(char ch);
+extern void DBG_PutString(const char* s);
 extern void DBG_PrintF(const char* format, ...);
 extern void DBG_PrintFV(const char* format, va_list va);
 extern void DBG_DebugPrintF(const char* format, ...);
@@ -42,9 +43,11 @@ extern void DebugPrintFV(unsigned channel, const char* component, const char* fo
 #define DBGC(component, ...)        DBG_DebugPrintFC(component, __VA_ARGS__)
 #define DBGL(fmt, ...)              DBG_DebugPrintF(fmt "\n", ## __VA_ARGS__)
 #define DBGCL(component, fmt, ...)  DBG_DebugPrintFC(component, fmt "\n", ## __VA_ARGS__)
+#define DBGS(s)                     DBG_DebugPrintF("%s", s)
 #define _DBG(...)                   DBG_PrintF(__VA_ARGS__)
 #define _DBGVA(...)                 DBG_PrintFV(__VA_ARGS__)
 #define _DBGCHAR(c)                 DBG_PutChar(c)
+#define _DBGS(s)                    DBG_PutString(s)
 
 #define CDBG(ch, ...)               CDBG_DebugPrintF(ch, __VA_ARGS__)
 #define CDBGC(ch, component, ...)   CDBG_DebugPrintFC(ch, component, __VA_ARGS__)
@@ -57,6 +60,11 @@ extern void DebugPrintFV(unsigned channel, const char* component, const char* fo
 
 #else
 
+#if MINITRACE
+extern void DBG_PutChar(char ch);
+extern void DBG_PutString(const char* s);
+#endif
+
 #define ASSERT(expr)
 
 #define DBG(...)
@@ -65,7 +73,15 @@ extern void DebugPrintFV(unsigned channel, const char* component, const char* fo
 #define DBGCL(component, fmt, ...)
 #define _DBG(...)
 #define _DBGVA(...)
+#if MINITRACE
+#define _DBGCHAR(c)                 DBG_PutChar(c)
+#define DBGS(s)                     ({ DBG_PutString(s); DBG_PutChar('\n'); })
+#define _DBGS(s)                    DBG_PutString(s)
+#else
 #define _DBGCHAR(c)
+#define DBGS(...)
+#define _DBGS(...)
+#endif
 
 #define CDBG(ch, ...)
 #define CDBGC(ch, component, ...)
