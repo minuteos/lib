@@ -41,7 +41,11 @@ NO_INLINE async_res_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec)
     else if (spec->pool)
         return _async_prolog_pool(pCallee, spec);
     else
+#if !KERNEL_SYNC_ONLY
         return _async_prolog_dynamic(pCallee, spec);
+#else
+        return async_res_t();
+#endif
 }
 
 /*!
@@ -54,8 +58,10 @@ NO_INLINE async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result)
     *pCallee = NULL;
     if (callee->spec->pool)
         callee->spec->pool->Free(callee);
+#if !KERNEL_SYNC_ONLY
     else
         free(callee);
+#endif
 
     return _ASYNC_RES(result, AsyncResult::Complete);
 }

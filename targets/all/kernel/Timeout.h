@@ -34,7 +34,7 @@ public:
 
     static constexpr InfiniteTimeout Infinite = InfiniteTimeout();
 
-    static constexpr Timeout Absolute(mono_t instant) { return Timeout(instant | BIT(31)); }
+    static constexpr Timeout Absolute(mono_t instant) { return Timeout(instant | (mono_t(MONO_SIGNED_MAX) + 1)); }
     static constexpr Timeout Ticks(mono_t value) { ASSERT(value <= MONO_SIGNED_MAX); return Timeout(value); }
     template<typename T> static constexpr Timeout Microseconds(T value) { return Ticks(MonoFromMicroseconds(value)); }
     template<typename T> static constexpr Timeout Milliseconds(T value) { return Ticks(MonoFromMilliseconds(value)); }

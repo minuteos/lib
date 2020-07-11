@@ -32,7 +32,9 @@ private:
 
     struct
     {
+#if !KERNEL_SYNC_ONLY
         mono_t until;           //!< Instant when the wait will be over
+#endif
         bool cont : 1;          //!< Indicates that the next wait should continue immediately after the time in the @ref until field
         bool invert : 1;        //!< Wait condition is inverted, i.e. we're waiting for the value to be other than @ref expect
         bool acquire : 1;       //!< Task should acquire the masked bits (invert them) when the masked value matches @expect
@@ -63,6 +65,7 @@ public:
     //! Gets a reference to the current task
     ALWAYS_INLINE static Task& Current();
 
+#if !KERNEL_SYNC_ONLY
     //! Delays the start of the task by the specified number of ticks, can be used only before the task is started
     ALWAYS_INLINE Task& DelayTicks(mono_t ticks) { ASSERT(!top); wait.until += ticks; return *this; }
     //! Delays the start of the task by the specified number of milliseconds, can be used only before the task is started
@@ -71,6 +74,7 @@ public:
     ALWAYS_INLINE Task& DelaySeconds(mono_t sec) { ASSERT(!top); wait.until += MonoFromSeconds(sec); return *this; }
     //! Delays the start of the task until the specified instant, can be used only before the task is started
     ALWAYS_INLINE Task& DelayUntil(mono_t instant) { ASSERT(!top); wait.until = instant; return *this; }
+#endif
 
     //! Configures a delegate that is called when the task completes; can be used only before the task is started
     ALWAYS_INLINE Task& OnComplete(Delegate<void, intptr_t> delegate) { ASSERT(!top); onComplete = delegate; return *this; }

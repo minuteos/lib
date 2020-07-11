@@ -41,10 +41,17 @@ Task& Scheduler::Add(AsyncDelegate<> fn)
 
 Task& Scheduler::Add(Task* t)
 {
+#if !KERNEL_SYNC_ONLY
     t->wait.until = CurrentTime();
+#endif
     t->wait.cont = true;
+#if KERNEL_SYNC_ONLY
+    t->next = active;
+    active = t;
+#else
     t->next = delayed;
     delayed = t;
+#endif
     return *t;
 }
 
@@ -75,12 +82,15 @@ mono_t Scheduler::Run()
 
     for (;;)
     {
+#if !KERNEL_SYNC_ONLY
 #ifdef PLATFORM_WATCHDOG_HIT
         PLATFORM_WATCHDOG_HIT();
 #endif
 
         mono_t t = CurrentTime();
         mono_signed_t maxSleep = MONO_SIGNED_MAX;
+        mono_signed_t sleep;
+#endif
         Task** pNext;
         Task* task;
 
@@ -92,7 +102,6 @@ mono_t Scheduler::Run()
             auto res = task->fn(&task->top);
             auto type = _ASYNC_RES_TYPE(res);
             auto value = _ASYNC_RES_VALUE(res);
-            mono_signed_t sleep;
 
             switch (type)
             {
@@ -113,6 +122,7 @@ mono_t Scheduler::Run()
                     }
                     continue;
 
+#if !KERNEL_SYNC_ONLY
                 // optional sleep (task will continue in the next loop while allowing sleep up to the specified duration)
                 case AsyncResult::SleepTimeout: sleep = Timeout(value).Relative(t); break;
                 case AsyncResult::SleepUntil: sleep = value - t; break;
@@ -187,7 +197,7 @@ mono_t Scheduler::Run()
                     nextWaiting = &task->next;
                     continue;
                 }
-
+#endif
                 // waiting for a value to change
                 case AsyncResult::Wait...AsyncResult::_WaitEnd:
                 {
@@ -208,7 +218,7 @@ mono_t Scheduler::Run()
                     task->wait.invert = type && AsyncResult::_WaitInvertedMask;
                     task->wait.acquire = type && AsyncResult::_WaitAcquireMask;
                     task->wait.frame = f;
-
+#if !KERNEL_SYNC_ONLY
                     Timeout timeout = f->waitTimeout;
                     if (timeout.IsInfinite())
                     {
@@ -224,7 +234,7 @@ mono_t Scheduler::Run()
                         task->wait.cont = true;
                         task->wait.until = timeout.ToMono(t);
                     }
-
+#endif
                     // also sets waitResult to false (union with waitPtr)
                     f->waitPtr = 0;
 
@@ -239,20 +249,25 @@ mono_t Scheduler::Run()
                 default:
                     DBG("INVALID WAIT TYPE: %X", type);
                     ASSERT(false);
+#if !KERNEL_SYNC_ONLY
                     sleep = 0;
+#endif
                     break;
             }
 
             task->wait.cont = false;   // if the task did not delay again, forget the continuation
 
+#if !KERNEL_SYNC_ONLY
             if (maxSleep > sleep)
             {
                 maxSleep = sleep;
             }
+#endif
 
             pNext = &task->next;
         }
 
+#if !KERNEL_SYNC_ONLY
         // adjust for the time spent executing tasks to avoid running active tasks
         // once more even if there are tasks already due to wake up
         mono_t timeSpent = CurrentTime() - t;
@@ -299,6 +314,13 @@ mono_t Scheduler::Run()
             // triggered between the wait check and actually going to sleep
             PLATFORM_DISABLE_INTERRUPTS();
         }
+#else
+        if (!(active || waiting))
+        {
+            s_current = previousScheduler;
+            return 0;
+        }
+#endif
 
         // process waiting tasks
         pNext = &waiting;
@@ -306,12 +328,14 @@ mono_t Scheduler::Run()
         {
             if (((*task->wait.ptr & task->wait.mask) == task->wait.expect) != task->wait.invert)
             {
+#if !KERNEL_SYNC_ONLY
                 // abort sleep and re-enable interrupts immediately to minimze latency
                 if (maxSleep > 0)
                 {
                     maxSleep = 0;
                     PLATFORM_ENABLE_INTERRUPTS();
                 }
+#endif
 
                 if (task->wait.acquire)
                 {
@@ -327,6 +351,7 @@ mono_t Scheduler::Run()
                 continue;
             }
 
+#if !KERNEL_SYNC_ONLY
             if (task->wait.cont)
             {
                 // check the timeout
@@ -353,11 +378,13 @@ mono_t Scheduler::Run()
                     maxSleep = sleep;
                 }
             }
+#endif
 
             pNext = &task->next;
         }
         nextWaiting = pNext;
 
+#if !KERNEL_SYNC_ONLY
         if (maxSleep > 0)
         {
             // go to sleep
@@ -380,6 +407,7 @@ mono_t Scheduler::Run()
 noSleep:
             PLATFORM_ENABLE_INTERRUPTS();
         }
+#endif
     }
 }
 
