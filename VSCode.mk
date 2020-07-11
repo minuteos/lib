@@ -15,6 +15,7 @@
 VSCODE_OS = $(subst Windows,Win32,$(subst Darwin,Mac,$(HOST_OS)))
 
 LAUNCH_OUTPUT ?= $(PRIMARY_OUTPUT)
+SWO_FREQUENCY ?= 1000000
 
 .PHONY: sense vscode
 
@@ -101,7 +102,7 @@ define LAUNCH_TEMPLATE
             "device": "$(JLINK_DEVICE)",
             "swoConfig": {
                 "enabled": true,
-                "swoFrequency": 1000000,
+                "swoFrequency": $(SWO_FREQUENCY),
                 "decoders": [
                     {
                         "port": 0,
@@ -122,7 +123,7 @@ define LAUNCH_TEMPLATE
             "device": "$(JLINK_DEVICE)",
             "swoConfig": {
                 "enabled": true,
-                "swoFrequency": 1000000,
+                "swoFrequency": $(SWO_FREQUENCY),
                 "decoders": [
                     {
                         "port": 0,
