@@ -32,6 +32,7 @@ public:
     PipePosition Position() const { ASSERT(pipe); return pipe->WriterPosition(); }
     size_t Available() const { ASSERT(pipe); return pipe->WriterAvailable(); }
     size_t AvailableAfter(PipePosition pos) const { ASSERT(pipe); return pipe->WriterAvailableAfter(pos); }
+    bool CanAllocate() const { ASSERT(pipe); return pipe->WriterCanAllocate(); }
     async(Allocate, size_t block, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterAllocate, block, timeout); }
     async(Write, Span data, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterWrite, data.Pointer(), data.Length(), timeout); }
     async(WriteF, const char* format, ...) async_def_va(WriteFV, format, Timeout::Infinite, format);

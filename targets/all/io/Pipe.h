@@ -39,6 +39,8 @@ public:
     void BindSignal(bool* sig) { wsignal = sig; }
     async(Completed, Timeout timeout = Timeout::Infinite);
     void Reset();
+    size_t ThrottleLevel() const { return throttle; }
+    void ThrottleLevel(size_t bytes) { throttle = bytes; }
 
     class Iterator
     {
@@ -87,8 +89,9 @@ private:
     PipePosition rpos = 0;          //!< Read position
     PipePosition wpos = 0;          //!< Write position
     PipePosition apos = 0;          //!< Maximum allocated position
-    size_t total = 0;               //!< Number of bytes moved through the pipe in total, also incremented when closed
+    size_t state = 0;               //!< Incremented every time pipe state changes
     bool* wsignal = NULL;           //!< External signal activated when new data is written to the pipe
+    size_t throttle = 1024;         //!< Hold writes above this threshold
 
     void Cleanup();
 
@@ -96,6 +99,8 @@ private:
     PipePosition WriterAllocatedPosition() const { return apos; }
     size_t WriterAvailable() const { return apos - wpos; }
     size_t WriterAvailableAfter(PipePosition position) const { ASSERT(position >= wpos); return position.LengthUntil(apos); }
+    bool WriterCanAllocate() const { return !throttle || TotalBytes() < throttle; }
+    bool WriterCanWrite() const { return WriterAvailable() || WriterCanAllocate(); }
     async(WriterAllocate, size_t block, Timeout timeout);
     async(WriterWrite, const char* data, size_t length, Timeout timeout);
     async(WriterWriteFV, Timeout timeout, const char* format, va_list va);
@@ -109,6 +114,7 @@ private:
 
     PipePosition ReaderPosition() const { return rpos; }
     size_t ReaderAvailable() const { return wpos - rpos; }
+    bool ReaderAvailableFullSegment() const { return rseg && ReaderAvailable() >= (rseg->length - roff); }
     async(ReaderRequire, size_t count, Timeout timeout);
     async(ReaderRequireUntil, uint8_t b, Timeout timeout);
     async(ReaderRead, char* buffer, size_t length, Timeout timeout);
@@ -121,6 +127,8 @@ private:
     int ReaderPeek(size_t offset) const;
     size_t ReaderLengthUntil(PipePosition position) const { return rpos.LengthUntil(position); }
     bool ReaderMatches(Span data, size_t offset) const;
+
+    constexpr size_t TotalBytes() const { return apos - rpos; }
 
     constexpr Iterator ReaderIteratorBegin() const { return Iterator(rseg, roff, wpos - rpos); }
     constexpr Iterator ReaderIteratorBegin(size_t length) const { return Iterator(rseg, roff, std::min(length, size_t(wpos - rpos))); }

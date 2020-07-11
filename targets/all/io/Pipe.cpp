@@ -71,7 +71,8 @@ void Pipe::Reset()
     rseg = NULL;
     pwseg = &rseg;
     rpos = apos = wpos = 0;
-    roff = woff = total = 0;
+    roff = woff = 0;
+    state++;
     WriterSignal();
 }
 
@@ -84,7 +85,7 @@ async_def(
 
     while (!IsCompleted())
     {
-        if (!await_mask_not_timeout(total, ~0u, total, f.timeout))
+        if (!await_mask_not_timeout(state, ~0u, state, f.timeout))
         {
             break;
         }
@@ -201,7 +202,7 @@ void Pipe::WriterInsert(PipeSegment* seg)
     MYTRACE("W: inserted %d byte segment %p @ %d", seg->length, seg, wpos);
     wpos += seg->length;
     apos += seg->length;
-    total += seg->length;
+    state++;
     WriterSignal();
 }
 
@@ -229,6 +230,16 @@ async_def(
 
     while (f.written < length)
     {
+        while (!to.WriterCanAllocate())
+        {
+            MYTRACEX("[%p] > [%p] COPY: throttling at %d bytes", &from, &to, to.TotalBytes());
+            if (!await_mask_not_timeout(to.state, ~0u, to.state, f.timeout) || to.IsClosed())
+            {
+                MYTRACEX("[%p] > [%p] COPY: stopping at %d bytes", &from, &to, to.TotalBytes());
+                async_return(0);
+            }
+        }
+
         if (auto mem = MemPoolAlloc<PipeReferencedSegment>())
         {
             // reference part of source segment in the destination pipe
@@ -247,7 +258,7 @@ async_def(
         else
         {
             auto& mon = *MemPoolGet<PipeReferencedSegment>()->WatchPointer();
-            if (!await_mask_not_timeout(mon, ~0u, mon, timeout))
+            if (!await_mask_not_timeout(mon, ~0u, mon, f.timeout))
             {
                 break;
             }
@@ -270,6 +281,16 @@ async_def(
 
     while (f.written < length)
     {
+        while (!to.WriterCanAllocate())
+        {
+            MYTRACEX("[%p] > [%p] MOVE: throttling at %d bytes", &from, &to, to.TotalBytes());
+            if (!await_mask_not_timeout(to.state, ~0u, to.state, f.timeout) || to.IsClosed())
+            {
+                MYTRACEX("[%p] > [%p] MOVE: stopping at %d bytes", &from, &to, to.TotalBytes());
+                async_return(0);
+            }
+        }
+
         ASSERT(from.rseg);
 
         PipeSegment* seg;
@@ -289,7 +310,7 @@ async_def(
         else
         {
             auto& mon = *MemPoolGet<PipeReferencedSegment>()->WatchPointer();
-            if (!await_mask_not_timeout(mon, ~0u, mon, timeout))
+            if (!await_mask_not_timeout(mon, ~0u, mon, f.timeout))
             {
                 break;
             }
@@ -307,7 +328,9 @@ async_def(
 async_end
 
 async(Pipe::WriterAllocate, size_t hint, Timeout timeout)
-async_def()
+async_def(
+    Timeout timeout;
+)
 {
     if (IsClosed())
     {
@@ -315,9 +338,26 @@ async_def()
         async_return(0);
     }
 
+    f.timeout = timeout;
+
+    while (!WriterCanAllocate())
+    {
+        MYTRACE("W: throttling at %d bytes", TotalBytes());
+        if (!await_mask_not_timeout(state, ~0u, state, f.timeout))
+        {
+            MYTRACE("W: could not allocate new segment, %d bytes in pipe", TotalBytes());
+            async_return(0);
+        }
+        if (IsClosed())
+        {
+            MYTRACE("W: pipe closed while waiting for allocation");
+            async_return(0);
+        }
+    }
+
     MYTRACE("W: allocating new segment (hint: %u)", hint);
     PipeSegment* seg;
-    seg = (PipeSegment*)await(allocator.AllocateSegment, hint, timeout);
+    seg = (PipeSegment*)await(allocator.AllocateSegment, hint, f.timeout);
     if (!seg)
     {
         MYTRACE("W: could not allocate new segment");
@@ -352,7 +392,7 @@ void Pipe::WriterAdvance(size_t count)
     MYTRACE("W: %u bytes written", count);
     woff += count;
     wpos += count;
-    total += count;
+    state++;
     WriterSignal();
     while (woff >= (*pwseg)->length)
     {
@@ -366,7 +406,7 @@ void Pipe::WriterClose()
     MYTRACE("W: pipe closed @ %u", wpos);
     pwseg = NULL;
     woff = 0;
-    total++;
+    state++;
     WriterSignal();
 
     if (IsEmpty())
@@ -387,7 +427,7 @@ async_def(
     {
         MYTRACE("R: waiting for data...");
         // wait for more data to become available
-        if (!await_mask_not_timeout(total, ~0u, total, f.timeout))
+        if (!await_mask_not_timeout(state, ~0u, state, f.timeout))
         {
             break;
         }
@@ -485,7 +525,7 @@ async_def(
         auto avail = ReaderAvailable();
         if (!avail)
         {
-            await(ReaderRequire, 1, timeout);
+            await(ReaderRequire, 1, f.timeout);
             if (!(avail = ReaderAvailable()))
                 break;
         }
@@ -505,6 +545,7 @@ res_pair_t Pipe::ReaderRead(char* buffer, size_t count)
     ASSERT(rseg);
     MYTRACE("R: %u bytes read", count);
     rpos += count;
+    state++;
 
     auto bufferStart = buffer;
     size_t remain = rseg->length - roff;

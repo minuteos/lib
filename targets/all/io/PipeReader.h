@@ -41,9 +41,13 @@ public:
 
     PipePosition Position() const { ASSERT(pipe); return pipe->ReaderPosition(); }
     size_t Available() const { ASSERT(pipe); return pipe->ReaderAvailable(); }
+    bool AvailableFullSegment() const { ASSERT(pipe); return pipe->ReaderAvailableFullSegment(); }
     bool IsComplete() const { ASSERT(pipe); return pipe->ReaderComplete(); }
     int Peek(size_t offset) const { ASSERT(pipe); return pipe->ReaderPeek(offset); }
     size_t LengthUntil(PipePosition position) const { ASSERT(pipe); return pipe->ReaderLengthUntil(position); }
+
+    size_t ThrottleLevel() const { ASSERT(pipe); return pipe->ThrottleLevel(); }
+    void ThrottleLevel(size_t bytes) const { ASSERT(pipe); pipe->ThrottleLevel(bytes); }
 
     bool Matches(Span data, size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderMatches(data, offset); }
 
