@@ -125,6 +125,7 @@ private:
     void ReaderAdvanceTo(PipePosition position) { if (auto count = rpos.LengthUntil(position)) ReaderAdvance(count); }
     bool ReaderComplete() const { return IsClosed(); }
     int ReaderPeek(size_t offset) const;
+    RES_PAIR_DECL_EX(ReaderPeek, const, char * buffer, size_t length, size_t offset);
     size_t ReaderLengthUntil(PipePosition position) const { return rpos.LengthUntil(position); }
     bool ReaderMatches(Span data, size_t offset) const;
 

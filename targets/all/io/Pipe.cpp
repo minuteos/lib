@@ -632,6 +632,28 @@ int Pipe::ReaderPeek(size_t offset) const
     return -1;
 }
 
+res_pair_t Pipe::ReaderPeek(char* buf, size_t length, size_t offset) const
+{
+    offset += roff;
+    char* start = buf;
+    for (auto seg = rseg; length && seg; seg = seg->next)
+    {
+        if (offset < seg->length)
+        {
+            size_t block = std::min(seg->length - offset, length);
+            memcpy(buf, seg->data + offset, block);
+            length -= block;
+            buf += block;
+            offset = 0;
+        }
+        else
+        {
+            offset -= seg->length;
+        }
+    }
+    return Span(start, buf);
+}
+
 bool Pipe::ReaderMatches(Span data, size_t offset) const
 {
     if (rpos + offset + data.Length() > wpos)

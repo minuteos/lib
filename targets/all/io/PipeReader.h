@@ -44,6 +44,7 @@ public:
     bool AvailableFullSegment() const { ASSERT(pipe); return pipe->ReaderAvailableFullSegment(); }
     bool IsComplete() const { ASSERT(pipe); return pipe->ReaderComplete(); }
     int Peek(size_t offset) const { ASSERT(pipe); return pipe->ReaderPeek(offset); }
+    Buffer Peek(Buffer buffer, size_t offset = 0) { ASSERT(pipe); return pipe->ReaderPeek(buffer.Pointer(), buffer.Length(), offset); }
     size_t LengthUntil(PipePosition position) const { ASSERT(pipe); return pipe->ReaderLengthUntil(position); }
 
     size_t ThrottleLevel() const { ASSERT(pipe); return pipe->ThrottleLevel(); }
