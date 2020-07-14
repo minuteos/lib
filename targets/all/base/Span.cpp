@@ -7,6 +7,7 @@
  */
 
 #include <base/Span.h>
+#include <base/format.h>
 
 #include <ctype.h>
 
@@ -192,4 +193,11 @@ int Span::ReadInt(Span s, unsigned lenSignRev)
     }
 
     return res;
+}
+
+res_pair_t Buffer::FormatImpl(char* buf, size_t len, const char* format, va_list va)
+{
+    format_write_info fwi = { buf, buf + len };
+    vformat(format_output_mem, &fwi, format, va);
+    return Buffer(buf, fwi.p);
 }

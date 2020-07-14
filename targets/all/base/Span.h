@@ -290,6 +290,11 @@ public:
     //! Explicit indexer implementation to resolve possible ambiguity
     ALWAYS_INLINE constexpr char& operator[](size_t index) const { return ((char*)p)[index]; }
 
+    //! C++ iterator interface
+    ALWAYS_INLINE constexpr char* begin() const { return (char*)p; }
+    //! C++ iterator interface
+    ALWAYS_INLINE constexpr char* end() const { return (char*)p + len; }
+
     //! Returns a new Buffer consisting of up to n bytes from the start of the original Buffer
     ALWAYS_INLINE Buffer Left(size_t n) const { return _FromSpan(Span::Left(n)); }
     //! Returns a new Buffer consisting of up to n bytes from the end of the original Buffer
@@ -303,10 +308,16 @@ public:
 
     //! Fills the entire bufer with the specified value
     ALWAYS_INLINE Buffer Fill(int value) const { memset(Pointer(), value, len); return *this; }
+    //! Formats a string into the buffer
+    ALWAYS_INLINE Buffer Format(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, len, format); }
+    //! Formats a string into the buffer
+    ALWAYS_INLINE Buffer FormatVA(const char* format, va_list va) const { return FormatImpl((char*)p, len, format, va); }
 
 private:
     //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
     ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((char*)span.p, span.len); }
+
+    static RES_PAIR_DECL(FormatImpl, char* buffer, size_t length, const char* format, va_list va);
 };
 
 ALWAYS_INLINE Buffer Span::CopyTo(Buffer buf) const { auto len = std::min(buf.len, this->len); memcpy(buf.Pointer(), this->p, len); return Buffer(buf.Pointer(), len); }
