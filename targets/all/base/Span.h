@@ -309,7 +309,7 @@ public:
     //! Fills the entire bufer with the specified value
     ALWAYS_INLINE Buffer Fill(int value) const { memset(Pointer(), value, len); return *this; }
     //! Formats a string into the buffer
-    ALWAYS_INLINE Buffer Format(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, len, format); }
+    Buffer Format(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, len, format); }
     //! Formats a string into the buffer
     ALWAYS_INLINE Buffer FormatVA(const char* format, va_list va) const { return FormatImpl((char*)p, len, format, va); }
 
