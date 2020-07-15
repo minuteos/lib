@@ -154,6 +154,7 @@ BLOBS   := $(call subfiles,$(SOURCE_DIRS),*.o) $(ADDITIONAL_BLOBS)
 DEPS    := $(OBJS:.o=.d) $(ADDITIONAL_DEPS)
 # all components get a macro C<component_name>, useful for optional dependencies
 DEFINES += $(subst /,_,$(subst -,_,$(addprefix C,$(COMPONENTS))))
+DEFINES += $(subst /,_,$(subst -,_,$(addprefix T,$(TARGETS))))
 
 DEP_OPT = -MMD -MP
 DEF_OPT = $(addprefix -D,$(DEFINES))
