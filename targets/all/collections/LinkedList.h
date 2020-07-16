@@ -26,6 +26,8 @@ public:
 
     struct Iterator
     {
+        constexpr Iterator() : n(NULL) {}
+
         constexpr bool operator !=(const Iterator& other) const { return n != other.n; }
         Iterator& operator++() { n = n->next; return *this; }
         T& operator*() { return n->element; }
