@@ -82,11 +82,11 @@ mono_t Scheduler::Run()
 
     for (;;)
     {
-#if !KERNEL_SYNC_ONLY
 #ifdef PLATFORM_WATCHDOG_HIT
         PLATFORM_WATCHDOG_HIT();
 #endif
 
+#if !KERNEL_SYNC_ONLY
         mono_t t = CurrentTime();
         mono_signed_t maxSleep = MONO_SIGNED_MAX;
         mono_signed_t sleep;
