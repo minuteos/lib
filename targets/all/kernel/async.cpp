@@ -11,7 +11,7 @@
 #include <kernel/kernel.h>
 
 //! Prolog allocation of a frame from a memory pool
-NO_INLINE async_res_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* spec)
+NO_INLINE RES_PAIR_DECL_ATTRIBUTE async_res_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     AsyncFrame* f = *pCallee = (AsyncFrame*)spec->pool->Alloc();
     f->spec = spec;
@@ -19,7 +19,7 @@ NO_INLINE async_res_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* 
 }
 
 //! Prolog allocation of an oversized frame dynamically using @ref malloc
-NO_INLINE async_res_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpec* spec)
+NO_INLINE RES_PAIR_DECL_ATTRIBUTE async_res_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     AsyncFrame* f = *pCallee = (AsyncFrame*)malloc(spec->frameSize);
     memset(f, 0, spec->frameSize);

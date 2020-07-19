@@ -19,8 +19,9 @@
 
 typedef intptr_t __attribute__((vector_size(sizeof(intptr_t) * 2))) res_pair_t;
 
-#define RES_PAIR_DECL(fn, ...)  res_pair_t fn(__VA_ARGS__) __attribute__((pcs("aapcs")))
-#define RES_PAIR_DECL_EX(fn, ex, ...)  res_pair_t fn(__VA_ARGS__) ex __attribute__((pcs("aapcs")))
+#define RES_PAIR_DECL_ATTRIBUTE         __attribute__((pcs("aapcs")))
+#define RES_PAIR_DECL(fn, ...)          RES_PAIR_DECL_ATTRIBUTE res_pair_t fn(__VA_ARGS__)
+#define RES_PAIR_DECL_EX(fn, ex, ...)   RES_PAIR_DECL_ATTRIBUTE res_pair_t fn(__VA_ARGS__) ex
 #define RES_PAIR_FIRST(res) ((res)[0])
 #define RES_PAIR_SECOND(res) ((res)[1])
 #define RES_PAIR(first, second) ((res_pair_t){ (intptr_t)(first), (intptr_t)(second) })
@@ -32,6 +33,7 @@ typedef intptr_t __attribute__((vector_size(sizeof(intptr_t) * 2))) res_pair_t;
 // are returned as a register pair automatically
 typedef struct { intptr_t first, second; } res_pair_t;
 
+#define RES_PAIR_DECL_ATTRIBUTE
 #define RES_PAIR_DECL(fn, ...)  res_pair_t fn(__VA_ARGS__)
 #define RES_PAIR_DECL_EX(fn, ex, ...)  res_pair_t fn(__VA_ARGS__) ex
 #define RES_PAIR_FIRST(res) ((res).first)

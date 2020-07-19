@@ -14,6 +14,7 @@
 #include <base/base.h>
 
 #include <base/Packed.h>
+#include <base/ResultPair.h>
 
 #if defined(__arm__) || defined(__mips__) || defined(__aarch64__)
 // for architectures where function pointers can be odd, the virtual indicator is the lowest bit of thisAdjust field
@@ -42,9 +43,9 @@ template<typename TRes, typename... Args>
 class Delegate
 {
 public:
-    typedef TRes (*fptr_t)(void* target, Args...);
-    template<typename T> using tfptr_t = TRes (*)(T* target, Args...);
-    template<typename T> using mthptr_t = TRes (T::*)(Args...);
+    typedef RES_PAIR_DECL_ATTRIBUTE TRes (*fptr_t)(void* target, Args...);
+    template<typename T> using tfptr_t = RES_PAIR_DECL_ATTRIBUTE TRes (*)(T* target, Args...);
+    template<typename T> using mthptr_t = RES_PAIR_DECL_ATTRIBUTE TRes (T::*)(Args...);
 
 private:
     union

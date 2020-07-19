@@ -94,9 +94,9 @@ struct AsyncFrame
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
     //! Prepares the frame for a wait operation
-    async_res_t _prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect);
+    RES_PAIR_DECL_ATTRIBUTE async_res_t _prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect);
     //! Prepares the frame for a byte wait operation
-    async_res_t _prepare_wait(AsyncResult type);
+    RES_PAIR_DECL_ATTRIBUTE async_res_t _prepare_wait(AsyncResult type);
     //! Decrements the running child count
     void _child_completed(intptr_t res);
     //! Returns the wait result and clears it
@@ -109,7 +109,7 @@ extern RES_PAIR_DECL(_async_prolog, AsyncFrame** pCallee, const AsyncSpec* spec)
 extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
 
 //! Declaration of an async function
-#define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
+#define async(name, ...)    RES_PAIR_DECL_ATTRIBUTE async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
 
 //! Implementation of a function with async interface that actually forwards to another async function
 /*!
