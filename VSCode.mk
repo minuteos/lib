@@ -100,6 +100,9 @@ define LAUNCH_TEMPLATE
             "servertype": "jlink",
             "preLaunchTask": "Build $(CONFIG)",
             "device": "$(JLINK_DEVICE)",
+            "postStartSessionCommands": [
+                "monitor SWO Start 0 $(SWO_FREQUENCY)"
+            ],
             "swoConfig": {
                 "enabled": true,
                 "swoFrequency": $(SWO_FREQUENCY),
@@ -121,6 +124,9 @@ define LAUNCH_TEMPLATE
             "type": "cortex-debug",
             "servertype": "jlink",
             "device": "$(JLINK_DEVICE)",
+            "postStartSessionCommands": [
+                "monitor SWO Start 0 $(SWO_FREQUENCY)"
+            ],
             "swoConfig": {
                 "enabled": true,
                 "swoFrequency": $(SWO_FREQUENCY),
