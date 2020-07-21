@@ -64,13 +64,13 @@ public:
     ALWAYS_INLINE constexpr operator res_pair_t() const { return pair; }
 
     //! Gets the pointer to the beginning of the Span
-    ALWAYS_INLINE const char* Pointer() const { return p; }
+    ALWAYS_INLINE constexpr const char* Pointer() const { return p; }
     //! Gets the pointer to the beginning of the Span
-    template<class T> ALWAYS_INLINE const T* Pointer() const { return (const T*)p; }
+    template<class T> ALWAYS_INLINE constexpr const T* Pointer() const { return (const T*)p; }
     //! Gets the reference to the element of the Span with the specified index
-    template<class T> ALWAYS_INLINE const T& Element(size_t index = 0) const { return ((const T*)p)[index]; }
+    template<class T> ALWAYS_INLINE constexpr const T& Element(size_t index = 0) const { return ((const T*)p)[index]; }
     //! Gets the length of the Span
-    ALWAYS_INLINE size_t Length() const { return len; }
+    ALWAYS_INLINE constexpr size_t Length() const { return len; }
 
     //! Gets the pointer to the beginning of the Span
     ALWAYS_INLINE constexpr operator const char*() const { return p; }
@@ -283,9 +283,9 @@ public:
     //! Gets the pointer to the beginning of the Buffer
     constexpr char* Pointer() const { return (char*)p; }
     //! Gets the pointer to the beginning of the Buffer
-    template<class T> ALWAYS_INLINE T* Pointer() const { return (T*)p; }
+    template<class T> ALWAYS_INLINE constexpr T* Pointer() const { return (T*)p; }
     //! Gets the reference to the element of the Buffer with the specified index
-    template<class T> ALWAYS_INLINE T& Element(size_t index = 0) const { return ((T*)p)[index]; }
+    template<class T> ALWAYS_INLINE constexpr T& Element(size_t index = 0) const { return ((T*)p)[index]; }
 
     //! Explicit indexer implementation to resolve possible ambiguity
     ALWAYS_INLINE constexpr char& operator[](size_t index) const { return ((char*)p)[index]; }
