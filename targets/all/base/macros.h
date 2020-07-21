@@ -43,6 +43,14 @@
 #endif
 #endif
 
+#ifndef RELEASE_ALWAYS_INLINE
+#if DEBUG
+#define RELEASE_ALWAYS_INLINE NO_INLINE
+#else
+#define RELEASE_ALWAYS_INLINE ALWAYS_INLINE
+#endif
+#endif
+
 #ifndef OPTIMIZE_SIZE
 #define OPTIMIZE_SIZE
 #endif
