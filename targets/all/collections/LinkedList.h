@@ -29,8 +29,18 @@ public:
         constexpr Iterator() : n(NULL) {}
 
         constexpr bool operator !=(const Iterator& other) const { return n != other.n; }
-        Iterator& operator++() { n = n->next; return *this; }
-        T& operator*() { return n->element; }
+        constexpr Iterator& operator++() { n = n->next; return *this; }
+        constexpr T& operator*() { return n->element; }
+
+        constexpr bool IsValid() const { return n; }
+        constexpr bool Next() { return n = n->next; }
+        constexpr T* Read()
+        {
+            if (!n) { return NULL; }
+            auto res = &n->element;
+            n = n->next;
+            return res;
+        }
 
     private:
         Node* n;
@@ -83,8 +93,8 @@ public:
         friend class LinkedList;
     };
 
-    Iterator begin() const { return first; }
-    Iterator end() const { return NULL; }
+    constexpr Iterator begin() const { return first; }
+    constexpr Iterator end() const { return NULL; }
 
     template<typename F> T* Find(F&& predicate) const
     {
