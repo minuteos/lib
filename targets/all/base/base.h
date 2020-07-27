@@ -32,3 +32,5 @@
 // platform-specific base header, to include anything that is common for the platform
 // e.g. CMSIS for ARM targets
 #include <base/platform.h>
+
+#include <base/platform_post.h>
