@@ -8,6 +8,8 @@
  * Loads and validates platform specific configuration
  */
 
+#pragma once
+
 #include <base/base.h>
 
 #ifndef KERNEL_PLATFORM_HEADER
@@ -58,3 +60,5 @@
 typedef std::make_signed_t<mono_t> mono_signed_t;
 
 #define MONO_SIGNED_MAX (std::numeric_limits<mono_signed_t>::max())
+
+#include <kernel/platform_post.h>
