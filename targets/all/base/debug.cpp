@@ -98,20 +98,20 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
         return;
 
 #ifdef MONO_US
-#ifdef MONO_US_STARTS_AT_ZERO
-    static auto s_last = 0;
-#else
-    static auto s_last = MONO_US;
-#endif
-    static int s_sec, s_sub;
+    static struct
+    {
+        unsigned stamp = MONO_US;
+        unsigned sec = 0, sub = 0;
+    } last;
 
-    auto elapsed = MONO_US - s_last;
-    s_last += elapsed;
+    auto stamp = MONO_US;
+    auto elapsed = last.stamp ? stamp - last.stamp : 0;
+    last.stamp = stamp;
 
-    int sub = s_sub + elapsed;
+    int sub = last.sub + elapsed;
     int sec = sub / 1000000;
-    s_sub = sub -= sec * 1000000;
-    s_sec = sec += s_sec;
+    last.sub = sub -= sec * 1000000;
+    last.sec = sec += last.sec;
 
     bool nz = false;
 
