@@ -45,6 +45,9 @@ public:
     class Iterator
     {
     public:
+        constexpr Iterator()
+            : seg(NULL), segEnd(NULL), segRemaining(0), remaining(0) {}
+
         ALWAYS_INLINE constexpr bool operator ==(const Iterator& other) const { return remaining == other.remaining; }
         ALWAYS_INLINE constexpr bool operator !=(const Iterator& other) const { return remaining != other.remaining; }
         ALWAYS_INLINE constexpr Iterator& operator ++()
@@ -54,6 +57,7 @@ public:
                 if (!++segRemaining)
                 {
                     seg = seg->next;
+                    ASSERT(seg);
                     segRemaining = -seg->length;
                     segEnd = seg->data - segRemaining;
                 }
@@ -62,13 +66,17 @@ public:
         }
         ALWAYS_INLINE constexpr char operator *() const { return segEnd[segRemaining]; }
         ALWAYS_INLINE constexpr ptrdiff_t operator -(const Iterator& other) const { return other.remaining - remaining; }
+        ALWAYS_INLINE Iterator operator +(size_t offset) const { auto res = *this; res.Skip(offset); return res; }
 
         ALWAYS_INLINE constexpr Iterator begin() const { return *this; }
         ALWAYS_INLINE constexpr Iterator end() const { return Iterator(); }
 
+        ALWAYS_INLINE constexpr operator bool() const { return !!remaining; }
+
+        void Skip(size_t length);
+        ALWAYS_INLINE bool Matches(Span data, size_t offset = 0) const { return remaining >= offset + data.Length() && seg->Matches(segEnd + segRemaining - seg->data + offset, data); }
+
     private:
-        constexpr Iterator()
-            : seg(NULL), segEnd(NULL), segRemaining(0), remaining(0) {}
         constexpr Iterator(PipeSegment* seg, size_t offset, size_t remaining)
             : seg(seg), segEnd(seg->data + seg->length), segRemaining(offset - seg->length), remaining(remaining) {}
 

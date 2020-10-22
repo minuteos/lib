@@ -9,6 +9,7 @@
 #pragma once
 
 #include <base/base.h>
+#include <base/Span.h>
 
 namespace io
 {
@@ -25,6 +26,8 @@ public:
 
 private:
     virtual void Destroy() = 0;
+
+    bool Matches(size_t offset, Span data) const;
 
     PipeSegment* next = NULL;
     const uint8_t* data;

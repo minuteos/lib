@@ -656,36 +656,7 @@ res_pair_t Pipe::ReaderPeek(char* buf, size_t length, size_t offset) const
 
 bool Pipe::ReaderMatches(Span data, size_t offset) const
 {
-    if (rpos + offset + data.Length() > wpos)
-    {
-        return false;
-    }
-
-    if (!data.Length())
-    {
-        return true;
-    }
-
-    offset += roff;
-    auto seg = rseg;
-    while (offset >= seg->length)
-    {
-        offset -= seg->length;
-        seg = seg->next;
-        ASSERT(seg);
-    }
-
-    do
-    {
-        auto len = std::min(data.Length(), seg->length - offset);
-        if (memcmp(seg->data + offset, data.Pointer(), len))
-        {
-            return false;
-        }
-        data = data.RemoveLeft(len);
-    } while (data);
-
-    return true;
+    return ReaderIteratorBegin().Matches(data, offset);
 }
 
 res_pair_t Pipe::ReaderSpan(size_t offset) const
@@ -710,6 +681,26 @@ res_pair_t Pipe::GetSpan(PipeSegment* seg, size_t offset, size_t count)
         offset -= seg->length;
         seg = seg->next;
     }
+}
+
+void Pipe::Iterator::Skip(size_t length)
+{
+    if (length > remaining)
+    {
+        length = remaining;
+    }
+    remaining -= length;
+
+    while (length >= size_t(-segRemaining))
+    {
+        seg = seg->next;
+        ASSERT(seg);
+        segRemaining = -seg->length;
+        segEnd = seg->data - segRemaining;
+        length += segRemaining;
+    }
+
+    segRemaining += length;
 }
 
 }
