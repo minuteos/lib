@@ -90,6 +90,9 @@ class RingBufferReader : public RingBufferAccessor
         : RingBufferAccessor(pair), length(ExtractLength()) {}
 
 public:
+    ALWAYS_INLINE constexpr RingBufferReader()
+        : length(0) {}
+
     constexpr size_t Available() const { return length; }
 
     ALWAYS_INLINE Buffer Read(Buffer data)
@@ -110,6 +113,9 @@ class RingBufferWriter : public RingBufferAccessor
         : RingBufferAccessor(pair), length(ExtractLength()) {}
 
 public:
+    ALWAYS_INLINE constexpr RingBufferWriter()
+        : length(0) {}
+
     constexpr size_t Available() const { return length; }
 
     //! Writes data to the buffer, returns @ref true on success
