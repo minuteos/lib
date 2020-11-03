@@ -17,12 +17,12 @@ class RingBufferBase
 {
 protected:
     RingBufferBase(intptr_t* buffer, size_t size)
-        : read(buffer), write(buffer), data(buffer), size(size) {}
+        : read(buffer), write(buffer), data(buffer), end((uint8_t*)(data + size / sizeof(intptr_t))) {}
 
     intptr_t* read;
     intptr_t* write;
     intptr_t* data;
-    size_t size;
+    uint8_t* end;
 
     //! Aligns the size to word boundary
     static constexpr size_t Align(size_t size) { return (size + sizeof(intptr_t) - 1) & ~(sizeof(intptr_t) - 1); }
@@ -33,21 +33,23 @@ protected:
     {
         return high > low ?
             (intptr_t)high - (intptr_t)low :
-            (intptr_t)high - (intptr_t)low + size;
+            (intptr_t)high - (intptr_t)low + Size();
     }
-    //! Gets the pointer to the end of buffer
-    constexpr uint8_t* End() const { return (uint8_t*)data + size; }
+    //! Gets the size fo the buffer in bytes
+    constexpr size_t Size() const { return (intptr_t)end - (intptr_t)data; }
     //! Wraps a pointer so that it stays inside the buffer
     template<typename T> constexpr T* Wrap(T* ptr)
     {
         ASSERT(!((intptr_t)ptr & (sizeof(T) - 1)));
-        return ptr < End() ? ptr : (T*)((uint8_t*)ptr - size);
+        return ptr < end ? ptr : (T*)((uint8_t*)ptr - Size());
     }
 
     RES_PAIR_DECL(AllocateImpl, size_t length);
     static bool WriteImpl(const void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
-    RES_PAIR_DECL(DequeueImpl);
+    RES_PAIR_DECL(DequeueImpl, bool peek);
     static RES_PAIR_DECL(ReadImpl, void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
+    RES_PAIR_DECL(ChunkImpl, uint8_t* p, size_t skip, size_t length);
+    RES_PAIR_DECL(Chunk2Impl, uint8_t* p, size_t skip, size_t length);
 
     friend class RingBufferAccessor;
     friend class RingBufferReader;
@@ -102,6 +104,9 @@ public:
         return res;
     }
 
+    ALWAYS_INLINE Span Chunk(size_t skip = 0) const { return ring->ChunkImpl(p, skip, length); }
+    ALWAYS_INLINE Span Chunk2(size_t skip = 0) const { return ring->Chunk2Impl(p, skip, length); }
+
     template<size_t> friend class RingBuffer;
 };
 
@@ -145,7 +150,9 @@ public:
     //! Allocates an item in the buffer, @returns a manipulator for storing item data. Data must be written before yielding control.
     ALWAYS_INLINE RingBufferWriter Allocate(size_t length) { return AllocateImpl(length); }
     //! Retrieves an item from the buffer, @returns a manipulator for reading item data. Data must be read before yielding control.
-    ALWAYS_INLINE RingBufferReader Dequeue() { return DequeueImpl(); }
+    ALWAYS_INLINE RingBufferReader Dequeue() { return DequeueImpl(false); }
+    //! Retrieves the first item in the buffer without dequeuing it, @returns a manipulator for reading item data.
+    ALWAYS_INLINE RingBufferReader Peek() { return DequeueImpl(true); }
 
     //! Appends an item to the buffer, @returns true on success
     ALWAYS_INLINE bool Enqueue(Span record) { return Allocate(record.Length()).Write(record); }

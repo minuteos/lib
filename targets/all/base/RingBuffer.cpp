@@ -53,7 +53,7 @@ bool RingBufferBase::WriteImpl(const void* data, size_t len, uint8_t*& p, RingBu
 
     const uint8_t* src = (const uint8_t*)data;
     uint8_t* dst = p;
-    size_t toEnd = ring->End() - dst;
+    size_t toEnd = ring->end - dst;
     if (len > toEnd)
     {
         // copy to the end of buffer
@@ -66,7 +66,7 @@ bool RingBufferBase::WriteImpl(const void* data, size_t len, uint8_t*& p, RingBu
     return true;
 }
 
-res_pair_t RingBufferBase::DequeueImpl()
+res_pair_t RingBufferBase::DequeueImpl(bool peek)
 {
     if (read == write)
     {
@@ -77,7 +77,10 @@ res_pair_t RingBufferBase::DequeueImpl()
     auto r = read;
     size_t len = *r++;
     auto payload = (uint8_t*)r;
-    read = (intptr_t*)Wrap(payload + Align(len));
+    if (!peek)
+    {
+        read = (intptr_t*)Wrap(payload + Align(len));
+    }
 
     return RingBufferAccessor(this, payload);
 }
@@ -91,7 +94,7 @@ res_pair_t RingBufferBase::ReadImpl(void* buffer, size_t len, uint8_t*& p, RingB
 
     const uint8_t* src = p;
     uint8_t* dst = (uint8_t*)buffer;
-    size_t toEnd = ring->End() - src;
+    size_t toEnd = ring->end - src;
     if (len > toEnd)
     {
         // copy to the end of buffer
@@ -102,4 +105,18 @@ res_pair_t RingBufferBase::ReadImpl(void* buffer, size_t len, uint8_t*& p, RingB
     inline_memcpy(dst, src, dst + len);
     p = (uint8_t*)src;
     return Buffer(buffer, dst);
+}
+
+res_pair_t RingBufferBase::ChunkImpl(uint8_t* p, size_t skip, size_t length)
+{
+    if (skip >= length || p + skip >= end)
+        return Span();
+    return Span(p + skip, p + length < end ? p + length : end);
+}
+
+res_pair_t RingBufferBase::Chunk2Impl(uint8_t* p, size_t skip, size_t length)
+{
+    if (skip >= length || p + length <= end)
+        return Span();
+    return Span(p + skip <= end ? (uint8_t*)data : (uint8_t*)data + (p + skip - end), p + length - end);
 }
