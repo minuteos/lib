@@ -14,6 +14,8 @@
  * 00 00 44 55 66 42 56 A4 D3 12 9B E8 67 45 3E 12
  */
 
+#pragma once
+
 #include <base/base.h>
 
 class UuidLE
@@ -34,6 +36,10 @@ class UuidLE
 #endif
 
 public:
+    UuidLE() = default;
     constexpr UuidLE(const char str[37])
         : ghij(parse32(str + 28)), ef(parse16(str + 24)), d(parse16(str + 19)), c(parse16(str + 14)), b(parse16(str + 9)), a(parse32(str)) {}
+
+    constexpr bool operator ==(const UuidLE& other) { return !memcmp(this, &other, sizeof(UuidLE)); }
+    constexpr bool operator !=(const UuidLE& other) { return !!memcmp(this, &other, sizeof(UuidLE)); }
 };
