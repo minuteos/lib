@@ -37,7 +37,7 @@ define C_CPP_PROPERTIES_TEMPLATE
 				""
 			],
 			"compilerPath": "$(TOOLCHAIN_PATH)$(CXX)",
-			"intelliSenseMode": "gcc-x64",
+			"intelliSenseMode": "gcc-arm",
 			"cStandard": "gnu11",
 			"cppStandard": "gnu++14",
 			"macFrameworkPath": []
