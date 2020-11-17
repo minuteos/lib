@@ -45,8 +45,7 @@ public:
     class Iterator
     {
     public:
-        constexpr Iterator()
-            : seg(NULL), segEnd(NULL), segRemaining(0), remaining(0) {}
+        Iterator() = default;
 
         ALWAYS_INLINE constexpr bool operator ==(const Iterator& other) const { return remaining == other.remaining; }
         ALWAYS_INLINE constexpr bool operator !=(const Iterator& other) const { return remaining != other.remaining; }
@@ -72,8 +71,10 @@ public:
         ALWAYS_INLINE constexpr Iterator end() const { return Iterator(); }
 
         ALWAYS_INLINE constexpr operator bool() const { return !!remaining; }
+        ALWAYS_INLINE constexpr size_t Available() const { return remaining; }
 
         void Skip(size_t length);
+        Buffer Read(Buffer buf) { return ReadImpl(buf.Pointer(), buf.Length()); }
         ALWAYS_INLINE bool Matches(Span data, size_t offset = 0) const { return remaining >= offset + data.Length() && seg->Matches(segEnd + segRemaining - seg->data + offset, data); }
 
     private:
@@ -84,6 +85,8 @@ public:
         const uint8_t* segEnd;
         int segRemaining;
         size_t remaining;
+
+        RES_PAIR_DECL(ReadImpl, char* data, size_t length);
 
         friend class Pipe;
     };

@@ -711,4 +711,29 @@ void Pipe::Iterator::Skip(size_t length)
     segRemaining += length;
 }
 
+res_pair_t Pipe::Iterator::ReadImpl(char* buffer, size_t length)
+{
+    if (length > remaining)
+    {
+        length = remaining;
+    }
+    Buffer res(buffer, length);
+    remaining -= length;
+
+    while (length > size_t(-segRemaining))
+    {
+        memcpy(buffer, segEnd + segRemaining, -segRemaining);
+        buffer -= segRemaining;
+        seg = seg->next;
+        ASSERT(seg);
+        segRemaining = -seg->length;
+        segEnd = seg->data - segRemaining;
+        length += segRemaining;
+    }
+
+    memcpy(buffer, segEnd + segRemaining, length);
+    segRemaining += length;
+    return res;
+}
+
 }
