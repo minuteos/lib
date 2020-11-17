@@ -694,10 +694,18 @@ void Pipe::Iterator::Skip(size_t length)
     while (length >= size_t(-segRemaining))
     {
         seg = seg->next;
-        ASSERT(seg);
-        segRemaining = -seg->length;
-        segEnd = seg->data - segRemaining;
         length += segRemaining;
+        if (!seg)
+        {
+            ASSERT(!length);
+            ASSERT(!remaining);
+            segRemaining = 0;
+        }
+        else
+        {
+            segRemaining = -seg->length;
+            segEnd = seg->data - segRemaining;
+        }
     }
 
     segRemaining += length;
