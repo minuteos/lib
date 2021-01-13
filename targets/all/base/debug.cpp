@@ -44,7 +44,12 @@ void DBG_AssertFailed(const char* file, unsigned line)
     for (;;)
     {
 #if DEBUG && defined(PLATFORM_WATCHDOG_HIT)
+        volatile bool cont = false;
         PLATFORM_WATCHDOG_HIT();
+        if (cont)
+        {
+            break;
+        }
 #endif
     }
 }
