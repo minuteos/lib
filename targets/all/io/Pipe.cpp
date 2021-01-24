@@ -230,6 +230,7 @@ async_def(
 
     while (f.written < length)
     {
+        ASSERT(f.seg);
         while (!to.WriterCanAllocate())
         {
             MYTRACEX("[%p] > [%p] COPY: throttling at %d bytes", &from, &to, to.TotalBytes());
@@ -250,7 +251,6 @@ async_def(
             {
                 f.offset -= f.seg->length;
                 f.seg = f.seg->next;
-                ASSERT(f.seg);
             }
             to.WriterInsert(seg);
             f.written += seg->length;
