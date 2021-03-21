@@ -33,7 +33,7 @@ define C_CPP_PROPERTIES_TEMPLATE
 				""
 			],
 			"defines": [
-				$(foreach d,$(DEFINES),"$d",)
+				$(foreach d,$(DEFINES),"$(subst ",\",$d)",)
 				""
 			],
 			"compilerPath": "$(TOOLCHAIN_PATH)$(CXX)",
