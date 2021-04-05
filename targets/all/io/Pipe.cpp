@@ -724,11 +724,11 @@ res_pair_t Pipe::Iterator::ReadImpl(char* buffer, size_t length)
     {
         memcpy(buffer, segEnd + segRemaining, -segRemaining);
         buffer -= segRemaining;
+        length += segRemaining;
         seg = seg->next;
         ASSERT(seg);
         segRemaining = -seg->length;
         segEnd = seg->data - segRemaining;
-        length += segRemaining;
     }
 
     memcpy(buffer, segEnd + segRemaining, length);
