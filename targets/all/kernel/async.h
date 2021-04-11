@@ -83,12 +83,12 @@ struct AsyncFrame
     {
         AsyncFrame* callee; //!< Pointer to the frame of the asynchronous function being called
         uintptr_t* waitPtr; //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
-        intptr_t waitResult;    //!< Result of the wait operation
     };
     contptr_t cont;     //!< Pointer to the instruction where execution will continue
     union
     {
         mono_t waitTimeout;     //!< Timeout for the wait operation (actually a Timeout::value)
+        intptr_t waitResult;    //!< Result of the wait operation
         uintptr_t children;     //!< Count of child tasks still executing
     };
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
@@ -99,8 +99,6 @@ struct AsyncFrame
     RES_PAIR_DECL_ATTRIBUTE async_res_t _prepare_wait(AsyncResult type);
     //! Decrements the running child count
     void _child_completed(intptr_t res);
-    //! Returns the wait result and clears it
-    ALWAYS_INLINE intptr_t _read_waitResult() { auto res = waitResult; waitResult = 0; return res; }
 };
 
 //! Asynchronous function prolog
@@ -171,8 +169,9 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
     AsyncFrame& __async = *(AsyncFrame*)__pCallee;
 
 //! Defines a lightweight asynchronous function called just once
+//! The function can end with a wait operation
 #define async_def_once(...) { \
-    if (*__pCallee) { *__pCallee = NULL; return _ASYNC_RES(0, AsyncResult::Complete); } \
+    if (*__pCallee) { auto res = (*__pCallee)->waitResult; *__pCallee = NULL; return _ASYNC_RES(res, AsyncResult::Complete); } \
     *__pCallee = (AsyncFrame*)__pCallee; \
     struct __FRAME { \
         async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { *pCallee = NULL; return _ASYNC_RES(result, AsyncResult::Complete); } \
@@ -235,7 +234,7 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
     __async.waitTimeout = Timeout::__raw_value(timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type, (uintptr_t)(mask), (uintptr_t)(expect)); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async._read_waitResult(); })
+next: __async.waitResult; })
 
 #define _await_signal(type, reg, timeout) ({ \
     __label__ next; \
@@ -244,7 +243,7 @@ next: __async._read_waitResult(); })
     __async.waitTimeout = Timeout::__raw_value(timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async._read_waitResult(); })
+next: __async.waitResult; })
 
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
 #define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, Timeout::Infinite)
@@ -338,7 +337,7 @@ next: \
     __label__ next; \
     f.__requireContinue(&&next); \
     return ::kernel::Task::_RunAll(__async, __VA_ARGS__); \
-next: __async._read_waitResult(); })
+next: __async.waitResult; })
 
 //! Begins a block where multiple tasks can be spawned dynamically and then awaited
 #define await_multiple_init() ({ \
@@ -356,7 +355,7 @@ next: __async._read_waitResult(); })
     __label__ next; \
     f.__requireContinue(&&next); \
     return _ASYNC_RES(&__async, AsyncResult::WaitMultiple); \
-next: __async._read_waitResult(); })
+next: __async.waitResult; })
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;

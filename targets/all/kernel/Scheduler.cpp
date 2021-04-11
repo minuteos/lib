@@ -235,7 +235,6 @@ mono_t Scheduler::Run()
                         task->wait.until = timeout.ToMono(t);
                     }
 #endif
-                    // also sets waitResult to false (union with waitPtr)
                     f->waitPtr = 0;
 
                     // move task to the waiting queue
@@ -366,9 +365,10 @@ mono_t Scheduler::Run()
                         PLATFORM_ENABLE_INTERRUPTS();
                     }
 
-                    // just return the task to the active queue, the result is already set to false
+                    // return the task to the active queue, set timeout result
                     *pNext = task->next;
                     task->next = active;
+                    task->wait.frame->waitResult = false;
                     active = task;
                     continue;
                 }

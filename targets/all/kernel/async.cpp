@@ -72,6 +72,8 @@ NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type)
     if (match != (type && AsyncResult::_WaitInvertedMask))
     {
         type = AsyncResult::Complete;
+        waitPtr = NULL;
+        waitResult = true;
     }
 
     return _ASYNC_RES(this, type);
@@ -88,6 +90,8 @@ NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, uintptr_t mask
         {
             *waitPtr ^= mask;
         }
+        waitPtr = NULL;
+        waitResult = true;
         return _ASYNC_RES(this, AsyncResult::Complete);
     }
 
