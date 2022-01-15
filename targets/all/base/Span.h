@@ -250,6 +250,10 @@ public:
     //! Decodes the content of the Span (up to 4 bytes) as a big-endian signed integer
     ALWAYS_INLINE int32_t ReadIntBE32(int32_t defVal = 0) const { return ReadInt(0x34, defVal); }
 
+    //! Checks if the content of the Span is all zeroes
+    ALWAYS_INLINE bool IsAllZeroes() const { return IsAll(*this, 0); }
+    ALWAYS_INLINE bool IsAllOnes() const { return IsAll(*this, ~0u); }
+
 private:
     static RES_PAIR_DECL(Sub, Span s, size_t start, size_t len);
     static RES_PAIR_DECL(Slice, Span s, int start, int end);
@@ -261,6 +265,7 @@ private:
     static int ParseInt(Span s, int baseStopAtInvalid, int defVal);
     ALWAYS_INLINE int ReadInt(unsigned lenSignRev, uint32_t defVal) const { return defVal && !Length() ? defVal : ReadInt(*this, lenSignRev); }
     static int ReadInt(Span s, unsigned lenSignRev);
+    static bool IsAll(Span s, uint32_t val);
 
     friend class Buffer;
 };

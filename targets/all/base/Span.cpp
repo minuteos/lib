@@ -195,6 +195,27 @@ int Span::ReadInt(Span s, unsigned lenSignRev)
     return res;
 }
 
+bool Span::IsAll(Span s, uint32_t val)
+{
+    while (s.len & 3)
+    {
+        if ((s.p[--s.len] ^ val) << 24)
+        {
+            return false;
+        }
+    }
+
+    while (s.len)
+    {
+        if (*(const uint32_t*)(s.p + (s.len -= 4)) != val)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 res_pair_t Buffer::FormatImpl(char* buf, size_t len, const char* format, va_list va)
 {
     format_write_info fwi = { buf, buf + len };
