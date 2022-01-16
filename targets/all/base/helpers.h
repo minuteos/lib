@@ -31,6 +31,6 @@
 template<typename T, T value> constexpr T force_constexpr() { return value; }
 
 //! Cause a value to never be zero
-template<typename T> constexpr T nonzero(T value) { return value ? value : 1; }
+template<typename T> constexpr T nonzero(T value, int nonZero = 1) { return value ? value : (T)nonZero; }
 
 #endif
