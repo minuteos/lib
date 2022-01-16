@@ -32,11 +32,11 @@ protected:
     constexpr size_t Diff(intptr_t* low, intptr_t* high) const
     {
         return high > low ?
-            (uint8_t*)high - (uint8_t*)low :
-            (uint8_t*)high - (uint8_t*)low + Size();
+            (intptr_t)high - (intptr_t)low :
+            (intptr_t)high - (intptr_t)low + Size();
     }
     //! Gets the size fo the buffer in bytes
-    constexpr size_t Size() const { return end - (uint8_t*)data; }
+    constexpr size_t Size() const { return (intptr_t)end - (intptr_t)data; }
     //! Wraps a pointer so that it stays inside the buffer
     template<typename T> constexpr T* Wrap(T* ptr)
     {
