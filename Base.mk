@@ -86,7 +86,7 @@ SOURCE_EXTS = .c .cpp .S
 # Default compilation flags to minimize output size
 COMMON_FLAGS = -g -Wall -fmessage-length=0 -fno-exceptions -fdata-sections -ffunction-sections
 C_FLAGS = -std=gnu11
-CXX_FLAGS = -std=gnu++14 -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
+CXX_FLAGS = -std=gnu++17 -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit
 OPT_FLAGS = -O3 -Os
 
 # Include configuration-specific makefiles
