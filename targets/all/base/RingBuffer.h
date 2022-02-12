@@ -20,12 +20,12 @@
 class RingBufferBase
 {
 protected:
-    RingBufferBase(intptr_t* buffer, size_t size)
-        : read(buffer), write(buffer), data(buffer), end((uint8_t*)(data + size / sizeof(intptr_t))) {}
+    RingBufferBase(uint8_t* buffer, size_t size)
+        : read(buffer), write(buffer), data(buffer), end(data + size) {}
 
-    intptr_t* read;
-    intptr_t* write;
-    intptr_t* data;
+    uint8_t* read;
+    uint8_t* write;
+    uint8_t* data;
     uint8_t* end;
 
     //! Aligns the size to word boundary
@@ -33,14 +33,14 @@ protected:
     //! Returns the number of words required to store @param size bytes
     static constexpr size_t Words(size_t size) { return (size + sizeof(intptr_t) - 1) / sizeof(intptr_t); }
     //! Calculates the difference between two pointers, wrapping around the ring
-    constexpr size_t Diff(intptr_t* low, intptr_t* high) const
+    constexpr size_t Diff(uint8_t* low, uint8_t* high) const
     {
         return high > low ?
-            (intptr_t)high - (intptr_t)low :
-            (intptr_t)high - (intptr_t)low + Size();
+            high - low :
+            high - low + Size();
     }
     //! Gets the size fo the buffer in bytes
-    constexpr size_t Size() const { return (intptr_t)end - (intptr_t)data; }
+    constexpr size_t Size() const { return end - data; }
     //! Wraps a pointer so that it stays inside the buffer
     template<typename T> constexpr T* Wrap(T* ptr)
     {

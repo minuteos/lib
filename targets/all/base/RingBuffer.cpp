@@ -36,10 +36,10 @@ res_pair_t RingBufferBase::AllocateImpl(size_t len)
     }
 
     // store original length
-    auto w = write;
+    auto w = (intptr_t*)write;
     *w++ = len;
     auto payload = (uint8_t*)w;
-    write = (intptr_t*)Wrap(payload + required);
+    write = Wrap(payload + required);
 
     return RingBufferAccessor(this, payload);
 }
@@ -58,7 +58,7 @@ bool RingBufferBase::WriteImpl(const void* data, size_t len, uint8_t*& p, RingBu
     {
         // copy to the end of buffer
         inline_memcpy(dst, src, dst + toEnd);
-        dst = (uint8_t*)ring->data;
+        dst = ring->data;
         len -= toEnd;
     }
     inline_memcpy(dst, src, dst + len);
@@ -74,12 +74,12 @@ res_pair_t RingBufferBase::DequeueImpl(bool peek)
         return RingBufferAccessor();
     }
 
-    auto r = read;
+    auto r = (intptr_t*)read;
     size_t len = *r++;
     auto payload = (uint8_t*)r;
     if (!peek)
     {
-        read = (intptr_t*)Wrap(payload + Align(len));
+        read = Wrap(payload + Align(len));
     }
 
     return RingBufferAccessor(this, payload);
@@ -99,7 +99,7 @@ res_pair_t RingBufferBase::ReadImpl(void* buffer, size_t len, uint8_t*& p, RingB
     {
         // copy to the end of buffer
         inline_memcpy(dst, src, dst + toEnd);
-        src = (uint8_t*)ring->data;
+        src = ring->data;
         len -= toEnd;
     }
     inline_memcpy(dst, src, dst + len);
@@ -118,7 +118,7 @@ res_pair_t RingBufferBase::Chunk2Impl(uint8_t* p, size_t skip, size_t length)
 {
     if (skip >= length || p + length <= end)
         return Span();
-    return Span(p + skip <= end ? (uint8_t*)data : (uint8_t*)data + (p + skip - end), p + length - end);
+    return Span(p + skip <= end ? data : data + (p + skip - end), p + length - end);
 }
 
 void RingBufferWriter::FormatOutput(void* context, char ch)
