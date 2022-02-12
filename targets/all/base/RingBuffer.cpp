@@ -120,3 +120,8 @@ res_pair_t RingBufferBase::Chunk2Impl(uint8_t* p, size_t skip, size_t length)
         return Span();
     return Span(p + skip <= end ? (uint8_t*)data : (uint8_t*)data + (p + skip - end), p + length - end);
 }
+
+void RingBufferWriter::FormatOutput(void* context, char ch)
+{
+    ((RingBufferWriter*)context)->WriteByte(ch);
+}

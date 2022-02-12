@@ -13,6 +13,10 @@
 #include <base/base.h>
 #include <base/Span.h>
 
+#if Ckernel
+#include <kernel/kernel.h>
+#endif
+
 class RingBufferBase
 {
 protected:
@@ -108,6 +112,7 @@ public:
     ALWAYS_INLINE Span Chunk2(size_t skip = 0) const { return ring->Chunk2Impl(p, skip, length); }
 
     template<size_t> friend class RingBuffer;
+    friend class RingBufferWriter;
 };
 
 class RingBufferWriter : public RingBufferAccessor
@@ -122,6 +127,7 @@ public:
         : length(0) {}
 
     constexpr size_t Available() const { return length; }
+    constexpr RingBufferReader MakeReader() const { return RingBufferReader(*this); }
 
     //! Writes data to the buffer, returns @ref true on success
     ALWAYS_INLINE bool Write(Span data)
@@ -132,7 +138,25 @@ public:
         return RingBufferBase::WriteImpl(data.Pointer(), len, p, ring);
     }
 
+    //! Writes a single byte to the buffer, returns @ref true on success
+    ALWAYS_INLINE bool WriteByte(uint8_t b)
+    {
+        if (!ring || !length) return false;
+        length--;
+        uint8_t* dst = p;
+        *dst++ = b;
+        if (dst == ring->end)
+        {
+            dst = (uint8_t*)ring->data;
+        }
+        p = dst;
+        return true;
+    }
+
+    static void FormatOutput(void* context, char ch);
+
     template<size_t> friend class RingBuffer;
+    friend class RingBufferReader;
 };
 
 template<size_t TSize> class RingBuffer : RingBufferBase
@@ -158,6 +182,11 @@ public:
     ALWAYS_INLINE bool Enqueue(Span record) { return Allocate(record.Length()).Write(record); }
     //! Retrieves an item from the buffer, @returns buffer with adjusted length, or an invalid @ref Buffer if empty
     ALWAYS_INLINE Buffer Dequeue(Buffer buffer) { return Dequeue().Read(buffer); }
+
+#if Ckernel
+    //! Waits until there is a record in the buffer
+    async(HasData) async_def_once() { await_mask_not(read, ~0u, write); } async_end
+#endif
 
 private:
     intptr_t _data[Words(TSize)];
