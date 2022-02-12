@@ -12,6 +12,7 @@
 #include <io/Pipe.h>
 
 #include <base/format.h>
+#include <base/MemPoolAsync.h>
 
 //#define PIPE_TRACE  1
 
@@ -241,7 +242,8 @@ async_def(
             }
         }
 
-        if (auto mem = MemPoolAlloc<PipeReferencedSegment>())
+        void* mem;
+        if ((mem = MemPoolAlloc<PipeReferencedSegment>()))
         {
             // reference part of source segment in the destination pipe
             auto seg = new(mem) PipeReferencedSegment(f.seg, f.seg->data + f.offset, std::min(length - f.written, f.seg->length - f.offset));
@@ -257,8 +259,7 @@ async_def(
         }
         else
         {
-            auto& mon = *MemPoolGet<PipeReferencedSegment>()->WatchPointer();
-            if (!await_mask_not_timeout(mon, ~0u, mon, f.timeout))
+            if (!await_mempool_timeout(PipeReferencedSegment, f.timeout))
             {
                 break;
             }
@@ -294,6 +295,7 @@ async_def(
         ASSERT(from.rseg);
 
         PipeSegment* seg;
+        void* mem;
         if (!from.roff && from.rseg->length < length - f.written)
         {
             // transfer an entire segment from source to destination
@@ -301,7 +303,7 @@ async_def(
             seg->Reference();
             MYTRACEX("[%p] > [%p] MOVE: transfered entire %d byte segment %p", &from, &to, from.rseg->length, from.rseg);
         }
-        else if (auto mem = MemPoolAlloc<PipeReferencedSegment>())
+        else if ((mem = MemPoolAlloc<PipeReferencedSegment>()))
         {
             // reference part of source segment in the destination pipe
             seg = new(mem) PipeReferencedSegment(from.rseg, from.rseg->data + from.roff, std::min(length - f.written, from.rseg->length - from.roff));
@@ -309,8 +311,7 @@ async_def(
         }
         else
         {
-            auto& mon = *MemPoolGet<PipeReferencedSegment>()->WatchPointer();
-            if (!await_mask_not_timeout(mon, ~0u, mon, f.timeout))
+            if (!await_mempool_timeout(PipeReferencedSegment, f.timeout))
             {
                 break;
             }
@@ -453,6 +454,7 @@ async_def(
         // read initial data
         if (!await(ReaderRequire, 1, f.timeout))
         {
+            MYTRACE("RRU: no data");
             async_return(0);
         }
     }
@@ -463,13 +465,14 @@ async_def(
 
     for (;;)
     {
-        size_t remain = wpos - f.epos;
-        if (!remain)
+        size_t remain;
+        if (!(remain = (wpos - f.epos)))
         {
             // need more data
             await(ReaderRequire, f.epos - rpos + 1, f.timeout);
             if (!(remain = (wpos - f.epos)))
             {
+                MYTRACE("RRU: no data");
                 async_return(0);
             }
         }
@@ -486,7 +489,8 @@ async_def(
         while (remain)
         {
             size_t len = std::min(remain, f.seg->length - f.off);
-            if (auto p = (const uint8_t*)memchr(f.seg->data + f.off, b, len))
+            const uint8_t* p;
+            if ((p = (const uint8_t*)memchr(f.seg->data + f.off, b, len)))
             {
                 // found a match
                 f.epos += p - (f.seg->data + f.off) + 1;
@@ -522,14 +526,14 @@ async_def(
 
     while (f.read < length)
     {
-        auto avail = ReaderAvailable();
-        if (!avail)
+        size_t avail;
+        if (!(avail = ReaderAvailable()))
         {
             await(ReaderRequire, 1, f.timeout);
             if (!(avail = ReaderAvailable()))
                 break;
         }
-        f.read += Span(ReaderRead(data + f.read, std::min(length - f.read, ReaderAvailable()))).Length();
+        f.read += Span(ReaderRead(data + f.read, std::min(length - f.read, avail))).Length();
     }
 
     async_return(f.read);
@@ -539,7 +543,7 @@ async_end
 res_pair_t Pipe::ReaderRead(char* buffer, size_t count)
 {
     if (!count)
-        return Span(buffer, 0u);
+        return Span(buffer, size_t(0));
 
     ASSERT(rpos + count <= wpos);
     ASSERT(rseg);
@@ -586,7 +590,7 @@ res_pair_t Pipe::ReaderRead(char* buffer, size_t count)
             {
                 // all segments have been released
                 ASSERT(!count);
-                ASSERT(pwseg == &rseg);
+                ASSERT(!pwseg || pwseg == &rseg);
                 MYTRACE("R: all segments released");
                 rseg = NULL;
                 roff = woff = 0;
