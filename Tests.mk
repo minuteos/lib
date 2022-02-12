@@ -7,7 +7,9 @@
 #
 
 # Any source directory can contain tests
-TEST_DIRS = $(call subdirs,$(SOURCE_DIRS),tests)
+TEST_COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(TEST_COMPONENTS))
+TEST_SOURCE_DIRS = $(sort $(TEST_COMPONENT_DIRS))
+TEST_DIRS = $(call subdirs,$(TEST_SOURCE_DIRS),tests)
 TEST_SUITES = $(sort $(call subdirs,$(TEST_DIRS),*))
 
 # output directory for built tests

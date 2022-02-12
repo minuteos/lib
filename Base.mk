@@ -201,8 +201,6 @@ main: prebuild $(PRIMARY_OUTPUT) disassembly
 
 disassembly: $(OUTPUT).S $(OUTPUT).SS
 
-test: $(TESTRESULTS) $(TESTSUMMARY)
-
 objs: $(OBJS)
 
 prebuild:
