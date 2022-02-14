@@ -15,7 +15,7 @@
 class TestCase
 {
 public:
-    static bool RunAll();
+    static bool RunAll(int numFilters = 0, char** filters = NULL);
 
 protected:
     TestCase();
@@ -51,6 +51,7 @@ public:
     template<typename T> static void Print(T value) { Print(Span::Of(value)); }
 
 private:
+    bool Match(int numFilters, char** filters);
     bool Execute();
 
     static TestCase* s_first;
@@ -81,3 +82,7 @@ class TestCase_ ## id : public TestCase \
   virtual int Line() const final override { return __LINE__; } \
 } _tc_ ## id; \
 void TestCase_ ## id ::Run()
+
+#define async_test  { struct __AsyncTest
+#define async_test_init(...) __AsyncTest() : __VA_ARGS__ {}
+#define async_test_end test; ::kernel::Scheduler::Run(test, &decltype(test)::Run); }

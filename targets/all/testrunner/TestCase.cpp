@@ -24,12 +24,17 @@ TestCase::TestCase()
     s_last = this;
 }
 
-bool TestCase::RunAll()
+bool TestCase::RunAll(int argc, char** argv)
 {
     int passed = 0, failed = 0;
 
     for (auto tc = s_first; tc; tc = tc->next)
     {
+        if (!tc->Match(argc, argv))
+        {
+            continue;
+        }
+
         if (tc->Execute())
             failed++;
         else
@@ -38,6 +43,70 @@ bool TestCase::RunAll()
 
     printf("\nRan %d tests, %d passed, %d failed\n", passed + failed, passed, failed);
     return failed != 0;
+}
+
+bool TestCase::Match(int numFilters, char** filters)
+{
+    if (!numFilters)
+    {
+        return true;
+    }
+
+    auto name = Name();
+    auto nameLen = strlen(name);
+
+    for (int i = 0; i < numFilters; i++)
+    {
+        auto f = filters[i];
+        bool anyPrefix = f[0] == '*';
+        if (anyPrefix) { f++; }
+        auto len = strlen(f);
+        bool anySuffix = len && f[len - 1] == '*';
+        if (anySuffix) { len--; }
+
+        if (len > nameLen)
+        {
+            // if filter length is more than name length, it can never match
+            continue;
+        }
+
+        if (!anyPrefix && !anySuffix)
+        {
+            if (len == nameLen && !strcasecmp(name, f))
+            {
+                return true;
+            }
+        }
+        else if (!anyPrefix)
+        {
+            // prefix match
+            if (!strncasecmp(name, f, len))
+            {
+                return true;
+            }
+        }
+        else if (!anySuffix)
+        {
+            // suffix match
+            if (!strncasecmp(name + len - nameLen, f, len))
+            {
+                return true;
+            }
+        }
+        else
+        {
+            // any match
+            for (size_t i = 0; i < nameLen - len; i++)
+            {
+                if (!strncasecmp(name + i, f, len))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 bool TestCase::Execute()

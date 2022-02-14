@@ -8,5 +8,5 @@
 
 int main(int argc, char **argv)
 {
-    return TestCase::RunAll();
+    return TestCase::RunAll(argc - 1, argv + 1);
 }

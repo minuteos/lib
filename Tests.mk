@@ -22,6 +22,7 @@ TEST_OUTPUTS  := $(addprefix $(OUTTEST),$(TEST_SUITES))
 TEST_BINARIES := $(foreach t,$(TEST_OUTPUTS),$(addsuffix $(call dirname,$(t))$(PRIMARY_EXT),$t))
 TEST_RESULTS  := $(TEST_BINARIES:$(PRIMARY_EXT)=.testres)
 TEST_SUMMARY  := $(OUTTEST)summary.testres
+TEST_RUN_ARGS ?= $(TEST_FILTERS)
 
 $(TEST_SUMMARY): $(TEST_RESULTS)
 	@$(DATE) >$@
@@ -43,7 +44,7 @@ $(TEST_BINARIES):
 	$(info )
 	$(info *** Running test suite '$(patsubst $(OUTTEST)%,%,$(dir $@))')
 	$(info )
-	@$(TEST_RUN) $< 2>&1 | $(TEE) $@
+	$(TEST_RUN) $< $(TEST_RUN_ARGS) 2>&1 | $(TEE) $@
 
 .PHONY: tests test
 
