@@ -150,6 +150,9 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
     goto *(contptr_t*)RES_PAIR_SECOND(__prolog_res); \
     __start__: new(&f) __FRAME;
 
+//! Construction-time initialization of fields inside the async frame
+#define async_def_init(...) __FRAME() : __VA_ARGS__ {}
+
 //! Starts definition of a synchronous function using the async calling convention
 #define async_def_sync(...) { \
     struct __FRAME { \
