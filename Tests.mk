@@ -7,8 +7,13 @@
 #
 
 # Any source directory can contain tests
+ifeq (,$(TEST_COMPONENTS))
+TEST_SOURCE_DIRS = $(SOURCE_DIR)
+TEST_COMPONENT_OVERRIDE = "TEST_COMPONENT=$(COMPONENTS)"
+else
 TEST_COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(TEST_COMPONENTS))
 TEST_SOURCE_DIRS = $(sort $(TEST_COMPONENT_DIRS))
+endif
 TEST_DIRS = $(call subdirs,$(TEST_SOURCE_DIRS),tests)
 TEST_SUITES = $(sort $(call subdirs,$(TEST_DIRS),*))
 
@@ -38,13 +43,13 @@ $(TEST_BINARIES):
 	$(info )
 	$(info *** Building test suite '$(patsubst $(OUTTEST)%,%,$(dir $@))')
 	$(info )
-	@$(MAKE) -f $(BASE_DIR)Test.mk OUTDIR=$(dir $@) TEST=$(patsubst $(OUTTEST)%,%,$(dir $@)) main
+	@$(MAKE) -f $(BASE_DIR)Test.mk OUTDIR=$(dir $@) TEST=$(patsubst $(OUTTEST)%,%,$(dir $@)) $(TEST_COMPONENT_OVERRIDE) main
 
 %.testres: %$(PRIMARY_EXT)
 	$(info )
 	$(info *** Running test suite '$(patsubst $(OUTTEST)%,%,$(dir $@))')
 	$(info )
-	$(TEST_RUN) $< $(TEST_RUN_ARGS) 2>&1 | $(TEE) $@
+	@$(TEST_RUN) $< $(TEST_RUN_ARGS) 2>&1 | $(TEE) $@
 
 .PHONY: tests test
 

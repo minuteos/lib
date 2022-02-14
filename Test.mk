@@ -22,6 +22,7 @@ include $(BASE_DIR)Functions.mk
 NAME = $(call dirname,$(OUTDIR))
 TEST_COMPONENT = $(call dirname,$(call parentdir,$(call parentdir,$(dir $(TEST)))))
 COMPONENTS = testrunner $(TEST_COMPONENT)
+ADDITIONAL_TARGETS = test
 
 # test can request additional components to be included
 sinclude $(TEST)Include.mk

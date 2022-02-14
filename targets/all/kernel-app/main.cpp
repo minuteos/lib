@@ -10,6 +10,7 @@
 
 #include <kernel/kernel.h>
 
+#if !Ctestrunner
 int main()
 {
     if (!kernel::HardwareInit::Empty())
@@ -27,3 +28,4 @@ int main()
     DBGCL("kernel-app", "Starting main loop...");
     kernel::Scheduler::Main().Run();
 }
+#endif

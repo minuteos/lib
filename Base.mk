@@ -29,7 +29,7 @@ PROJECT_ROOT = $(call parentdir,$(BASE_DIR))
 
 # the host running the build is the default target
 TARGET ?= host
-TARGETS ?= $(TARGET)
+TARGETS ?= $(TARGET) $(ADDITIONAL_TARGETS)
 
 # default configuration is release
 CONFIG ?= Release
