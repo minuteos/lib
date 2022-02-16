@@ -17,6 +17,8 @@ class TestCase
 public:
     static bool RunAll(int numFilters = 0, char** filters = NULL);
 
+    static TestCase* Active() { return s_cur; }
+
 protected:
     TestCase();
     virtual void Run() = 0;
@@ -38,6 +40,7 @@ public:
     static void _Fail(int line, const char* reason);
     static void _Fail(int line, const char* format, ...);
     static void _Fail(int line, std::function<void(void)> reasonPrint);
+    static void _Done() { s_cur = NULL; }
 
     static void Print(const char* text) { printf("%s", text); }
     static void Print(int value) { printf("%d", value); }
@@ -85,4 +88,11 @@ void TestCase_ ## id ::Run()
 
 #define async_test  { struct __AsyncTest
 #define async_test_init(...) __AsyncTest() : __VA_ARGS__ {}
-#define async_test_end test; ::kernel::Scheduler::Run(test, &decltype(test)::Run); }
+#define async_test_end ; \
+    struct __TestRunner { \
+        __AsyncTest test; \
+        async(Run) async_def() { await(test.Run); _Done(); } async_end \
+    } test; \
+    ::kernel::Scheduler::Main().Add(test, &__TestRunner::Run); \
+    ::kernel::Scheduler::Main().Run(); \
+}

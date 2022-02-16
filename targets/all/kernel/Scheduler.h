@@ -92,54 +92,6 @@ public:
     //! Executes the scheduled tasks
     mono_t Run();
 
-    //! Runs a task on a temporary scheduler synchronously
-    ALWAYS_INLINE static mono_t Run(async_fptr_t fn)
-    {
-        Scheduler sch;
-        sch.Add(fn);
-        return sch.Run();
-    }
-
-    //! Runs a task on a temporary scheduler synchronously
-    ALWAYS_INLINE static mono_t Run(AsyncDelegate<> fn)
-    {
-        Scheduler sch;
-        sch.Add(fn);
-        return sch.Run();
-    }
-
-    //! Runs a task on a temporary scheduler synchronously
-    template<typename... Args, typename... AArgs> ALWAYS_INLINE static mono_t Run(async_fptr_args_t<Args...> fn, AArgs&&... args)
-    {
-        Scheduler sch;
-        sch.Add(fn, std::forward<AArgs>(args)...);
-        return sch.Run();
-    }
-
-    //! Runs a task on a temporary scheduler synchronously
-    template<typename... Args, typename... AArgs> ALWAYS_INLINE static mono_t Run(AsyncDelegate<Args...> fn, AArgs&&... args)
-    {
-        Scheduler sch;
-        sch.Add(fn, std::forward<AArgs>(args)...);
-        return sch.Run();
-    }
-
-    //! Runs a task on a temporary scheduler synchronously
-    template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE static mono_t Run(T& target, async_methodptr_t<T, Args...> method, AArgs&&... args)
-    {
-        Scheduler sch;
-        sch.Add(target, method, std::forward<AArgs>(args)...);
-        return sch.Run();
-    }
-
-    //! Runs a task on a temporary scheduler synchronously
-    template<typename T, typename... Args, typename... AArgs> ALWAYS_INLINE static mono_t Run(T* target, async_methodptr_t<T, Args...> method, AArgs&&... args)
-    {
-        Scheduler sch;
-        sch.Add(target, method, std::forward<AArgs>(args)...);
-        return sch.Run();
-    }
-
 #if !KERNEL_SYNC_ONLY
     //! Retrieves current monotonic time used by the scheduler
     static ALWAYS_INLINE mono_t CurrentTime() { return MONO_CLOCKS; }
