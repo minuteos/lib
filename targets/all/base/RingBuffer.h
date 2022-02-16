@@ -52,6 +52,7 @@ protected:
     static bool WriteImpl(const void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
     RES_PAIR_DECL(DequeueImpl, bool peek);
     static RES_PAIR_DECL(ReadImpl, void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
+    static void SkipImpl(size_t length, uint8_t*& p, RingBufferBase* ring);
     RES_PAIR_DECL(ChunkImpl, uint8_t* p, size_t skip, size_t length);
     RES_PAIR_DECL(Chunk2Impl, uint8_t* p, size_t skip, size_t length);
 
@@ -88,6 +89,8 @@ public:
     friend class RingBufferWriter;
 };
 
+class RingBufferWriter;
+
 class RingBufferReader : public RingBufferAccessor
 {
     size_t length;
@@ -100,12 +103,23 @@ public:
         : length(0) {}
 
     constexpr size_t Available() const { return length; }
+    constexpr RingBufferWriter MakeWriter() const;
 
     ALWAYS_INLINE Buffer Read(Buffer data)
     {
         Buffer res = RingBufferBase::ReadImpl(data.Pointer(), std::min(length, data.Length()), p, ring);
         length -= res.Length();
         return res;
+    }
+
+    //! Skips the specified number of bytes in the buffer
+    ALWAYS_INLINE size_t Skip(size_t skip)
+    {
+        if (!ring) return false;
+        if (skip > length) { skip = length; }
+        length -= skip;
+        RingBufferBase::SkipImpl(skip, p, ring);
+        return skip;
     }
 
     ALWAYS_INLINE Span Chunk(size_t skip = 0) const { return ring->ChunkImpl(p, skip, length); }
@@ -127,7 +141,7 @@ public:
         : length(0) {}
 
     constexpr size_t Available() const { return length; }
-    constexpr RingBufferReader MakeReader() const { return RingBufferReader(*this); }
+    constexpr RingBufferReader MakeReader() const;
 
     //! Writes data to the buffer, returns @ref true on success
     ALWAYS_INLINE bool Write(Span data)
@@ -153,11 +167,24 @@ public:
         return true;
     }
 
+    //! Skips the specified number of bytes in the buffer
+    ALWAYS_INLINE size_t Skip(size_t skip)
+    {
+        if (!ring) return 0;
+        if (skip > length) { skip = length; }
+        length -= skip;
+        RingBufferBase::SkipImpl(skip, p, ring);
+        return skip;
+    }
+
     static void FormatOutput(void* context, char ch);
 
     template<size_t> friend class RingBuffer;
     friend class RingBufferReader;
 };
+
+constexpr RingBufferWriter RingBufferReader::MakeWriter() const { return *(RingBufferWriter*)this; }
+constexpr RingBufferReader RingBufferWriter::MakeReader() const { return *(RingBufferReader*)this; }
 
 template<size_t TSize> class RingBuffer : RingBufferBase
 {

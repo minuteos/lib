@@ -107,6 +107,19 @@ res_pair_t RingBufferBase::ReadImpl(void* buffer, size_t len, uint8_t*& p, RingB
     return Buffer(buffer, dst);
 }
 
+void RingBufferBase::SkipImpl(size_t skip, uint8_t*& p, RingBufferBase* ring)
+{
+    if (ring)
+    {
+        auto pNew = p + skip;
+        if (pNew > ring->end)
+        {
+            pNew -= ring->end - ring->data;
+        }
+        p = pNew;
+    }
+}
+
 res_pair_t RingBufferBase::ChunkImpl(uint8_t* p, size_t skip, size_t length)
 {
     if (skip >= length || p + skip >= end)
