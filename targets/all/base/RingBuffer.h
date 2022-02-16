@@ -162,7 +162,7 @@ public:
 template<size_t TSize> class RingBuffer : RingBufferBase
 {
 public:
-    RingBuffer() : RingBufferBase(_data, sizeof(_data)) {}
+    RingBuffer() : RingBufferBase((uint8_t*)_data, sizeof(_data)) {}
 
     //! Checks if the buffer is empty
     constexpr bool IsEmpty() const { return read == write; }
@@ -185,7 +185,7 @@ public:
 
 #if Ckernel
     //! Waits until there is a record in the buffer
-    async(HasData) async_def_once() { await_mask_not(read, ~0u, write); } async_end
+    async(HasData) async_def_once() { await_mask_not(write, ~0u, read); } async_end
 #endif
 
 private:
