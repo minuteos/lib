@@ -15,5 +15,6 @@
 class _RTCC
 {
 public:
-    uint32_t Time() const { return MONO_CLOCKS / MONO_FREQUENCY; }
+    uint32_t Time(bool offset = false) const { return MONO_CLOCKS / MONO_FREQUENCY; }
+    uint32_t TimeOffset() const { return 0; }
 };
