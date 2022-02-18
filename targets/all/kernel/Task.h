@@ -16,6 +16,17 @@
 namespace kernel
 {
 
+#if KERNEL_STATS
+
+struct _TaskStats
+{
+    int ticks, cycles, maxCycles;
+    int delays, delayChecks, delayEnds;
+    int waits, waitChecks, waitEnds, waitTimeouts;
+};
+
+#endif
+
 //! Representation of a single task
 class Task
 {
@@ -29,16 +40,18 @@ private:
     AsyncFrame* top;    //!< Pointer to the topmost frame of the async stack
     AsyncDelegate<> fn; //!< Function implmenting the task
     Delegate<void, intptr_t> onComplete; //!< Delegate called on completion
-
+#if KERNEL_STATS && KERNEL_STATS_PER_TASK
+    _TaskStats stats;
+#endif
     struct
     {
 #if !KERNEL_SYNC_ONLY
         mono_t until;           //!< Instant when the wait will be over
 #endif
-        bool cont : 1;          //!< Indicates that the next wait should continue immediately after the time in the @ref until field
-        bool invert : 1;        //!< Wait condition is inverted, i.e. we're waiting for the value to be other than @ref expect
-        bool acquire : 1;       //!< Task should acquire the masked bits (invert them) when the masked value matches @expect
-        bool dynamic : 1;       //!< Task has been allocated dynamically (not wait related)
+        bool cont;          //!< Indicates that the next wait should continue immediately after the time in the @ref until field
+        bool invert;        //!< Wait condition is inverted, i.e. we're waiting for the value to be other than @ref expect
+        bool acquire;       //!< Task should acquire the masked bits (invert them) when the masked value matches @expect
+        bool dynamic;       //!< Task has been allocated dynamically (not wait related)
         uintptr_t mask;         //!< Mask of bits which are checked in the byte pointed to by @ref ptr
         uintptr_t expect;       //!< Value expected at @ref ptr (after applying @ref mask)
         uintptr_t* ptr;         //!< Pointer to the value on which the task is waiting

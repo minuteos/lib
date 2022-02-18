@@ -54,6 +54,18 @@
 #define PLATFORM_DEEP_SLEEP_ENABLED() (0)
 #endif
 
+#if KERNEL_STATS
+#ifndef PLATFORM_CYCLE_COUNT
+#warning "'kernel/platform.h' did not provide PLATFORM_CYCLE_COUNT macro, but statistics are enabled; cycle counts will be missing"
+#define PLATFORM_CYCLE_COUNT 0
+#endif
+
+#if !defined(PLATFORM_WAKE_REASON_COUNT)
+#warning "'kernel/platform.h' did not provide PLATFORM_WAKE_REASON(_COUNT) macro, but statistics are enabled; wake reasons will not be reported"
+#define PLATFORM_WAKE_REASON_COUNT 0
+#endif
+#endif
+
 #include <type_traits>
 #include <limits>
 

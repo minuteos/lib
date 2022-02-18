@@ -80,8 +80,87 @@ mono_t Scheduler::Run()
     auto previousScheduler = s_current;
     s_current = this;
 
+#if KERNEL_STATS
+    struct : _TaskStats
+    {
+        mono_t t0;
+        uint32_t t0cyc;
+        int gticks, completions;
+        int sleepStarts, sleepAborts;
+    } stats = {};
+#if PLATFORM_WAKE_REASON_COUNT
+    uint16_t wakeReason[PLATFORM_WAKE_REASON_COUNT] = {};
+#endif
+
+    stats.t0 = MONO_CLOCKS;
+    stats.t0cyc = PLATFORM_CYCLE_COUNT;
+#if KERNEL_STATS_PER_TASK
+#define STAT_ADD(stat, n) ({ task->stats.stat += (n); stats.stat += (n); })
+#else
+#define STAT_ADD(stat, n) ({ stats.stat += (n); })
+#endif
+#define STAT_ADDG(stat, n) ({ stats.stat += (n); })
+#else
+#define STAT_ADD(...)
+#define STAT_ADDG(...)
+#endif
+
+#define STAT_INC(stat)  STAT_ADD(stat, 1)
+#define STAT_INCG(stat)  STAT_ADDG(stat, 1)
+
     for (;;)
     {
+        Task** pNext;
+        Task* task;
+
+#if KERNEL_STATS
+        if (MONO_CLOCKS - stats.t0 >= MONO_FREQUENCY)
+        {
+            // dump stats
+            auto t0 = stats.t0 + MONO_FREQUENCY;
+            auto cyc = PLATFORM_CYCLE_COUNT;
+            DBGCL("kstat", "ticks: %d, cycles: %d, taskTicks: %d, taskCycles: %d, taskCompletions: %d", stats.gticks, cyc - stats.t0cyc, stats.ticks, stats.cycles, stats.completions);
+            DBGCL("kstat", "delays: %d, checks: %d, ends: %d", stats.delays, stats.delayChecks, stats.delayEnds);
+            DBGCL("kstat", "waits: %d, checks: %d, ends: %d, timeouts: %d", stats.waits, stats.waitChecks, stats.waitEnds, stats.waitTimeouts);
+            DBGC("kstat", "sleeps: %d, aborts: %d", stats.sleepStarts, stats.sleepAborts);
+#if PLATFORM_WAKE_REASON_COUNT
+            for (size_t i = 0; i < countof(wakeReason); i++)
+            {
+                if (wakeReason[i])
+                {
+                    _DBG(", w%d: %d", i, wakeReason[i]);
+                    wakeReason[i] = 0;
+                }
+            }
+#endif
+            _DBGCHAR('\n');
+            stats = {};
+            stats.t0 = t0;
+            stats.t0cyc = cyc;
+
+#if KERNEL_STATS_PER_TASK
+            for (task = active; task; task = task->next)
+            {
+                auto& s = task->stats;
+                DBGCL("kstat", "%c %X %X: %d %d %d D: %d %d %d W: %d %d %d %d", 'A', task, ((intptr_t*)&task->fn)[1], s.ticks, s.cycles, s.maxCycles, s.delays, s.delayChecks, s.delayEnds, s.waits, s.waitChecks, s.waitEnds, s.waitTimeouts);
+                s = {};
+            }
+            for (task = delayed; task; task = task->next)
+            {
+                auto& s = task->stats;
+                DBGCL("kstat", "%c %X %X: %d %d %d D: %d %d %d W: %d %d %d %d", 'D', task, ((intptr_t*)&task->fn)[1], s.ticks, s.cycles, s.maxCycles, s.delays, s.delayChecks, s.delayEnds, s.waits, s.waitChecks, s.waitEnds, s.waitTimeouts);
+                s = {};
+            }
+            for (task = waiting; task; task = task->next)
+            {
+                auto& s = task->stats;
+                DBGCL("kstat", "%c %X %X: %d %d %d D: %d %d %d W: %d %d %d %d WP: %X", 'W', task, ((intptr_t*)&task->fn)[1], s.ticks, s.cycles, s.maxCycles, s.delays, s.delayChecks, s.delayEnds, s.waits, s.waitChecks, s.waitEnds, s.waitTimeouts, task->wait.ptr);
+                s = {};
+            }
+#endif
+        }
+#endif
+        STAT_INCG(gticks);
 #ifdef PLATFORM_WATCHDOG_HIT
         PLATFORM_WATCHDOG_HIT();
 #endif
@@ -91,15 +170,31 @@ mono_t Scheduler::Run()
         mono_signed_t maxSleep = MONO_SIGNED_MAX;
         mono_signed_t sleep;
 #endif
-        Task** pNext;
-        Task* task;
 
         // first process active tasks
         pNext = &active;
         while ((task = *pNext))
         {
+            STAT_INCG(ticks);
             current = task;
+#if KERNEL_STATS
+            int cyc = -PLATFORM_CYCLE_COUNT;
+#endif
             auto res = task->fn(&task->top);
+#if KERNEL_STATS
+            cyc += PLATFORM_CYCLE_COUNT;
+            STAT_ADD(cycles, cyc);
+            if (stats.maxCycles < cyc)
+            {
+                stats.maxCycles = cyc;
+            }
+#if KERNEL_STATS_PER_TASK
+            if (task->stats.maxCycles < cyc)
+            {
+                task->stats.maxCycles = cyc;
+            }
+#endif
+#endif
             auto type = _ASYNC_RES_TYPE(res);
             auto value = _ASYNC_RES_VALUE(res);
 
@@ -107,6 +202,7 @@ mono_t Scheduler::Run()
             {
                 // task has finished
                 case AsyncResult::Complete:
+                    STAT_INCG(completions);
                     *pNext = task->next;
                     if (task->onComplete)
                     {
@@ -133,6 +229,7 @@ mono_t Scheduler::Run()
                 // unconditional sleep (delay)
                 case AsyncResult::DelayTimeout...AsyncResult::DelayMilliseconds:
                 {
+                    STAT_INC(delays);
                     if (type == AsyncResult::DelayUntil)
                     {
                         task->wait.cont = true;
@@ -183,6 +280,7 @@ mono_t Scheduler::Run()
                 // waiting for multiple tasks to finish
                 case AsyncResult::WaitMultiple:
                 {
+                    STAT_INC(waits);
                     AsyncFrame* f = task->wait.frame = (AsyncFrame*)value;
                     task->wait.ptr = &f->children;
                     task->wait.expect = 0;
@@ -201,6 +299,7 @@ mono_t Scheduler::Run()
                 // waiting for a value to change
                 case AsyncResult::Wait...AsyncResult::_WaitEnd:
                 {
+                    STAT_INC(waits);
                     AsyncFrame* f = (AsyncFrame*)value;
                     task->wait.ptr = f->waitPtr;
                     if (type && AsyncResult::_WaitSignalMask)
@@ -277,11 +376,13 @@ mono_t Scheduler::Run()
         pNext = &delayed;
         while ((task = *pNext))
         {
+            STAT_INC(delayChecks);
             mono_signed_t sleep = task->wait.until - t;
 
             if (sleep <= 0)
             {
                 // return the task to the active queue
+                STAT_INC(delayEnds);
                 *pNext = task->next;
                 task->next = active;
                 active = task;
@@ -325,6 +426,7 @@ mono_t Scheduler::Run()
         pNext = &waiting;
         while ((task = *pNext))
         {
+            STAT_INC(waitChecks);
             if (((*task->wait.ptr & task->wait.mask) == task->wait.expect) != task->wait.invert)
             {
 #if !KERNEL_SYNC_ONLY
@@ -336,6 +438,7 @@ mono_t Scheduler::Run()
                 }
 #endif
 
+                STAT_INC(waitEnds);
                 if (task->wait.acquire)
                 {
                     *task->wait.ptr ^= task->wait.mask;
@@ -366,6 +469,7 @@ mono_t Scheduler::Run()
                     }
 
                     // return the task to the active queue, set timeout result
+                    STAT_INC(waitTimeouts);
                     *pNext = task->next;
                     task->next = active;
                     task->wait.frame->waitResult = false;
@@ -387,11 +491,13 @@ mono_t Scheduler::Run()
 #if !KERNEL_SYNC_ONLY
         if (maxSleep > 0)
         {
+            STAT_INCG(sleepStarts);
             // go to sleep
             for (auto callback : preSleep.Manipulate())
             {
                 if (callback.Element()(t, maxSleep))
                 {
+                    STAT_INCG(sleepAborts);
                     callback.Remove();
                     goto noSleep;
                 }
@@ -399,11 +505,22 @@ mono_t Scheduler::Run()
                 maxSleep -= timeSpent;
                 if (maxSleep <= 0)
                 {
+                    STAT_INCG(sleepAborts);
                     goto noSleep;
                 }
                 t += timeSpent;
             }
             PLATFORM_SLEEP(t, maxSleep);
+
+#if KERNEL_STATS && PLATFORM_WAKE_REASON_COUNT
+            {
+                auto reason = PLATFORM_WAKE_REASON;
+                if (reason >= 0 && reason < PLATFORM_WAKE_REASON_COUNT)
+                {
+                    wakeReason[reason]++;
+                }
+            }
+#endif
 noSleep:
             PLATFORM_ENABLE_INTERRUPTS();
         }
