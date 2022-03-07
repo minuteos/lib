@@ -8,20 +8,25 @@
 # Defines macro APP_VERSION via version tags in git
 #
 
-GIT_DESCRIBE := $(subst -, ,$(shell git describe --tags --match="v*"))
+GIT_DESCRIBE := $(subst -, ,$(shell git describe --tags --match="v*" --long --dirty --abbrev=8))
 
 GIT_DESCRIBE_TAG = $(word 1,$(GIT_DESCRIBE))
 GIT_DESCRIBE_DISTANCE = $(word 2,$(GIT_DESCRIBE))
 GIT_DESCRIBE_COMMIT = $(patsubst g%,%,$(word 3,$(GIT_DESCRIBE)))
+GIT_DESCRIBE_DIRTY = $(word 4,$(GIT_DESCRIBE))
 
 ifneq (,$(GIT_DESCRIBE_COMMIT))
-  DEFINES += APP_VERSION_COMMIT=$(GIT_DESCRIBE_COMMIT)
+  DEFINES += APP_VERSION_COMMIT=$(GIT_DESCRIBE_COMMIT) APP_VERSION_COMMIT_32=0x$(GIT_DESCRIBE_COMMIT)uL
 endif
 
 GIT_APP_VERSION = $(patsubst v%,%,$(GIT_DESCRIBE_TAG))
 
-ifneq (,$(GIT_DESCRIBE_DISTANCE))
+ifneq (0,$(GIT_DESCRIBE_DISTANCE))
   GIT_APP_VERSION := $(GIT_APP_VERSION).$(GIT_DESCRIBE_DISTANCE)
+endif
+
+ifneq (,$(GIT_DESCRIBE_DIRTY))
+  DEFINES += APP_VERSION_DIRTY=1
 endif
 
 GIT_APP_VERSION_PARTS = $(subst ., ,$(GIT_APP_VERSION))
