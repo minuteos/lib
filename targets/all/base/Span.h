@@ -252,7 +252,10 @@ public:
 
     //! Checks if the content of the Span is all zeroes
     ALWAYS_INLINE bool IsAllZeroes() const { return IsAll(*this, 0); }
+    //! Checks if the content of the Span is all ones
     ALWAYS_INLINE bool IsAllOnes() const { return IsAll(*this, ~0u); }
+    //! Checks if all the bytes in the Span have the specified value
+    ALWAYS_INLINE bool IsAll(uint8_t value) const { return IsAll(*this, value | value << 8 | value << 16 | value << 24); }
 
 private:
     static RES_PAIR_DECL(Sub, Span s, size_t start, size_t len);
