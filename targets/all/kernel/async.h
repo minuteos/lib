@@ -18,6 +18,8 @@
 
 #include <kernel/Timeout.h>
 
+#include <new>
+
 typedef const void* contptr_t;  //!< Pointer to the next instruction to be executed
 typedef res_pair_t async_res_t; //!< Intermediate result tuple (type and associated value) of asynchronous function execution
 
