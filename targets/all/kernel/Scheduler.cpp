@@ -195,8 +195,9 @@ mono_t Scheduler::Run()
             }
 #endif
 #endif
-            auto type = _ASYNC_RES_TYPE(res);
-            auto value = _ASYNC_RES_VALUE(res);
+            auto unpacked = unpack<_async_res_t>(res);
+            auto type = unpacked.type;
+            auto value = unpacked.value;
 
             switch (type)
             {

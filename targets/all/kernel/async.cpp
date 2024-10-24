@@ -11,20 +11,20 @@
 #include <kernel/kernel.h>
 
 //! Prolog allocation of a frame from a memory pool
-NO_INLINE RES_PAIR_DECL_ATTRIBUTE async_res_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* spec)
+NO_INLINE async_prolog_t _async_prolog_pool(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     AsyncFrame* f = *pCallee = (AsyncFrame*)spec->pool->Alloc();
     f->spec = spec;
-    return _ASYNC_RES(f, spec->start);
+    return pack<_async_prolog_t>(f, spec->start);
 }
 
 //! Prolog allocation of an oversized frame dynamically using @ref malloc
-NO_INLINE RES_PAIR_DECL_ATTRIBUTE async_res_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpec* spec)
+NO_INLINE async_prolog_t _async_prolog_dynamic(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     AsyncFrame* f = *pCallee = (AsyncFrame*)malloc(spec->frameSize);
     memset(f, 0, spec->frameSize);
     f->spec = spec;
-    return _ASYNC_RES(f, spec->start);
+    return pack<_async_prolog_t>(f, spec->start);
 }
 
 /*!
@@ -34,10 +34,10 @@ NO_INLINE RES_PAIR_DECL_ATTRIBUTE async_res_t _async_prolog_dynamic(AsyncFrame**
  * Returns a tuple containing the called frame pointer and
  * continuation address
  */
-NO_INLINE async_res_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec)
+NO_INLINE async_prolog_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec)
 {
     if (auto f = *pCallee)
-        return _ASYNC_RES(f, f->cont);
+        return pack<_async_prolog_t>(f, f->cont);
     else if (spec->pool)
         return _async_prolog_pool(pCallee, spec);
     else

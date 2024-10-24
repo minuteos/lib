@@ -13,7 +13,6 @@
 #include <base/base.h>
 
 #include <base/MemPool.h>
-#include <base/ResultPair.h>
 #include <base/Delegate.h>
 
 #include <kernel/Timeout.h>
@@ -21,7 +20,6 @@
 #include <new>
 
 typedef const void* contptr_t;  //!< Pointer to the next instruction to be executed
-typedef res_pair_t async_res_t; //!< Intermediate result tuple (type and associated value) of asynchronous function execution
 
 //!< State of asynchronous function execution
 enum struct AsyncResult : intptr_t
@@ -53,12 +51,28 @@ enum struct AsyncResult : intptr_t
     _WaitEnd = 0x17
 };
 
+struct _async_res_t {
+    intptr_t value;
+    AsyncResult type;
+};
+
+typedef Packed<_async_res_t> async_res_t; //!< Intermediate result tuple (type and associated value) of asynchronous function execution
+
+struct AsyncFrame;
+
+struct _async_prolog_t {
+    AsyncFrame* frame;
+    contptr_t cont;
+};
+
+typedef Packed<_async_prolog_t> async_prolog_t;
+
 //! Extracts the value from the result tuple
-#define _ASYNC_RES_VALUE(res)    RES_PAIR_FIRST(res)
+#define _ASYNC_RES_VALUE(res)    (unpack<_async_res_t>(res).value)
 //! Extracts the execution type from the result tuple
-#define _ASYNC_RES_TYPE(res)     ((AsyncResult)RES_PAIR_SECOND(res))
+#define _ASYNC_RES_TYPE(res)     (unpack<_async_res_t>(res).type)
 //! Creates an asynchronous result tuple
-#define _ASYNC_RES(value, type)  RES_PAIR(value, type)
+#define _ASYNC_RES(value, type)  (pack<_async_res_t>(intptr_t(value), type))
 //! Filters the asynchronous result type for a set of flags
 constexpr static AsyncResult operator &(AsyncResult type, AsyncResult flag)
 {
@@ -96,20 +110,20 @@ struct AsyncFrame
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
     //! Prepares the frame for a wait operation
-    RES_PAIR_DECL_ATTRIBUTE async_res_t _prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect);
+    async_res_t _prepare_wait(AsyncResult type, uintptr_t mask, uintptr_t expect);
     //! Prepares the frame for a byte wait operation
-    RES_PAIR_DECL_ATTRIBUTE async_res_t _prepare_wait(AsyncResult type);
+    async_res_t _prepare_wait(AsyncResult type);
     //! Decrements the running child count
     void _child_completed(intptr_t res);
 };
 
 //! Asynchronous function prolog
-extern RES_PAIR_DECL(_async_prolog, AsyncFrame** pCallee, const AsyncSpec* spec);
+extern async_prolog_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec);
 //! Asynchronous function epilog
-extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
+extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 
 //! Declaration of an async function
-#define async(name, ...)    RES_PAIR_DECL_ATTRIBUTE async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
+#define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
 
 //! Implementation of a function with async interface that actually forwards to another async function
 /*!
@@ -146,10 +160,10 @@ extern RES_PAIR_DECL(_async_epilog, AsyncFrame** pCallee, intptr_t result);
         void __requireContinue(void* cont) { __async.cont = cont; } \
         __VA_ARGS__; }; \
     static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
-    auto __prolog_res = _async_prolog(__pCallee, &__spec); \
-    __FRAME& f = *(__FRAME*)RES_PAIR_FIRST(__prolog_res); \
+    auto __prolog_res = unpack<_async_prolog_t>(_async_prolog(__pCallee, &__spec)); \
+    __FRAME& f = *(__FRAME*)__prolog_res.frame; \
     AsyncFrame& __async = f.__async; \
-    goto *(contptr_t*)RES_PAIR_SECOND(__prolog_res); \
+    goto *__prolog_res.cont; \
     __start__: new(&f) __FRAME;
 
 //! Construction-time initialization of fields inside the async frame
@@ -333,9 +347,10 @@ next: __async.waitResult; })
     __label__ next; \
     f.__requireContinue(&&next); \
 next: \
-    auto res = fn(&__async.callee, ## __VA_ARGS__); \
-    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; \
-    _ASYNC_RES_VALUE(res); })
+    auto _res = fn(&__async.callee, ## __VA_ARGS__); \
+    auto res = unpack<_async_res_t>(_res); \
+    if (res.type != AsyncResult::Complete) return _res; \
+    res.value; })
 
 //! Spawns multiple tasks and awaits completion of all
 #define await_all(...) ({ \

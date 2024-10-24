@@ -11,7 +11,7 @@
 
 #include <ctype.h>
 
-res_pair_t Span::Sub(Span s, size_t start, size_t length)
+Span::packed_t Span::Sub(Span s, size_t start, size_t length)
 {
     if (start > s.len)
         start = s.len;
@@ -20,7 +20,7 @@ res_pair_t Span::Sub(Span s, size_t start, size_t length)
     return Span(s.p + start, length);
 }
 
-res_pair_t Span::Slice(Span s, int start, int end)
+Span::packed_t Span::Slice(Span s, int start, int end)
 {
     if (end < 0)
         end += s.len;
@@ -42,7 +42,7 @@ res_pair_t Span::Slice(Span s, int start, int end)
     return Span(s.p + start, end - start);
 }
 
-res_pair_t Span::Split(Span& s, char sep)
+Span::packed_t Span::Split(Span& s, char sep)
 {
     for (size_t i = 0; i < s.len; i++)
     {
@@ -57,7 +57,7 @@ res_pair_t Span::Split(Span& s, char sep)
     return Span();
 }
 
-res_pair_t Span::Consume(Span& s, char sep)
+Span::packed_t Span::Consume(Span& s, char sep)
 {
     size_t i;
     auto p = s.p;
@@ -216,7 +216,7 @@ bool Span::IsAll(Span s, uint32_t val)
     return true;
 }
 
-res_pair_t Buffer::FormatImpl(char* buf, size_t len, const char* format, va_list va)
+Buffer::packed_t Buffer::FormatImpl(char* buf, size_t len, const char* format, va_list va)
 {
     format_write_info fwi = { buf, buf + len };
     vformat(format_output_mem, &fwi, format, va);

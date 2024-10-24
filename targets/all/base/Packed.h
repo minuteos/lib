@@ -15,77 +15,57 @@
 
 #include <base/base.h>
 
-template<typename T, size_t size = sizeof(T)> union PackedWrapper
+template<typename T, size_t size = sizeof(T)> class _Packed
 {
-    typedef T packed_t;
-    T value;
-    packed_t packed;
+    using packed_t = T;
 };
 
-#if __ARM_PCS
+template<typename T, size_t size = sizeof(T)> using Packed = typename _Packed<T, size>::packed_t;
 
-// actual packing is used only with the ARM Procedure Call Standard
-template<typename T> union PackedWrapper<T, 4>
+#if __ARM_PCS || __ARM_PCS_VFP
+
+template<typename T> struct _Packed<T, 4>
 {
-    typedef uint32_t __attribute__((vector_size(4))) packed_t;
-    T value;
-    packed_t packed;
+    enum struct packed_t : uint32_t {};
 };
 
-template<typename T> union PackedWrapper<T, 8>
+template<typename T> struct _Packed<T, 8>
 {
-    typedef uint32_t __attribute__((vector_size(8))) packed_t;
-    T value;
-    packed_t packed;
+    enum struct packed_t : uint64_t {};
 };
 
-template<typename T> union PackedWrapper<T, 12>
+template<typename T> struct _Packed<T, 12>
 {
     typedef uint32_t __attribute__((vector_size(16))) packed_t;
-    T value;
-    packed_t packed;
 };
 
-template<typename T> union PackedWrapper<T, 16>
+template<typename T> struct _Packed<T, 16>
 {
     typedef uint32_t __attribute__((vector_size(16))) packed_t;
-    T value;
-    packed_t packed;
-};
-
-#elif __ARM_PCS_VFP
-
-template<typename T> union PackedWrapper<T, 8>
-{
-    typedef struct { uint64_t value; } packed_t;
-    T value;
-    packed_t packed;
 };
 
 #endif
 
-template<typename T> using Packed = typename PackedWrapper<T>::packed_t;
+template<typename T> union PackedWrapper
+{
+    T value;
+    Packed<T> packed;
+};
 
 template<typename T>
-ALWAYS_INLINE static constexpr T& unpack(Packed<T>& packed)
+ALWAYS_INLINE static constexpr T unpack(const Packed<T>& packed)
 {
-    return unsafe_cast<T>(packed);
+    return PackedWrapper<T>{ .packed = packed }.value;
+}
+
+template<typename T, typename... Initializers>
+ALWAYS_INLINE static constexpr Packed<T> pack(Initializers... init)
+{
+    return PackedWrapper<T>{ .value = { init... } }.packed;
 }
 
 template<typename T>
-ALWAYS_INLINE static constexpr const T& unpack(const Packed<T>& packed)
+ALWAYS_INLINE static constexpr Packed<T> pack(const T& init)
 {
-    return unsafe_cast<T>(packed);
-}
-
-template<typename T>
-ALWAYS_INLINE static constexpr Packed<T>& pack(T& value)
-{
-    return unsafe_cast<Packed<T>>(value);
-}
-
-template<typename T>
-ALWAYS_INLINE static constexpr const Packed<T>& pack(const T& value)
-{
-    return unsafe_cast<Packed<T>>(value);
+    return PackedWrapper<T>{ .value = init }.packed;
 }

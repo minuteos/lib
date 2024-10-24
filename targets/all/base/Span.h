@@ -12,7 +12,7 @@
 
 #include <base/base.h>
 
-#include <base/ResultPair.h>
+#include <base/Packed.h>
 
 #include <algorithm>
 
@@ -30,6 +30,10 @@ class Buffer;
  */
 class Span
 {
+public:
+    using packed_t = Packed<Span, sizeof(intptr_t)*2>;
+
+private:
     union
     {
         struct
@@ -37,7 +41,7 @@ class Span
             const char* p;
             size_t len;
         };
-        res_pair_t pair;
+        packed_t packed;
     };
 
 public:
@@ -58,10 +62,10 @@ public:
         ASSERT(literal[n - 1] == 0);
     }
 
-    //! Constructs a Span from a @ref res_pair_t - used to force passing of return values via registers
-    ALWAYS_INLINE constexpr Span(res_pair_t pair) : pair(pair) {}
-    //! Converts a Span to a @ref res_pair_t - used to force passing of return values via registers
-    ALWAYS_INLINE constexpr operator res_pair_t() const { return pair; }
+    //! Constructs a Span from a @ref packed_t - used to force passing of return values via registers
+    constexpr Span(packed_t packed) : packed(packed) {}
+    //! Converts a Span to a @ref packed_t - used to force passing of return values via registers
+    ALWAYS_INLINE constexpr operator packed_t() const { return packed; }
 
     //! Gets the pointer to the beginning of the Span
     ALWAYS_INLINE constexpr const char* Pointer() const { return p; }
@@ -258,11 +262,11 @@ public:
     ALWAYS_INLINE bool IsAll(uint8_t value) const { return IsAll(*this, value | value << 8 | value << 16 | value << 24); }
 
 private:
-    static RES_PAIR_DECL(Sub, Span s, size_t start, size_t len);
-    static RES_PAIR_DECL(Slice, Span s, int start, int end);
+    static packed_t Sub(Span s, size_t start, size_t len);
+    static packed_t Slice(Span s, int start, int end);
 
-    static RES_PAIR_DECL(Split, Span& s, char separator);
-    static RES_PAIR_DECL(Consume, Span& s, char separator);
+    static packed_t Split(Span& s, char separator);
+    static packed_t Consume(Span& s, char separator);
 
     ALWAYS_INLINE int ParseInt(int base, int defVal, bool stopAtInvalid) const { return ParseInt(*this, stopAtInvalid ? base : base ? -base : -1, defVal); }
     static int ParseInt(Span s, int baseStopAtInvalid, int defVal);
@@ -276,6 +280,8 @@ private:
 class Buffer : public Span
 {
 public:
+    using packed_t = Packed<Buffer, sizeof(intptr_t)*2>;
+
     //! Constructs an empty (invalid) buffer
     constexpr Buffer() {}
     //! Constructs a Buffer covering a range of memory determined by start and length
@@ -285,8 +291,10 @@ public:
     //! Constructs a Buffer covering a single object
     template<class T> constexpr Buffer(T& value) : Span((char*)&value, sizeof(T)) {}
 
-    //! Constructs a Buffer from a @ref res_pair_t - used to force passing of return values via registers
-    ALWAYS_INLINE constexpr Buffer(res_pair_t pair) : Span(pair) {}
+    //! Constructs a Buffer from a @ref packed_t - used to force passing of return values via registers
+    constexpr Buffer(packed_t packed) : Span((Span::packed_t)packed) {}
+    //! Converts a Buffer to a @ref packed_t - used to force passing of return values via registers
+    ALWAYS_INLINE constexpr operator packed_t() const { return (packed_t)packed; }
 
     //! Gets the pointer to the beginning of the Buffer
     constexpr char* Pointer() const { return (char*)p; }
@@ -325,11 +333,11 @@ private:
     //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
     ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((char*)span.p, span.len); }
 
-    static RES_PAIR_DECL(FormatImpl, char* buffer, size_t length, const char* format, va_list va);
+    static packed_t FormatImpl(char* buffer, size_t length, const char* format, va_list va);
 };
 
 ALWAYS_INLINE Buffer Span::CopyTo(Buffer buf) const { auto len = std::min(buf.len, this->len); memcpy(buf.Pointer(), this->p, len); return Buffer(buf.Pointer(), len); }
 
-template<> constexpr Span::Span(const Span& value) : Span(value.pair) {}
-template<> constexpr Span::Span(const Buffer& value) : Span(value.pair) {}
-template<> constexpr Buffer::Buffer(Buffer& value) : Span(value.pair) {}
+template<> constexpr Span::Span(const Span& value) : p(value.p), len(value.len) {}
+template<> constexpr Span::Span(const Buffer& value) : Span(value.packed) {}
+template<> constexpr Buffer::Buffer(Buffer& value) : Span(value) {}

@@ -19,6 +19,9 @@
 
 class RingBufferBase
 {
+public:
+    using packed_accessor_t = Packed<class RingBufferAccessor, sizeof(intptr_t)*2>;
+
 protected:
     RingBufferBase(uint8_t* buffer, size_t size)
         : read(buffer), write(buffer), data(buffer), end(data + size) {}
@@ -48,13 +51,13 @@ protected:
         return ptr < end ? ptr : (T*)((uint8_t*)ptr - Size());
     }
 
-    RES_PAIR_DECL(AllocateImpl, size_t length);
+    packed_accessor_t AllocateImpl(size_t length);
     static bool WriteImpl(const void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
-    RES_PAIR_DECL(DequeueImpl, bool peek);
-    static RES_PAIR_DECL(ReadImpl, void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
+    packed_accessor_t DequeueImpl(bool peek);
+    static Buffer::packed_t ReadImpl(void* data, size_t length, uint8_t*& p, RingBufferBase* ring);
     static void SkipImpl(size_t length, uint8_t*& p, RingBufferBase* ring);
-    RES_PAIR_DECL(ChunkImpl, uint8_t* p, size_t skip, size_t length);
-    RES_PAIR_DECL(Chunk2Impl, uint8_t* p, size_t skip, size_t length);
+    Span::packed_t ChunkImpl(uint8_t* p, size_t skip, size_t length);
+    Span::packed_t Chunk2Impl(uint8_t* p, size_t skip, size_t length);
 
     friend class RingBufferAccessor;
     friend class RingBufferReader;
@@ -63,6 +66,10 @@ protected:
 
 class RingBufferAccessor
 {
+public:
+    using packed_t = RingBufferBase::packed_accessor_t;
+
+private:
     union
     {
         struct
@@ -70,14 +77,14 @@ class RingBufferAccessor
             RingBufferBase* ring;
             uint8_t* p;
         };
-        res_pair_t pair;
+        packed_t packed;
     };
 
     ALWAYS_INLINE constexpr RingBufferAccessor() : ring(NULL), p(NULL) {}
     ALWAYS_INLINE constexpr RingBufferAccessor(RingBufferBase* ring, uint8_t* payload) : ring(ring), p(payload) {}
-    ALWAYS_INLINE constexpr RingBufferAccessor(res_pair_t pair) : pair(pair) {}
+    ALWAYS_INLINE constexpr RingBufferAccessor(packed_t packed) : packed(packed) {}
 
-    ALWAYS_INLINE constexpr operator res_pair_t() const { return pair; }
+    ALWAYS_INLINE constexpr operator packed_t() const { return packed; }
 
     ALWAYS_INLINE constexpr size_t ExtractLength() const { return p ? ((intptr_t*)p)[-1] : 0; }
 
@@ -95,8 +102,8 @@ class RingBufferReader : public RingBufferAccessor
 {
     size_t length;
 
-    ALWAYS_INLINE constexpr RingBufferReader(res_pair_t pair)
-        : RingBufferAccessor(pair), length(ExtractLength()) {}
+    ALWAYS_INLINE constexpr RingBufferReader(packed_t packed)
+        : RingBufferAccessor(packed), length(ExtractLength()) {}
 
 public:
     ALWAYS_INLINE constexpr RingBufferReader()
@@ -133,8 +140,8 @@ class RingBufferWriter : public RingBufferAccessor
 {
     size_t length;
 
-    ALWAYS_INLINE constexpr RingBufferWriter(res_pair_t pair)
-        : RingBufferAccessor(pair), length(ExtractLength()) {}
+    ALWAYS_INLINE constexpr RingBufferWriter(packed_t packed)
+        : RingBufferAccessor(packed), length(ExtractLength()) {}
 
 public:
     ALWAYS_INLINE constexpr RingBufferWriter()
