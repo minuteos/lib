@@ -46,7 +46,8 @@ public:
     Timeout MakeAbsolute() const { return Timeout(IsAbsolute() || IsInfinite() ? value : ((MONO_CLOCKS + value) | (mono_t(MONO_SIGNED_MAX) + 1))); }
 
     bool Elapsed() const { return Relative() < 0; }
-    ALWAYS_INLINE mono_signed_t Relative(mono_t to = MONO_CLOCKS) const { return IsRelative() ? value : mono_signed_t((value - to) << 1) >> 1; }
+    ALWAYS_INLINE mono_signed_t Relative() const { return IsRelative() ? value : mono_signed_t((value - MONO_CLOCKS) << 1) >> 1; }
+    ALWAYS_INLINE mono_signed_t Relative(mono_t to) const { return IsRelative() ? value : mono_signed_t((value - to) << 1) >> 1; }
     ALWAYS_INLINE mono_t ToMono(mono_t base = MONO_CLOCKS) const { return base + Relative(base); }
     static constexpr mono_t __raw_value(const Timeout& timeout) { return timeout.value; }
 

@@ -42,9 +42,8 @@ Task& Scheduler::Add(AsyncDelegate<> fn)
 Task& Scheduler::Add(Task* t)
 {
 #if !KERNEL_SYNC_ONLY
-    t->wait.until = CurrentTime();
+    t->wait.until = nonzero(CurrentTime());
 #endif
-    t->wait.cont = true;
 #if KERNEL_SYNC_ONLY
     t->next = active;
     active = t;
@@ -231,46 +230,48 @@ mono_t Scheduler::Run()
                 case AsyncResult::DelayTimeout...AsyncResult::DelayMilliseconds:
                 {
                     STAT_INC(delays);
-                    if (type == AsyncResult::DelayUntil)
-                    {
-                        task->wait.cont = true;
-                        task->wait.until = value;
-                    }
-                    else if (type == AsyncResult::DelayTimeout)
-                    {
-                        Timeout timeout = value;
-                        if (task->wait.cont && timeout.IsRelative())
-                        {
-                            task->wait.until += timeout.Relative();
-                        }
-                        else
-                        {
-                            task->wait.cont = true;
-                            task->wait.until = timeout.ToMono(t);
-                        }
-                    }
-                    else
-                    {
-                        switch (type)
-                        {
-                            case AsyncResult::DelayMilliseconds: value = MonoFromMilliseconds(value); break;
-                            case AsyncResult::DelaySeconds: value = MonoFromSeconds(value); break;
-                            case AsyncResult::DelayTicks: break;
-                            default: ASSERT(false); break; // cannot happen
-                        }
+                    bool relative;
 
-                        if (task->wait.cont)
+                    switch (type)
+                    {
+                        case AsyncResult::DelayTimeout:
+                        {
+                            Timeout timeout = value;
+                            if ((relative = timeout.IsRelative()))
+                            {
+                                value = timeout.Relative();
+                            }
+                            else
+                            {
+                                value = timeout.ToMono(t);
+                            }
+                            break;
+                        }
+                        case AsyncResult::DelayMilliseconds: relative = true; value = MonoFromMilliseconds(value); break;
+                        case AsyncResult::DelaySeconds: relative = true; value = MonoFromSeconds(value); break;
+                        case AsyncResult::DelayTicks: relative = true; break;
+                        case AsyncResult::DelayUntil: relative = false; break;
+                        default: ASSERT(false); relative = false; break; // cannot happen
+                    }
+
+                    mono_t until = value;
+
+                    if (relative)
+                    {
+                        if (task->wait.until)
                         {
                             // continue where previous delay ended
-                            task->wait.until += value;
+                            until = task->wait.until + value;
                         }
                         else
                         {
-                            task->wait.cont = true;
-                            task->wait.until = t + value;
+                            // simply relative to the current time
+                            until += t;
                         }
                     }
 
+                    // do not let the deadline be in the past
+                    task->wait.until = nonzero(OVF_MAX(until, t));
                     // move task to the delay queue
                     *pNext = task->next;
                     task->next = delayed;
@@ -288,7 +289,7 @@ mono_t Scheduler::Run()
                     task->wait.mask = ~0u;
                     task->wait.invert = false;
                     task->wait.acquire = false;
-                    task->wait.cont = false;
+                    task->wait.until = 0;
                     // move task to the waiting queue
                     *pNext = task->next;
                     task->next = NULL;
@@ -322,17 +323,25 @@ mono_t Scheduler::Run()
                     Timeout timeout = f->waitTimeout;
                     if (timeout.IsInfinite())
                     {
-                        task->wait.cont = false;
-                    }
-                    else if (task->wait.cont && timeout.IsRelative())
-                    {
-                        // continue where previous delay ended
-                        task->wait.until += timeout.Relative();
+                        task->wait.until = 0;
                     }
                     else
                     {
-                        task->wait.cont = true;
-                        task->wait.until = timeout.ToMono(t);
+                        mono_t until;
+                        if (timeout.IsAbsolute())
+                        {
+                            until = timeout.ToMono(t);
+                        }
+                        else if (task->wait.until)
+                        {
+                            until = task->wait.until + timeout.Relative();
+                        }
+                        else
+                        {
+                            until = t + timeout.Relative();
+                        }
+                        // do not let the deadline be in the past
+                        task->wait.until = nonzero(OVF_MAX(t, until));
                     }
 #endif
                     f->waitPtr = 0;
@@ -354,7 +363,7 @@ mono_t Scheduler::Run()
                     break;
             }
 
-            task->wait.cont = false;   // if the task did not delay again, forget the continuation
+            task->wait.until = 0;   // if the task did not delay again, forget the continuation
 
 #if !KERNEL_SYNC_ONLY
             if (maxSleep > sleep)
@@ -449,13 +458,13 @@ mono_t Scheduler::Run()
                 *pNext = task->next;
                 task->next = active;
                 active = task;
-                task->wait.cont = false;   // make sure the next delay won't try to continue from an invalid time
+                task->wait.until = 0;   // make sure the next delay won't try to continue from an invalid time
                 task->wait.frame->waitResult = true;
                 continue;
             }
 
 #if !KERNEL_SYNC_ONLY
-            if (task->wait.cont)
+            if (task->wait.until)
             {
                 // check the timeout
                 mono_signed_t sleep = task->wait.until - t;

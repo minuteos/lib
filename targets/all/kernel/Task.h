@@ -46,9 +46,8 @@ private:
     struct
     {
 #if !KERNEL_SYNC_ONLY
-        mono_t until;           //!< Instant when the wait will be over
+        mono_t until;           //!< Non-zero instant when the wait will be over
 #endif
-        bool cont;          //!< Indicates that the next wait should continue immediately after the time in the @ref until field
         bool invert;        //!< Wait condition is inverted, i.e. we're waiting for the value to be other than @ref expect
         bool acquire;       //!< Task should acquire the masked bits (invert them) when the masked value matches @expect
         bool dynamic;       //!< Task has been allocated dynamically (not wait related)
