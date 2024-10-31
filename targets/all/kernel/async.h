@@ -370,6 +370,9 @@ next: __async.waitResult; })
     ::kernel::Task::Run(__VA_ARGS__).OnComplete(GetDelegate(&__async, &AsyncFrame::_child_completed)); \
 })
 
+//! Adds a task to the group that will be awaited at once
+#define await_multiple_add_method(instance, method, ...) await_multiple_add(instance, &decltype(instance)::method, ## __VA_ARGS__)
+
 //! Waits for all the tasks added using await_multiple_add() to complete
 #define await_multiple() ({ \
     __label__ next; \
