@@ -56,6 +56,7 @@ public:
 private:
     bool Match(int numFilters, char** filters);
     bool Execute();
+    void PrintResult(int errorLine = 0, std::function<void(void)> errorReason = {});
 
     static TestCase* s_first;
     static TestCase* s_last;

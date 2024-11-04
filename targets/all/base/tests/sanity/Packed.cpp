@@ -27,11 +27,6 @@ template<size_t n> void Test(TestCase* t)
     auto packed = noInlinePack(s);
     auto unpacked = noInlineUnpack<S<n>>(packed);
 
-    if (std::is_same<S<n>, Packed<S<n>>>::value)
-        printf("Unsupported...");
-    else
-        printf("Supported...");
-
     for (unsigned i =0; i < n; i++)
         t->AssertEqual(s.a[i], unpacked.a[i]);
 }

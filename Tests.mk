@@ -31,7 +31,7 @@ TEST_RUN_ARGS ?= $(TEST_FILTERS)
 
 $(TEST_SUMMARY): $(TEST_RESULTS)
 	@$(DATE) >$@
-	@$(foreach d,$(TEST_RESULTS),$(ECHO) "\n*** Results from '$(call t_stripout,$(dir $(d)))'\\n" >>$@; $(CAT) $(d) >>$@;)
+	@$(foreach d,$(TEST_RESULTS),$(ECHO) "\n## $(call t_stripout,$(dir $(d)))\\n" >>$@; $(CAT) $(d) >>$@;)
 	$(info )
 	$(info Test log can be found in '$@')
 

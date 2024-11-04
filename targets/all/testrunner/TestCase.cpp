@@ -28,6 +28,9 @@ bool TestCase::RunAll(int argc, char** argv)
 {
     int passed = 0, failed = 0;
 
+    printf("| Test file | Test name | Result |\n");
+    printf("| :-------- | :-------- | :----: |\n");
+
     for (auto tc = s_first; tc; tc = tc->next)
     {
         if (!tc->Match(argc, argv))
@@ -41,7 +44,7 @@ bool TestCase::RunAll(int argc, char** argv)
             passed++;
     }
 
-    printf("\nRan %d tests, %d passed, %d failed\n", passed + failed, passed, failed);
+    printf("| **TOTAL** | **%d** | **%d** :white_check_mark: / **%d** :x: |\n", passed + failed, passed, failed);
     return failed != 0;
 }
 
@@ -112,7 +115,6 @@ bool TestCase::Match(int numFilters, char** filters)
 bool TestCase::Execute()
 {
     jmp_buf fail;
-    printf("%s:%d - %s...", File(), Line(), Name());
     if (setjmp(fail))
     {
         // we get here after a failure
@@ -125,41 +127,50 @@ bool TestCase::Execute()
     __testrunner_time = 0;
 #endif
     Run();
-    puts("OK");
+    PrintResult();
     return false;
 }
 
 void TestCase::_Fail(int line)
 {
-    puts("FAIL");
-    printf("  assertion at %s:%d\n", s_cur->File(), line);
-    longjmp(*s_failJump, 1);
+    _Fail(line, std::function<void(void)>{});
 }
 
 void TestCase::_Fail(int line, const char* reason)
 {
-    printf("FAIL (%s)\n", reason);
-    printf("  assertion at %s:%d\n", s_cur->File(), line);
-    longjmp(*s_failJump, 1);
+    _Fail(line, [reason] { printf("%s", reason); });
 }
 
 void TestCase::_Fail(int line, const char* format, ...)
 {
     va_list va;
     va_start(va, format);
-    printf("FAIL (");
-    vprintf(format, va);
-    puts(")");
+    _Fail(line, [format, &va] { vprintf(format, va); });
     va_end(va);
-    printf("  assertion at %s:%d\n", s_cur->File(), line);
-    longjmp(*s_failJump, 1);
 }
 
 void TestCase::_Fail(int line, std::function<void(void)> reason)
 {
-    printf("FAIL (");
-    reason();
-    puts(")");
-    printf("  assertion at %s:%d\n", s_cur->File(), line);
+    s_cur->PrintResult(line, reason);
     longjmp(*s_failJump, 1);
+}
+
+void TestCase::PrintResult(int errorLine, std::function<void(void)> errorReason)
+{
+    printf("| %s:%d ", File(), Line());
+    if (errorLine)
+    {
+       printf("<br/> *...assertion at line %d* ", errorLine);
+    }
+    printf("| %s | %s ", Name(), errorLine ? ":x:" : ":white_check_mark:");
+    if (errorReason)
+    {
+        printf("<br/> **(");
+        errorReason();
+        puts(")** |");
+    }
+    else
+    {
+        puts("|");
+    }
 }
