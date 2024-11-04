@@ -1,0 +1,19 @@
+name: Test
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Test Workflow
+        uses: the-actions-org/workflow-dispatch@v4
+        with:
+          repo: minuteos/test
+          token: ${{ secrets.TEST_PAT }}
+          workflow: Test
+          wait-for-completion: true
+          inputs: |-
+            {
+              "override-repo": "${{ github.repository }}",
+              "override-commit": "${{ github.sha }}"
+            }
