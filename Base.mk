@@ -257,6 +257,13 @@ $(OUTPUT).S: $(PRIMARY_OUTPUT)
 $(OUTPUT).SS: $(PRIMARY_OUTPUT)
 	-$(OBJDUMP) -d -S $< > $@
 
+# Cancel built-in RCS rules for cleaner debug output
+% : %,v
+% : RCS/%
+% : RCS/%,v
+% : s.%
+% : SCCS/s.%
+
 # Include generated dependency files, unless we're cleaning
 ifeq (,$(findstring clean,$(MAKECMDGOALS)))
 ifneq ($(DEPS),)
