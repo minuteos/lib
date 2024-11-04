@@ -167,7 +167,7 @@ int Span::ReadInt(Span s, unsigned lenSignRev)
     size_t fill = 32 - (len << 3);
 
     // align the result with MSB - reversal does this for BE, shift for LE
-#if LITTLE_ENDIAN
+#if PLATFORM_LITTLE_ENDIAN
     if (lenSignRev & 0x20)
 #else
     if (!(lenSignRev & 0x20))
