@@ -86,7 +86,7 @@ public:
         int segRemaining;
         size_t remaining;
 
-        RES_PAIR_DECL(ReadImpl, char* data, size_t length);
+        Buffer::packed_t ReadImpl(char* data, size_t length);
 
         friend class Pipe;
     };
@@ -115,7 +115,7 @@ private:
     async(WriterAllocate, size_t block, Timeout timeout);
     async(WriterWrite, const char* data, size_t length, Timeout timeout);
     async(WriterWriteFV, Timeout timeout, const char* format, va_list va);
-    RES_PAIR_DECL_EX(WriterBuffer, const, size_t offset);
+    Buffer::packed_t WriterBuffer(size_t offset) const;
     Buffer WriterBufferAt(PipePosition position) { return WriterBuffer(wpos.LengthUntil(position)); }
     void WriterAdvance(size_t count);
     void WriterAdvanceTo(PipePosition position) { if (auto count = wpos.LengthUntil(position)) WriterAdvance(count); }
@@ -129,14 +129,14 @@ private:
     async(ReaderRequire, size_t count, Timeout timeout);
     async(ReaderRequireUntil, uint8_t b, Timeout timeout);
     async(ReaderRead, char* buffer, size_t length, Timeout timeout);
-    RES_PAIR_DECL_EX(ReaderSpan, const, size_t offset);
+    Span::packed_t ReaderSpan(size_t offset) const;
     Span ReaderSpanAt(PipePosition position) const { return ReaderSpan(rpos.LengthUntil(position)); }
-    RES_PAIR_DECL(ReaderRead, char* buffer, size_t length);
+    Span::packed_t ReaderRead(char* buffer, size_t length);
     void ReaderAdvance(size_t count) { ReaderRead(NULL, count); }
     void ReaderAdvanceTo(PipePosition position) { if (auto count = rpos.LengthUntil(position)) ReaderAdvance(count); }
     bool ReaderComplete() const { return IsClosed(); }
     int ReaderPeek(size_t offset) const;
-    RES_PAIR_DECL_EX(ReaderPeek, const, char * buffer, size_t length, size_t offset);
+    Span::packed_t ReaderPeek(char * buffer, size_t length, size_t offset) const;
     size_t ReaderLengthUntil(PipePosition position) const { return rpos.LengthUntil(position); }
     bool ReaderMatches(Span data, size_t offset) const;
 
@@ -146,7 +146,7 @@ private:
     constexpr Iterator ReaderIteratorBegin(size_t length) const { return Iterator(rseg, roff, std::min(length, size_t(wpos - rpos))); }
     constexpr Iterator ReaderIteratorEnd() const { return Iterator(); }
 
-    static RES_PAIR_DECL(GetSpan, PipeSegment* seg, size_t offset, size_t count);
+    static Span::packed_t GetSpan(PipeSegment* seg, size_t offset, size_t count);
 
     static async(Copy, Pipe& from, Pipe& to, size_t offset, size_t length, Timeout timeout);
     static async(Move, Pipe& from, Pipe& to, size_t length, Timeout timeout);

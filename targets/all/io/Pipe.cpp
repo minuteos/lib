@@ -540,7 +540,7 @@ async_def(
 }
 async_end
 
-res_pair_t Pipe::ReaderRead(char* buffer, size_t count)
+Span::packed_t Pipe::ReaderRead(char* buffer, size_t count)
 {
     if (!count)
         return Span(buffer, size_t(0));
@@ -636,7 +636,7 @@ int Pipe::ReaderPeek(size_t offset) const
     return -1;
 }
 
-res_pair_t Pipe::ReaderPeek(char* buf, size_t length, size_t offset) const
+Span::packed_t Pipe::ReaderPeek(char* buf, size_t length, size_t offset) const
 {
     offset += roff;
     char* start = buf;
@@ -663,19 +663,19 @@ bool Pipe::ReaderMatches(Span data, size_t offset) const
     return ReaderIteratorBegin().Matches(data, offset);
 }
 
-res_pair_t Pipe::ReaderSpan(size_t offset) const
+Span::packed_t Pipe::ReaderSpan(size_t offset) const
 {
     ASSERT(rpos + offset <= wpos);
     return GetSpan(rseg, roff + offset, wpos - rpos - offset);
 }
 
-res_pair_t Pipe::WriterBuffer(size_t offset) const
+Buffer::packed_t Pipe::WriterBuffer(size_t offset) const
 {
     ASSERT(wpos + offset <= apos);
-    return GetSpan(*pwseg, woff + offset, ~0u);
+    return (Buffer::packed_t)GetSpan(*pwseg, woff + offset, ~0u);
 }
 
-res_pair_t Pipe::GetSpan(PipeSegment* seg, size_t offset, size_t count)
+Span::packed_t Pipe::GetSpan(PipeSegment* seg, size_t offset, size_t count)
 {
     for (;;)
     {
@@ -715,7 +715,7 @@ void Pipe::Iterator::Skip(size_t length)
     segRemaining += length;
 }
 
-res_pair_t Pipe::Iterator::ReadImpl(char* buffer, size_t length)
+Buffer::packed_t Pipe::Iterator::ReadImpl(char* buffer, size_t length)
 {
     if (length > remaining)
     {
