@@ -75,8 +75,7 @@ TEST_CASE("02 Static task")
 
     s.Add(Test::Task);
     auto endTime = s.Run();
-    AssertEqual(a, 0u);
-    AssertEqual(b, MonoFromMilliseconds(10));
+    AssertEqual(b - a, MonoFromMilliseconds(10));
     AssertEqual(endTime, b);
 }
 

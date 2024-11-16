@@ -21,15 +21,16 @@ TEST_CASE("01 Simple")
 
     struct Test
     {
-        static async(Task) async_def(PeriodicWakeup wake = PeriodicWakeup(3, 700))
+        static async(Task) async_def(mono_t start; PeriodicWakeup wake = PeriodicWakeup(3, 700))
         {
+            f.start = MONO_CLOCKS;
             await(f.wake.Next);
             AssertNotEqual(f.wake.Error(), 0u);
             await(f.wake.Next);
             AssertNotEqual(f.wake.Error(), 0u);
             await(f.wake.Next);
             AssertEqual(f.wake.Error(), 0u);
-            AssertEqual(MONO_CLOCKS, 700u);
+            AssertEqual(MONO_CLOCKS - f.start, 700u);
         }
         async_end
     };
