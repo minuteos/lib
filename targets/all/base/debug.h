@@ -94,4 +94,13 @@ extern void DBG_PutString(const char* s);
 
 #endif
 
+#if Ctestrunner
+
+extern void TEST_AssertFailed(const char* file, unsigned line);
+
+#undef ASSERT
+#define ASSERT(expr)    if(!(expr)) { TEST_AssertFailed(__FILE__, __LINE__); }
+
+#endif
+
 END_EXTERN_C

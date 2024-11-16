@@ -174,3 +174,8 @@ void TestCase::PrintResult(int errorLine, std::function<void(void)> errorReason)
         puts("|");
     }
 }
+
+extern "C" void TEST_AssertFailed(const char* file, unsigned line)
+{
+    TestCase::_Fail(line, "ASSERT: %s:%u", file, line);
+}
