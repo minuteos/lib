@@ -155,6 +155,7 @@ DEPS    := $(OBJS:.o=.d) $(ADDITIONAL_DEPS)
 # all components get a macro C<component_name>, useful for optional dependencies
 DEFINES += $(subst /,_,$(subst -,_,$(addprefix C,$(COMPONENTS))))
 DEFINES += $(subst /,_,$(subst -,_,$(addprefix T,$(TARGETS))))
+DEFINES += $(DEFINES_EXTRA)
 
 DEP_OPT = -MMD -MP
 DEF_OPT = $(addprefix -D,$(DEFINES))
