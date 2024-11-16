@@ -15,7 +15,8 @@ TEST_COMPONENT_DIRS = $(call subdirs2,$(TARGET_DIRS),$(TEST_COMPONENTS))
 TEST_SOURCE_DIRS = $(sort $(TEST_COMPONENT_DIRS))
 endif
 TEST_DIRS = $(call subdirs,$(TEST_SOURCE_DIRS),tests)
-TEST_SUITES = $(sort $(call subdirs,$(TEST_DIRS),*))
+TEST_SUITES ?= *
+TEST_SUITE_DIRS = $(sort $(call subdirs,$(TEST_DIRS),$(TEST_SUITES)))
 
 # output directory for built tests
 OUTTEST = $(OUTDIR)tests/
@@ -23,7 +24,7 @@ OUTTEST = $(OUTDIR)tests/
 # helper to get rid of the output directory prefix
 t_stripout = $(patsubst $(OUTTEST)%,%,$(1))
 
-TEST_OUTPUTS  := $(addprefix $(OUTTEST),$(TEST_SUITES))
+TEST_OUTPUTS  := $(addprefix $(OUTTEST),$(TEST_SUITE_DIRS))
 TEST_BINARIES := $(foreach t,$(TEST_OUTPUTS),$(addsuffix $(call dirname,$(t))$(PRIMARY_EXT),$t))
 TEST_RESULTS  := $(TEST_BINARIES:$(PRIMARY_EXT)=.testres)
 TEST_SUMMARY  := $(OUTTEST)summary.testres
