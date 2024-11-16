@@ -25,7 +25,7 @@ struct SequenceRecorder
 protected:
     void Mark(char m)
     {
-        mark += sprintf(mark, "%s%c@%lu", mark == buf ? "" : ",", m, (long)MonoToMilliseconds(MONO_CLOCKS));
+        mark += snprintf(mark, endof(buf) - mark, "%s%c@%lu", mark == buf ? "" : ",", m, (long)MonoToMilliseconds(MONO_CLOCKS));
     }
 
 public:
@@ -293,7 +293,7 @@ TEST_CASE("06 Acquire Order")
     auto endTime = MonoToMilliseconds(s.Run());
 
     AssertEqualString(t, "A@0,A@10,B@10,B@20,C@20,C@30");
-    AssertEqual(endTime, 30);
+    AssertEqual(endTime, 30u);
 }
 
 
@@ -317,7 +317,7 @@ TEST_CASE("07 Delay Order")
     auto endTime = MonoToMilliseconds(s.Run());
 
     AssertEqualString(t, "A@0,B@0,C@0,A@10,B@10,C@10");
-    AssertEqual(endTime, 10);
+    AssertEqual(endTime, 10u);
 }
 
 }
