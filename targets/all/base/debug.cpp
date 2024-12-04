@@ -16,6 +16,10 @@
 #define PLATFORM_DBG_CHAR(...)
 #endif
 
+#ifndef PLATFORM_DBG_BRACKET
+#define PLATFORM_DBG_BRACKET()  '['
+#endif
+
 #if TRACE || MINITRACE
 
 void DBG_PutChar(char ch)
@@ -118,9 +122,10 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
     last.sub = sub -= sec * 1000000;
     last.sec = sec += last.sec;
 
+    char bracket = PLATFORM_DBG_BRACKET();
     bool nz = false;
 
-    PLATFORM_DBG_CHAR(channel, '[');
+    PLATFORM_DBG_CHAR(channel, bracket);
     for (int n = 1000000000; n; n /= 10)
     {
         int c = sec / n;
@@ -147,7 +152,7 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
             PLATFORM_DBG_CHAR(channel, '.');
     }
 
-    PLATFORM_DBG_CHAR(channel, ']');
+    PLATFORM_DBG_CHAR(channel, bracket == '(' ? ')' : bracket + 2);
     PLATFORM_DBG_CHAR(channel, ' ');
 #endif
 
