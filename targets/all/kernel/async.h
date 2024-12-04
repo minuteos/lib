@@ -253,7 +253,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     __async.waitTimeout = Timeout::__raw_value(timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type, (uintptr_t)(mask), (uintptr_t)(expect)); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async.waitResult; })
+next: __async.waitPtr = NULL; __async.waitResult; })
 
 #define _await_signal(type, reg, timeout) ({ \
     __label__ next; \
@@ -262,7 +262,7 @@ next: __async.waitResult; })
     __async.waitTimeout = Timeout::__raw_value(timeout); \
     { auto res = __async._prepare_wait(AsyncResult::type); \
     if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async.waitResult; })
+next: __async.waitPtr = NULL; __async.waitResult; })
 
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
 #define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, Timeout::Infinite)
@@ -357,7 +357,7 @@ next: \
     __label__ next; \
     f.__requireContinue(&&next); \
     return ::kernel::Task::_RunAll(__async, __VA_ARGS__); \
-next: __async.waitResult; })
+next: __async.waitPtr = NULL; __async.waitResult; })
 
 //! Begins a block where multiple tasks can be spawned dynamically and then awaited
 #define await_multiple_init() ({ \
@@ -378,7 +378,7 @@ next: __async.waitResult; })
     __label__ next; \
     f.__requireContinue(&&next); \
     return _ASYNC_RES(&__async, AsyncResult::WaitMultiple); \
-next: __async.waitResult; })
+next: __async.waitPtr = NULL; __async.waitResult; })
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;

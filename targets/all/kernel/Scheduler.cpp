@@ -344,8 +344,6 @@ mono_t Scheduler::Run()
                         task->wait.until = nonzero(OVF_MAX(t, until));
                     }
 #endif
-                    f->waitPtr = 0;
-
                     // move task to the waiting queue
                     *pNext = task->next;
                     task->next = NULL;
