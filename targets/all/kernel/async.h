@@ -217,7 +217,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 }
 
 //! Finished the execution of an async function immediately and returns the specified value
-#define async_return(value) ({ async_res_t __res; __res = f.__epilog(__pCallee, (value)); f.~__FRAME(); return __res; })
+#define async_return(value) ({ f.~__FRAME(); return f.__epilog(__pCallee, (value)); })
 
 #define _async_yield(type, value) ({ __label__ next; (void)__async; f.__continue(&&next); return _ASYNC_RES(value, AsyncResult::type); next: false; })
 
