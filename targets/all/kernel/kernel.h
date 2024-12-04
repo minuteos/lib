@@ -22,6 +22,8 @@
 #include <kernel/PeriodicWakeup.h>
 #include <kernel/ResetCause.h>
 
+#include <kernel/Events.h>
+
 #ifdef Ckernel_app
 #include <kernel-app/kernel.h>
 #endif
