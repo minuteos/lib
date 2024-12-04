@@ -38,6 +38,11 @@ struct _PMFDecodeResult
 
 Packed<_PMFDecodeResult> _PMFDecode(void* target, ptrdiff_t fptrOrVtOffset, ptrdiff_t thisAdjust);
 
+using _Delegate = Packed<_PMFDecodeResult>;
+
+ALWAYS_INLINE void* _DelegateTarget(_Delegate packed) { return unpack<_PMFDecodeResult>(packed).target; }
+ALWAYS_INLINE _PMFDecodeResult::fptr_t _DelegateFn(_Delegate packed) { return unpack<_PMFDecodeResult>(packed).fptr; }
+
 template<typename TRes, typename... Args>
 class Delegate
 {
@@ -54,7 +59,7 @@ private:
             void* target;
             fptr_t fn;
         };
-        Packed<_PMFDecodeResult> packed;
+        _Delegate packed;
     };
 
     template<class T, typename TRes2, typename... Args2> friend constexpr Delegate<TRes2, Args2...> GetDelegate(T* target, TRes (T::*method)(Args...));
@@ -98,6 +103,10 @@ public:
     ALWAYS_INLINE constexpr TRes operator()(Args... args) { return fn(target, args...); }
 
     ALWAYS_INLINE constexpr operator bool() const { return fn; }
+
+    ALWAYS_INLINE constexpr operator _Delegate() const { return packed; }
+
+    ALWAYS_INLINE constexpr bool operator ==(_Delegate other) const { return this->packed == packed; }
 };
 
 template<class T, typename TRes, typename... Args>
