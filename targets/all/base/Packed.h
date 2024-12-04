@@ -15,7 +15,14 @@
 
 #include <base/base.h>
 
-template<size_t size> struct _packed_t { intptr_t _[(size + sizeof(intptr_t) - 1) / sizeof(intptr_t)]; };
+template<size_t size> struct _packed_t
+{
+    intptr_t _[(size + sizeof(intptr_t) - 1) / sizeof(intptr_t)];
+
+    bool operator ==(const _packed_t& other) const { return !memcmp(this, &other, sizeof(_packed_t)); }
+    bool operator !=(const _packed_t& other) const { return !(*this == other); }
+};
+
 template<typename T, size_t size = sizeof(T)> struct _Packed
 {
     using packed_t = _packed_t<size>;
