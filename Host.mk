@@ -10,8 +10,10 @@
 
 ifeq ($(OS),Windows_NT)
   HOST_OS := Windows
+  POSIX_PREFIX := $(subst /,\\,$(dir $(call curmake))win-posix/)
 else
   HOST_OS := $(shell uname -s)
+  POSIX_PREFIX :=
 
   ifeq (,$(filter $(HOST_OS),Linux Darwin))
     $(warning Unknown OS: $(HOST_OS))
