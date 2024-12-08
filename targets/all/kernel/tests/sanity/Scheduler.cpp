@@ -319,4 +319,41 @@ TEST_CASE("07 Delay Order")
     AssertEqual(endTime, 10u);
 }
 
+TEST_CASE("08 Switch")
+{
+    struct Test : SequenceRecorder
+    {
+        int callCnt = 0;
+
+        async(Task) { callCnt++; async_def()
+        {
+            Mark('T');
+            auto res = await(Task::Switch, GetMethodDelegate(this, Alternate));
+            AssertEqual(res, 3);
+            Mark('t');
+        }
+        async_end }
+
+        async(Alternate) async_def(int i)
+        {
+            Mark('S');
+            for (f.i = 0; f.i < 3; f.i++)
+            {
+                async_delay_ms(10);
+            }
+            Mark('s');
+            async_return(3);
+        }
+        async_end
+    } t;
+
+    Scheduler s;
+    s.Add(t, &Test::Task);
+    auto endTime = MonoToMilliseconds(s.Run());
+
+    AssertEqualString(t, "T@0,S@0,s@30,t@30");
+    AssertEqual(endTime, 30u);
+    AssertEqual(t.callCnt, 2);
+}
+
 }

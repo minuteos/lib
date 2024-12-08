@@ -97,6 +97,9 @@ public:
         return async_forward(RunAll, tmp, sizeof...(delegates));
     }
 
+    //! Temporarily switches the current task to another root function, useful when it's likely many waits will occur
+    static async_once(Switch, AsyncDelegate<> other);
+
     friend class Scheduler;
     friend struct ::AsyncFrame;
     template<typename... Args> friend class TaskWithArgs;

@@ -32,4 +32,41 @@ async_res_t Task::RunAll(::AsyncFrame& frame, const AsyncDelegate<>* delegates, 
     return _ASYNC_RES(&frame, AsyncResult::Wait);
 }
 
+async_once(Task::Switch, AsyncDelegate<> other)
+{
+    struct SwitchContext
+    {
+        SwitchContext(Task& t, AsyncFrame& f, AsyncDelegate<> fn)
+            : t(t), f(f), fn(fn), prevFn(t.fn), prevTop(t.top)
+        {
+            t.fn = GetMethodDelegate(this, Run);
+            t.top = NULL;
+        }
+
+        async_res_t Run(AsyncFrame** pCallee)
+        {
+            auto _res = fn(pCallee);
+            auto res = unpack<_async_res_t>(_res);
+            if (res.type == AsyncResult::Complete)
+            {
+                t.fn = prevFn;
+                t.top = prevTop;
+                f.waitResult = res.value;
+                MemPoolFree(this);
+                _res = _ASYNC_RES(0, AsyncResult::SleepTicks);
+            }
+            return _res;
+        }
+
+        Task& t;
+        AsyncFrame& f;
+        AsyncDelegate<> fn;
+        AsyncDelegate<> prevFn;
+        AsyncFrame* prevTop;
+    };
+
+    new(MemPoolAlloc<SwitchContext>()) SwitchContext(Current(), __pCallee, other);
+    return _ASYNC_RES(0, AsyncResult::SleepTicks);
+}
+
 }
