@@ -9,3 +9,7 @@
  */
 
 #pragma once
+
+#ifndef PLATFORM_CRITICAL_SECTION
+#define PLATFORM_CRITICAL_SECTION()
+#endif
