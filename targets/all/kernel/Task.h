@@ -103,18 +103,6 @@ public:
     template<typename... Args> friend class TaskFnWithArgs;
 };
 
-template<size_t N> struct _CallWithArgs
-{
-    template<typename F, typename A1, typename T, typename... A>
-    static async_res_t Call(F&& f, A1&& a1, T&& t, A&&... a) { return _CallWithArgs<N-1>::Call(f, a1, t, std::get<N-1>(t), a...); }
-};
-
-template<> struct _CallWithArgs<0>
-{
-    template<typename F, typename A1, typename T, typename... A>
-    static async_res_t Call(F&& f, A1&& a1, T&& t, A&&... a) { return f(a1, a...); }
-};
-
 template<typename... Args> class TaskWithArgs : public Task
 {
     AsyncDelegate<Args...> delegate;
@@ -129,7 +117,7 @@ public:
     }
 
 private:
-    async(Call) { return _CallWithArgs<sizeof...(Args)>::Call(delegate, __pCallee, args); }
+    async(Call) { return std::apply(delegate, std::tuple_cat(std::make_tuple(__pCallee), args)); }
 };
 
 template<typename... Args> class TaskFnWithArgs : public Task
@@ -146,7 +134,7 @@ public:
     }
 
 private:
-    async(Call) { return _CallWithArgs<sizeof...(Args)>::Call(f, __pCallee, args); }
+    async(Call) { return std::apply(f, std::tuple_cat(std::make_tuple(__pCallee), args)); }
 };
 
 
