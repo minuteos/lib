@@ -50,7 +50,7 @@ void _EventTable::RemoveHandlers(const void* owner)
     _EventHandler** pNext = &handlers;
     for (_EventHandler* p = *pNext; p != NULL; p = *pNext)
     {
-        if (_DelegateTarget(p->handler) == owner)
+        if (p->delegate.Target() == owner)
         {
             *pNext = p->next;
             MemPoolFree(p);
