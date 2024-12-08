@@ -29,7 +29,7 @@ public:
     //! Current accumulated error (< fraction), if any
     mono_t Error() const { return error; }
     //! Sleeps until the next scheduled wakeup interval
-    async(Next);
+    async_once(Next);
 
 private:
     unsigned fraction;

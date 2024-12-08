@@ -219,7 +219,7 @@ public:
 
 #if Ckernel
     //! Waits until there is a record in the buffer
-    async(HasData) async_def_once() { await_mask_not(write, ~0u, read); } async_end
+    async_once(HasData) { return async_forward(WaitMaskNot, write, ~0u, uintptr_t(read)); }
 #endif
 
 private:
