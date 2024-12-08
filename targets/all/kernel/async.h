@@ -125,6 +125,9 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! Declaration of an async function
 #define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
 
+//! Declaration of a lightweight async function that executes only once and uses caller's frame
+#define async_once(name, ...)    async_res_t name(AsyncFrame& __pCallee, ## __VA_ARGS__)
+
 //! Implementation of a function with async interface that actually forwards to another async function
 /*!
  * Usage example:
@@ -156,8 +159,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
     __label__ __start__; \
     struct __FRAME { AsyncFrame __async; \
         async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } \
-        void __continue(void* cont) { __async.cont = cont; } \
-        void __requireContinue(void* cont) { __async.cont = cont; } \
+        void __continue(contptr_t cont) { __async.cont = cont; } \
         __VA_ARGS__; }; \
     static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
     auto __prolog_res = unpack<_async_prolog_t>(_async_prolog(__pCallee, &__spec)); \
@@ -178,25 +180,14 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! Defines a simple synchronous function immediately returning a value, using the async calling convention
 #define async_def_return(value) { return _ASYNC_RES(value, AsyncResult::Complete); }
 
-//! Defines a lightweight asynchronous function without a persistent frame and automatic continuation, just call count
-#define async_def_lite(...) { \
-    struct __FRAME { \
-        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { *pCallee = NULL; return _ASYNC_RES(result, AsyncResult::Complete); } \
-        void __continue(void* cont) { /* discard */ } \
-        __VA_ARGS__; } f; \
-    UNUSED const uintptr_t async_count = (*(uintptr_t*)__pCallee)++; \
-    AsyncFrame& __async = *(AsyncFrame*)__pCallee;
-
-//! Defines a lightweight asynchronous function called just once
+//! Starts definition of a lightweight asynchronous function (declared with async_once)
 //! The function can end with a wait operation
-#define async_def_once(...) { \
-    if (*__pCallee) { auto res = (*__pCallee)->waitResult; *__pCallee = NULL; return _ASYNC_RES(res, AsyncResult::Complete); } \
-    *__pCallee = (AsyncFrame*)__pCallee; \
+#define async_once_def(...) { \
     struct __FRAME { \
-        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { *pCallee = NULL; return _ASYNC_RES(result, AsyncResult::Complete); } \
-        void __continue(void* cont) { /* discard */ } \
+        async_res_t __epilog(AsyncFrame& pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
+        void __continue(contptr_t cont) { /* discard */ } \
         __VA_ARGS__; } f; \
-    AsyncFrame& __async = *(AsyncFrame*)__pCallee;
+    AsyncFrame& __async = __pCallee;
 
 //! Defines an asynchronous function with variable args that forwards to another async function with va_list
 #define async_def_va(func, last, ...) { \
@@ -246,118 +237,165 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! Allows the system to sleep for the specified number of platform-dependent monotonic ticks, but execution will continue as soon as the system wakes up for any reason
 #define async_sleep_ticks(ticks)  _async_yield(SleepTicks, (ticks))
 
-#define _await_mask(type, reg, mask, expect, timeout) ({ \
-    __label__ next; \
-    f.__continue(&&next); \
-    __async.waitPtr = (uintptr_t*)&(reg); \
-    __async.waitTimeout = Timeout::__raw_value(timeout); \
-    { auto res = __async._prepare_wait(AsyncResult::type, (uintptr_t)(mask), (uintptr_t)(expect)); \
-    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async.waitPtr = NULL; __async.waitResult; })
+template<typename TReg, typename TMask, typename TExpect> ALWAYS_INLINE async_once(WaitMask, TReg& reg, TMask mask, TExpect expect, Timeout timeout = {})
+{
+    __pCallee.waitPtr = (uintptr_t*)&reg;
+    __pCallee.waitTimeout = Timeout::__raw_value(timeout);
+    return __pCallee._prepare_wait(AsyncResult::Wait, uintptr_t(mask), uintptr_t(expect));
+}
 
-#define _await_signal(type, reg, timeout) ({ \
-    __label__ next; \
-    f.__continue(&&next); \
-    __async.waitPtr = (uintptr_t*)&(reg); \
-    __async.waitTimeout = Timeout::__raw_value(timeout); \
-    { auto res = __async._prepare_wait(AsyncResult::type); \
-    if (_ASYNC_RES_TYPE(res) != AsyncResult::Complete) return res; } \
-next: __async.waitPtr = NULL; __async.waitResult; })
+template<typename TReg, typename TMask, typename TExpect> ALWAYS_INLINE async_once(WaitMaskNot, TReg& reg, TMask mask, TExpect expect, Timeout timeout = {})
+{
+    __pCallee.waitPtr = (uintptr_t*)&reg;
+    __pCallee.waitTimeout = Timeout::__raw_value(timeout);
+    return __pCallee._prepare_wait(AsyncResult::WaitInverted, uintptr_t(mask), uintptr_t(expect));
+}
+
+template<typename TReg, typename TMask> ALWAYS_INLINE async_once(AcquireMask, TReg& reg, TMask mask, Timeout timeout = {})
+{
+    __pCallee.waitPtr = (uintptr_t*)&reg;
+    __pCallee.waitTimeout = Timeout::__raw_value(timeout);
+    return __pCallee._prepare_wait(AsyncResult::WaitAcquire, uintptr_t(mask), 0);
+}
+
+template<typename TReg, typename TMask> ALWAYS_INLINE async_once(AcquireMaskZero, TReg& reg, TMask mask, Timeout timeout = {})
+{
+    __pCallee.waitPtr = (uintptr_t*)&reg;
+    __pCallee.waitTimeout = Timeout::__raw_value(timeout);
+    return __pCallee._prepare_wait(AsyncResult::WaitAcquire, uintptr_t(mask), uintptr_t(mask));
+}
+
+template<typename TSig> ALWAYS_INLINE async_once(WaitSignal, TSig& signal, Timeout timeout = {})
+{
+    __pCallee.waitPtr = (uintptr_t*)&signal;
+    __pCallee.waitTimeout = Timeout::__raw_value(timeout);
+    return __pCallee._prepare_wait(AsyncResult::WaitSignal);
+}
+
+template<typename TSig> ALWAYS_INLINE async_once(WaitSignalOff, TSig& signal, Timeout timeout = {})
+{
+    __pCallee.waitPtr = (uintptr_t*)&signal;
+    __pCallee.waitTimeout = Timeout::__raw_value(timeout);
+    return __pCallee._prepare_wait(AsyncResult::WaitInvertedSignal);
+}
 
 //! Waits indefinitely for the value at the specified memory location to become the expected value (after masking)
-#define await_mask(reg, mask, expect)   _await_mask(Wait, reg, mask, expect, Timeout::Infinite)
+#define await_mask(reg, mask, expect)   await(::WaitMask, reg, mask, expect, Timeout::Infinite)
 //! Waits for the value at the specified memory location to become the expected value (after masking) with the specified timeout
-#define await_mask_timeout(reg, mask, expect, timeout) _await_mask(Wait, reg, mask, expect, timeout)
+#define await_mask_timeout(reg, mask, expect, timeout) await(::WaitMask, reg, mask, expect, timeout)
 //! Waits for the value at the specified memory location to become the expected value (after masking) until the specified instant
-#define await_mask_until(reg, mask, expect, until) _await_mask(Wait, reg, mask, expect, Timeout::Absolute(until))
+#define await_mask_until(reg, mask, expect, until) await(::WaitMask, reg, mask, expect, Timeout::Absolute(until))
 //! Waits for the value at the specified memory location to become the expected value (after masking) for the specified number of milliseconds
-#define await_mask_ms(reg, mask, expect, ms) _await_mask(Wait, reg, mask, expect, Timeout::Milliseconds(ms))
+#define await_mask_ms(reg, mask, expect, ms) await(::WaitMask, reg, mask, expect, Timeout::Milliseconds(ms))
 //! Waits for the value at the specified memory location to become the expected value (after masking) for the specified number of seconds
-#define await_mask_sec(reg, mask, expect, sec) _await_mask(Wait, reg, mask, expect, Timeout::Seconds(sec))
+#define await_mask_sec(reg, mask, expect, sec) await(::WaitMask, reg, mask, expect, Timeout::Seconds(sec))
 //! Waits for the value at the specified memory location to become the expected value (after masking) for the specified number of platform-dependent ticks
-#define await_mask_ticks(reg, mask, expect, ticks) _await_mask(Wait, reg, mask, expect, Timeout::Ticks(ticks))
+#define await_mask_ticks(reg, mask, expect, ticks) await(::WaitMask, reg, mask, expect, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the value at the specified memory location to become other than the expected value (after masking)
-#define await_mask_not(reg, mask, expect)   _await_mask(WaitInverted, reg, mask, expect, Timeout::Infinite)
+#define await_mask_not(reg, mask, expect)   await(::WaitMaskNot, reg, mask, expect, Timeout::Infinite)
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) with the specified timeout
-#define await_mask_not_timeout(reg, mask, expect, timeout) _await_mask(WaitInverted, reg, mask, expect, timeout)
+#define await_mask_not_timeout(reg, mask, expect, timeout) await(::WaitMaskNot, reg, mask, expect, timeout)
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) until the specified instant
-#define await_mask_not_until(reg, mask, expect, until) _await_mask(WaitInverted, reg, mask, expect, Timeout::Absolute(until))
+#define await_mask_not_until(reg, mask, expect, until) await(::WaitMaskNot, reg, mask, expect, Timeout::Absolute(until))
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of milliseconds
-#define await_mask_not_ms(reg, mask, expect, ms) _await_mask(WaitInverted, reg, mask, expect, Timeout::Milliseconds(ms))
+#define await_mask_not_ms(reg, mask, expect, ms) await(::WaitMaskNot, reg, mask, expect, Timeout::Milliseconds(ms))
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of seconds
-#define await_mask_not_sec(reg, mask, expect, sec) _await_mask(WaitInverted, reg, mask, expect, Timeout::Seconds(sec))
+#define await_mask_not_sec(reg, mask, expect, sec) await(::WaitMaskNot, reg, mask, expect, Timeout::Seconds(sec))
 //! Waits for the value at the specified memory location to become other than the expected value (after masking) for the specified number of platform-dependent ticks
-#define await_mask_not_ticks(reg, mask, expect, ticks) _await_mask(WaitInverted, reg, mask, expect, Timeout::Ticks(ticks))
+#define await_mask_not_ticks(reg, mask, expect, ticks) await(::WaitMaskNot, reg, mask, expect, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the byte at the specified memory location to become non-zero
-#define await_signal(sig) _await_signal(WaitSignal, sig, Timeout::Infinite)
+#define await_signal(sig) await(::WaitSignal, sig, Timeout::Infinite)
 //! Waits for the byte at the specified memory location to become non-zero with the specified timeout
-#define await_signal_timeout(sig, timeout) _await_signal(WaitSignal, sig, timeout)
+#define await_signal_timeout(sig, timeout) await(::WaitSignal, sig, timeout)
 //! Waits for the byte at the specified memory location to become non-zero until the specified instant
-#define await_signal_until(sig, until) _await_signal(WaitSignal, sig, Timeout::Absolute(until))
+#define await_signal_until(sig, until) await(::WaitSignal, sig, Timeout::Absolute(until))
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of milliseconds
-#define await_signal_ms(sig, ms) _await_signal(WaitSignal, sig, Timeout::Milliseconds(ms))
+#define await_signal_ms(sig, ms) await(::WaitSignal, sig, Timeout::Milliseconds(ms))
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of seconds
-#define await_signal_sec(sig, sec) _await_signal(WaitSignal, sig, Timeout::Seconds(sec))
+#define await_signal_sec(sig, sec) await(::WaitSignal, sig, Timeout::Seconds(sec))
 //! Waits for the byte at the specified memory location to become non-zero for the specified number of platform-dependent ticks
-#define await_signal_ticks(sig, ticks) _await_signal(WaitSignal, sig, Timeout::Ticks(ticks))
+#define await_signal_ticks(sig, ticks) await(::WaitSignal, sig, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the byte at the specified memory location to become zero
-#define await_signal_off(sig) _await_signal(WaitInvertedSignal, sig, Timeout::Infinite)
+#define await_signal_off(sig) await(::WaitSignalOff, sig, Timeout::Infinite)
 //! Waits for the byte at the specified memory location to become zero with the specified timeout
-#define await_signal_off_timeout(sig, timeout) _await_signal(WaitInvertedSignal, sig, timeout)
+#define await_signal_off_timeout(sig, timeout) await(::WaitSignalOff, sig, timeout)
 //! Waits for the byte at the specified memory location to become zero until the specified instant
-#define await_signal_off_until(sig, until) _await_signal(WaitInvertedSignal, sig, Timeout::Absolute(until))
+#define await_signal_off_until(sig, until) await(::WaitSignalOff, sig, Timeout::Absolute(until))
 //! Waits for the byte at the specified memory location to become zero for the specified number of milliseconds
-#define await_signal_off_ms(sig, ms) _await_signal(WaitInvertedSignal, sig, Timeout::Milliseconds(ms))
+#define await_signal_off_ms(sig, ms) await(::WaitSignalOff, sig, Timeout::Milliseconds(ms))
 //! Waits for the byte at the specified memory location to become zero for the specified number of seconds
-#define await_signal_off_sec(sig, sec) _await_signal(WaitInvertedSignal, sig, Timeout::Seconds(sec))
+#define await_signal_off_sec(sig, sec) await(::WaitSignalOff, sig, Timeout::Seconds(sec))
 //! Waits for the byte at the specified memory location to become zero for the specified number of platform-dependent ticks
-#define await_signal_off_ticks(sig, ticks) _await_signal(WaitInvertedSignal, sig, Timeout::Ticks(ticks))
+#define await_signal_off_ticks(sig, ticks) await(::WaitSignalOff, sig, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the acquisition of the specified bits
-#define await_acquire(reg, mask)   _await_mask(WaitAcquire, reg, mask, 0, Timeout::Infinite)
+#define await_acquire(reg, mask)   await(::AcquireMask, reg, mask, Timeout::Infinite)
 //! Waits for the acquisition of the specified bits with the specified timeout
-#define await_acquire_timeout(reg, mask, timeout) _await_mask(WaitAcquire, reg, mask, 0, timeout)
+#define await_acquire_timeout(reg, mask, timeout) await(::AcquireMask, reg, mask, timeout)
 //! Waits for the acquisition of the specified bits until the specified instant
-#define await_acquire_until(reg, mask, until) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Absolute(until))
+#define await_acquire_until(reg, mask, until) await(::AcquireMask, reg, mask, Timeout::Absolute(until))
 //! Waits for the acquisition of the specified bits for the specified number of milliseconds
-#define await_acquire_ms(reg, mask, ms) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Milliseconds(ms))
+#define await_acquire_ms(reg, mask, ms) await(::AcquireMask, reg, mask, Timeout::Milliseconds(ms))
 //! Waits for the acquisition of the specified bits for the specified number of seconds
-#define await_acquire_sec(reg, mask, sec) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Seconds(sec))
+#define await_acquire_sec(reg, mask, sec) await(::AcquireMask, reg, mask, Timeout::Seconds(sec))
 //! Waits for the acquisition of the specified bits for the specified number of platform-dependent ticks
-#define await_acquire_ticks(reg, mask, ticks) _await_mask(WaitAcquire, reg, mask, 0, Timeout::Ticks(ticks))
+#define await_acquire_ticks(reg, mask, ticks) await(::AcquireMask, reg, mask, Timeout::Ticks(ticks))
 
 //! Waits indefinitely for the inverse acquisition of the specified bits
-#define await_acquire_zero(reg, mask)   _await_mask(WaitAcquire, reg, mask, mask, Timeout::Infinite)
+#define await_acquire_zero(reg, mask)   await(::AcquireMaskZero, reg, mask, Timeout::Infinite)
 //! Waits for the inverse acquisition of the specified bits with the specified timeout
-#define await_acquire_zero_timeout(reg, mask, timeout) _await_mask(WaitAcquire, reg, mask, mask, timeout)
+#define await_acquire_zero_timeout(reg, mask, timeout) await(::AcquireMaskZero, reg, mask, timeout)
 //! Waits for the inverse acquisition of the specified bits until the specified instant
-#define await_acquire_zero_until(reg, mask, until) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Absolute(until))
+#define await_acquire_zero_until(reg, mask, until) await(::AcquireMaskZero, reg, mask, Timeout::Absolute(until))
 //! Waits for the inverse acquisition of the specified bits for the specified number of milliseconds
-#define await_acquire_zero_ms(reg, mask, ms) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Milliseconds(ms))
+#define await_acquire_zero_ms(reg, mask, ms) await(::AcquireMaskZero, reg, mask, Timeout::Milliseconds(ms))
 //! Waits for the inverse acquisition of the specified bits for the specified number of seconds
-#define await_acquire_zero_sec(reg, mask, sec) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Seconds(sec))
+#define await_acquire_zero_sec(reg, mask, sec) await(::AcquireMaskZero, reg, mask, Timeout::Seconds(sec))
 //! Waits for the inverse acquisition of the specified bits for the specified number of platform-dependent ticks
-#define await_acquire_zero_ticks(reg, mask, ticks) _await_mask(WaitAcquire, reg, mask, mask, Timeout::Ticks(ticks))
+#define await_acquire_zero_ticks(reg, mask, ticks) await(::AcquireMaskZero, reg, mask, Timeout::Ticks(ticks))
+
+template<typename TFrame> struct __async_binding
+{
+    ALWAYS_INLINE __async_binding(AsyncFrame& f)
+        : f(f) {}
+
+    ALWAYS_INLINE operator AsyncFrame**()
+    {
+        contAfter = false;
+        static_assert(std::is_same_v<TFrame, AsyncFrame**>, "Cannot call a full async function from an async_once function");
+        return &f.callee;
+    }
+
+    ALWAYS_INLINE operator AsyncFrame&()
+    {
+        contAfter = true;
+        return f;
+    }
+
+    AsyncFrame& f;
+    bool contAfter;
+};
 
 //! Calls another async function
 #define await(fn, ...) ({ \
-    __label__ next; \
-    f.__requireContinue(&&next); \
+    __label__ next, next2, done; \
+    intptr_t __res; \
 next: \
-    auto _res = fn(&__async.callee, ## __VA_ARGS__); \
+    auto __binding = __async_binding<decltype(__pCallee)>(__async); \
+    auto _res = fn(__binding, ## __VA_ARGS__); \
     auto res = unpack<_async_res_t>(_res); \
-    if (res.type != AsyncResult::Complete) return _res; \
-    res.value; })
+    if (res.type != AsyncResult::Complete) { f.__continue(__binding.contAfter ? &&next2 : &&next); return _res; } \
+    __res = res.value; goto done; \
+next2: \
+    __res = __async.waitResult; \
+done: \
+    __res; })
 
 //! Spawns multiple tasks and awaits completion of all
-#define await_all(...) ({ \
-    __label__ next; \
-    f.__requireContinue(&&next); \
-    return ::kernel::Task::_RunAll(__async, __VA_ARGS__); \
-next: __async.waitPtr = NULL; __async.waitResult; })
+#define await_all(...) await(::kernel::Task::RunAll, __VA_ARGS__)
 
 //! Begins a block where multiple tasks can be spawned dynamically and then awaited
 #define await_multiple_init() ({ \
@@ -373,12 +411,10 @@ next: __async.waitPtr = NULL; __async.waitResult; })
 //! Adds a task to the group that will be awaited at once
 #define await_multiple_add_method(instance, method, ...) await_multiple_add(instance, &decltype(instance)::method, ## __VA_ARGS__)
 
+ALWAYS_INLINE async_once(_WaitMultiple) { return _ASYNC_RES(&__pCallee, AsyncResult::WaitMultiple); }
+
 //! Waits for all the tasks added using await_multiple_add() to complete
-#define await_multiple() ({ \
-    __label__ next; \
-    f.__requireContinue(&&next); \
-    return _ASYNC_RES(&__async, AsyncResult::WaitMultiple); \
-next: __async.waitPtr = NULL; __async.waitResult; })
+#define await_multiple() await(_WaitMultiple)
 
 //! Alias for @ref Delegate to an asynchronous function
 template<typename... Args> using AsyncDelegate = Delegate<async_res_t, AsyncFrame**, Args...>;
@@ -389,3 +425,9 @@ typedef async_res_t (*async_fptr_t)(AsyncFrame**);
 template<typename... Args> using async_fptr_args_t = async_res_t (*)(AsyncFrame**, Args... args);
 //! Pointer to an asynchronous instance method
 template<class T, typename... Args> using async_methodptr_t = async_res_t (T::*)(AsyncFrame**, Args... args);
+
+#define async_suppress_uninitialized_warning(...) \
+_Pragma("GCC diagnostic push") \
+_Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"") \
+__VA_ARGS__; \
+_Pragma("GCC diagnostic pop")

@@ -100,10 +100,12 @@ public:
             if (mon)
             {
                 MYTRACE("Monitoring location %p", mon);
+                async_suppress_uninitialized_warning(
                 if (!await_mask_not_timeout(*mon, ~0, *mon, f.timeout))
                 {
                     async_return(0);
                 }
+                );
             }
             else if (f.timeout.Elapsed())
             {

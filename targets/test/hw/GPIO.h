@@ -47,8 +47,8 @@ struct GPIOPin
     void Toggle() const { *port ^= mask; }
 #ifdef Ckernel
     //! Waits for the pin to have the specified state
-    async(WaitFor, bool state, Timeout timeout = Timeout::Infinite)
-    async_def_once()
+    async_once(WaitFor, bool state, Timeout timeout = Timeout::Infinite)
+    async_once_def()
     {
         async_return(await_mask_timeout(*port, mask, mask * state, timeout));
     }

@@ -58,7 +58,7 @@ private:
     } wait;             //!< Additional parameters related to wait
 
     //! Runs multiple child tasks and configures the frame to wait for all of them to complete
-    static async_res_t RunAll(::AsyncFrame& frame, const AsyncDelegate<>*, size_t count);
+    static async_once(RunAll, const AsyncDelegate<>*, size_t count);
 
 public:
     //! Runs a new task on the main scheduler
@@ -91,10 +91,10 @@ public:
     //! Configures a delegate that is called when the task completes; can be used only before the task is started
     ALWAYS_INLINE Task& OnComplete(Delegate<void, intptr_t> delegate) { ASSERT(!top); onComplete = delegate; return *this; }
 
-    template<typename... Args> ALWAYS_INLINE static async_res_t _RunAll(::AsyncFrame& frame, Args... delegates)
+    template<typename... Args> ALWAYS_INLINE static async_once(RunAll, Args... delegates)
     {
         const AsyncDelegate<> tmp[] = { delegates... };
-        return RunAll(frame, tmp, sizeof...(delegates));
+        return async_forward(RunAll, tmp, sizeof...(delegates));
     }
 
     friend class Scheduler;
