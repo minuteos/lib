@@ -126,3 +126,5 @@ ALWAYS_INLINE constexpr Delegate<TRes, Args...> GetDelegate(const T* target, TRe
 {
     return Delegate<TRes, Args...>(target, method);
 }
+
+#define GetMethodDelegate(instance, method)   GetDelegate(instance, &std::remove_pointer_t<decltype(instance)>::method)
