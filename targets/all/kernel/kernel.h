@@ -17,6 +17,7 @@
 
 #include <kernel/Scheduler.h>
 #include <kernel/Task.h>
+#include <kernel/Worker.h>
 
 #include <kernel/Timeout.h>
 #include <kernel/PeriodicWakeup.h>
