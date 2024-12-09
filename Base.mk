@@ -73,6 +73,7 @@ OBJDIR    = $(OUTDIR)obj/
 OUTPUT    = $(OUTDIR)$(NAME)
 PRIMARY_EXT = .elf
 PRIMARY_OUTPUT = $(OUTPUT)$(PRIMARY_EXT)
+PRIMARY_DEPS = $(OBJDIR)primary.d
 
 # Include directories are the directories which contain components
 INCLUDE_DIRS = $(INCLUDE_OVERRIDE_DIRS) $(PROJECT_SOURCE_DIR) $(TARGET_DIRS) $(TARGET_ROOTS)
@@ -151,7 +152,7 @@ LN = ln
 SOURCES := $(GENERATED_SOURCES) $(call subfiles,$(SOURCE_DIRS),$(addprefix *,$(SOURCE_EXTS))) $(ADDITIONAL_SOURCES)
 OBJS    := $(addprefix $(OBJDIR),$(addsuffix .o,$(basename $(SOURCES))))
 BLOBS   := $(call subfiles,$(SOURCE_DIRS),*.o) $(ADDITIONAL_BLOBS)
-DEPS    := $(OBJS:.o=.d) $(ADDITIONAL_DEPS)
+DEPS    := $(OBJS:.o=.d) $(PRIMARY_DEPS) $(ADDITIONAL_DEPS)
 # all components get a macro C<component_name>, useful for optional dependencies
 DEFINES += $(subst /,_,$(subst -,_,$(addprefix C,$(COMPONENTS))))
 DEFINES += $(subst /,_,$(subst -,_,$(addprefix T,$(TARGETS))))
@@ -161,11 +162,12 @@ DEP_OPT = -MMD -MP
 DEF_OPT = $(addprefix -D,$(DEFINES))
 INC_OPT = $(call diropt,-I,$(call subdirs,$(dir $<),private) $(INCLUDE_DIRS))
 LIB_OPT = $(call diropt,-L,$(LIB_DIRS) $(LINK_DIRS)) $(addprefix -l,$(LIBS))
+LINK_DEP_OPT = -Wl,--dependency-file=$(PRIMARY_DEPS)
 
 C_OPT    = $(DEF_OPT) $(INC_OPT) $(DEP_OPT) $(CPP_FLAGS) $(ARCH_FLAGS) $(COMMON_FLAGS) $(OPT_FLAGS)
 CC_OPT   = $(C_OPT) $(C_FLAGS) $(C_FLAGS_EXTRA)
 CXX_OPT  = $(C_OPT) $(CXX_FLAGS) $(CXX_FLAGS_EXTRA)
-LINK_OPT = $(ARCH_FLAGS) $(LIB_OPT) $(LINK_FLAGS)
+LINK_OPT = $(ARCH_FLAGS) $(LIB_OPT) $(LINK_DEP_OPT) $(LINK_FLAGS)
 
 #
 # Automatic precompiled header support
