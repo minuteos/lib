@@ -161,7 +161,7 @@ DEFINES += $(DEFINES_EXTRA)
 DEP_OPT = -MMD -MP
 DEF_OPT = $(addprefix -D,$(DEFINES))
 INC_OPT = $(call diropt,-I,$(call subdirs,$(dir $<),private) $(INCLUDE_DIRS))
-LIB_OPT = $(call diropt,-L,$(LIB_DIRS) $(LINK_DIRS)) $(addprefix -l,$(LIBS))
+LIB_OPT = $(call diropt,-L,$(SOURCE_DIR) $(LIB_DIRS) $(LINK_DIRS)) $(addprefix -l,$(LIBS))
 LINK_DEP_OPT = -Wl,--dependency-file=$(PRIMARY_DEPS)
 
 C_OPT    = $(DEF_OPT) $(INC_OPT) $(DEP_OPT) $(CPP_FLAGS) $(ARCH_FLAGS) $(COMMON_FLAGS) $(OPT_FLAGS)
