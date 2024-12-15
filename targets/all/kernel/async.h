@@ -162,10 +162,10 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
         void __continue(contptr_t cont) { __async.cont = cont; } \
         __VA_ARGS__; }; \
     static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
-    auto __prolog_res = unpack<_async_prolog_t>(_async_prolog(__pCallee, &__spec)); \
-    __FRAME& f = *(__FRAME*)__prolog_res.frame; \
+    union { async_prolog_t p; _async_prolog_t u; } __prolog_res { _async_prolog(__pCallee, &__spec) }; \
+    __FRAME& f = *(__FRAME*)__prolog_res.u.frame; \
     AsyncFrame& __async = f.__async; \
-    goto *__prolog_res.cont; \
+    goto *__prolog_res.u.cont; \
     __start__: new(&f) __FRAME;
 
 //! Construction-time initialization of fields inside the async frame
@@ -385,10 +385,9 @@ template<typename TFrame> struct __async_binding
     intptr_t __res; \
 next: \
     auto __binding = __async_binding<decltype(__pCallee)>(__async); \
-    auto _res = fn(__binding, ## __VA_ARGS__); \
-    auto res = unpack<_async_res_t>(_res); \
-    if (res.type != AsyncResult::Complete) { f.__continue(__binding.contAfter ? &&next2 : &&next); return _res; } \
-    __res = res.value; goto done; \
+    union { async_res_t p; _async_res_t u; } _res { fn(__binding, ## __VA_ARGS__) }; \
+    if (_res.u.type != AsyncResult::Complete) { f.__continue(__binding.contAfter ? &&next2 : &&next); return _res.p; } \
+    __res = _res.u.value; goto done; \
 next2: \
     __res = __async.waitResult; \
 done: \
