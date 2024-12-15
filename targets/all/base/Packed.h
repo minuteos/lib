@@ -61,19 +61,19 @@ template<typename T> union PackedWrapper
 };
 
 template<typename T>
-ALWAYS_INLINE static constexpr T unpack(const Packed<T>& packed)
+ALWAYS_INLINE OPTIMIZE static constexpr T unpack(const Packed<T>& packed)
 {
     return PackedWrapper<T>{ .packed = packed }.value;
 }
 
 template<typename T, typename... Initializers>
-ALWAYS_INLINE static constexpr Packed<T> pack(Initializers... init)
+ALWAYS_INLINE OPTIMIZE static constexpr Packed<T> pack(Initializers... init)
 {
     return PackedWrapper<T>{ .value = { init... } }.packed;
 }
 
 template<typename T>
-ALWAYS_INLINE static constexpr Packed<T> pack(const T& init)
+ALWAYS_INLINE OPTIMIZE static constexpr Packed<T> pack(const T& init)
 {
     return PackedWrapper<T>{ .value = init }.packed;
 }
