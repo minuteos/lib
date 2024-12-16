@@ -33,4 +33,7 @@ template<typename T, T value> constexpr T force_constexpr() { return value; }
 //! Cause a value to never be zero
 template<typename T> constexpr T nonzero(T value, int nonZero = 1) { return value ? value : (T)nonZero; }
 
+//! Parse a nibble out of a base 11-36 value, returning -1 for invalid characters
+int parse_nibble(char c, int base = 16);
+
 #endif
