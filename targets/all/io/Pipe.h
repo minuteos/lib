@@ -91,6 +91,47 @@ public:
         friend class Pipe;
     };
 
+    class SpanIterator
+    {
+    public:
+        SpanIterator() = default;
+
+        ALWAYS_INLINE constexpr bool operator ==(const SpanIterator& other) const { return remaining == other.remaining; }
+        ALWAYS_INLINE constexpr bool operator !=(const SpanIterator& other) const { return remaining != other.remaining; }
+        ALWAYS_INLINE constexpr SpanIterator& operator ++()
+        {
+            if (remaining > seg->length - offset)
+            {
+                remaining -= seg->length - offset;
+                seg = seg->next;
+                ASSERT(seg);
+                offset = 0;
+            }
+            else
+            {
+                remaining = 0;
+            }
+
+            return *this;
+        }
+        ALWAYS_INLINE constexpr Span operator *() const { return Span(seg->data + offset, std::min(remaining, seg->length - offset)); }
+
+        ALWAYS_INLINE constexpr SpanIterator begin() const { return *this; }
+        ALWAYS_INLINE constexpr SpanIterator end() const { return SpanIterator(); }
+
+        ALWAYS_INLINE constexpr operator bool() const { return !!remaining; }
+        ALWAYS_INLINE constexpr size_t Available() const { return remaining; }
+
+    private:
+        constexpr SpanIterator(PipeSegment* seg, size_t offset, size_t remaining)
+            : seg(seg), offset(offset), remaining(remaining) {}
+
+        PipeSegment* seg;
+        size_t offset, remaining;
+
+        friend class Pipe;
+    };
+
 private:
     PipeAllocator& allocator;       //!< Allocator used for new segments
     PipeSegment* rseg = NULL;       //!< Pointer to the current read segment (head)
@@ -145,6 +186,10 @@ private:
     constexpr Iterator ReaderIteratorBegin() const { return Iterator(rseg, roff, wpos - rpos); }
     constexpr Iterator ReaderIteratorBegin(size_t length) const { return Iterator(rseg, roff, std::min(length, size_t(wpos - rpos))); }
     constexpr Iterator ReaderIteratorEnd() const { return Iterator(); }
+
+    constexpr SpanIterator ReaderSpanIteratorBegin() const { return SpanIterator(rseg, roff, wpos - rpos); }
+    constexpr SpanIterator ReaderSpanIteratorBegin(size_t length) const { return SpanIterator(rseg, roff, std::min(length, size_t(wpos - rpos))); }
+    constexpr SpanIterator ReaderSpanIteratorEnd() const { return SpanIterator(); }
 
     static Span::packed_t GetSpan(PipeSegment* seg, size_t offset, size_t count);
 
