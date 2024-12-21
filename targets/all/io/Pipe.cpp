@@ -679,9 +679,14 @@ Span::packed_t Pipe::GetSpan(PipeSegment* seg, size_t offset, size_t count)
 {
     for (;;)
     {
-        ASSERT(seg);
+        if (!seg)
+        {
+            return {};
+        }
         if (seg->length > offset)
+        {
             return Span(seg->data + offset, std::min(count, seg->length - offset));
+        }
         offset -= seg->length;
         seg = seg->next;
     }
