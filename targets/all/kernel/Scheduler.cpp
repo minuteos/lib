@@ -165,7 +165,7 @@ mono_t Scheduler::Run()
 #endif
 
 #if !KERNEL_SYNC_ONLY
-        mono_t t = CurrentTime();
+        mono_t t = tickTime = CurrentTime();
         mono_signed_t maxSleep = MONO_SIGNED_MAX;
         mono_signed_t sleep;
 #endif

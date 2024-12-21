@@ -103,6 +103,8 @@ public:
 
     //! Retrieves the currently running task
     ALWAYS_INLINE class Task& CurrentTask() { return *current; }
+    //! Retrieves the time of the current scheduler tick
+    ALWAYS_INLINE mono_t TickTime() const { return tickTime; }
 
 private:
     //! Adds a task to the scheduler
@@ -115,6 +117,7 @@ private:
     class Task* waiting = NULL;     //!< Queue of tasks waiting for a value to change
     class Task** nextWaiting = &waiting;    //!< Insertion pointer for the next waiting task
     class Task* current = NULL;     //!< Currently running task
+    mono_t tickTime;
 #if !KERNEL_SYNC_ONLY
     LinkedList<PreSleepDelegate> preSleep;  //!< List of callbacks called before sleep
 #endif
