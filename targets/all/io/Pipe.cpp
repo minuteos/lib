@@ -402,6 +402,8 @@ async_def(
     }
 
     apos += seg->length;
+    state++;
+
     async_return(seg->length);
 }
 async_end
