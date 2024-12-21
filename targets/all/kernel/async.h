@@ -408,7 +408,7 @@ done: \
 })
 
 //! Adds a task to the group that will be awaited at once
-#define await_multiple_add_method(instance, method, ...) await_multiple_add(instance, &decltype(instance)::method, ## __VA_ARGS__)
+#define await_multiple_add_method(instance, method, ...) await_multiple_add(instance, &std::remove_pointer_t<decltype(instance)>::method, ## __VA_ARGS__)
 
 ALWAYS_INLINE async_once(_WaitMultiple) { return _ASYNC_RES(&__pCallee, AsyncResult::WaitMultiple); }
 
