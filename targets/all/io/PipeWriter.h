@@ -47,6 +47,8 @@ public:
     void Close() { ASSERT(pipe); pipe->WriterClose(); }
     bool IsClosed() const { ASSERT(pipe); return pipe->IsClosed(); }
 
+    constexpr operator bool() const { return pipe; }
+
 private:
     Pipe* pipe;
 

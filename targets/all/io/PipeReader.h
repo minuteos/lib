@@ -61,6 +61,8 @@ public:
     ALWAYS_INLINE constexpr Pipe::Iterator Enumerate(size_t length) const { ASSERT(pipe); return pipe->ReaderIteratorBegin(length); }
     ALWAYS_INLINE constexpr Pipe::SpanIterator EnumerateSpans(size_t length) const { ASSERT(pipe); return pipe->ReaderSpanIteratorBegin(length); }
 
+    constexpr operator bool() const { return pipe; }
+
 private:
     Pipe* pipe;
 
