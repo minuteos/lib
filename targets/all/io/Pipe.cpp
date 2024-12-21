@@ -96,6 +96,26 @@ async_def(
 }
 async_end
 
+
+async(Pipe::Empty, Timeout timeout)
+async_def(
+    Timeout timeout
+)
+{
+    f.timeout = timeout.MakeAbsolute();
+
+    while (!IsEmpty())
+    {
+        if (!await(Change, f.timeout))
+        {
+            break;
+        }
+    }
+
+    async_return(IsEmpty());
+}
+async_end
+
 async(Pipe::WriterWrite, const char* data, size_t length, Timeout timeout)
 async_def(
     Timeout timeout;

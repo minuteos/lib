@@ -38,6 +38,7 @@ public:
     bool IsCompleted() const { return IsEmpty() && IsClosed(); }
     void BindSignal(bool* sig) { wsignal = sig; }
     async(Completed, Timeout timeout = Timeout::Infinite);
+    async(Empty, Timeout timeout = Timeout::Infinite);
     async_once(Change, Timeout timeout = Timeout::Infinite) { return async_forward(WaitMaskNot, state, ~0u, state, timeout); }
     void Reset();
     size_t ThrottleLevel() const { return throttle; }

@@ -34,6 +34,7 @@ public:
     async(Read, Buffer buffer, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->ReaderRead, buffer.Pointer(), buffer.Length(), timeout); }
     async(CopyTo, io::PipeWriter writer, size_t offset, size_t count, Timeout timeout = Timeout::Infinite);
     async(MoveTo, io::PipeWriter writer, size_t count, Timeout timeout = Timeout::Infinite);
+    async(Empty, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Empty, timeout); }
     async_once(Change, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Change, timeout); }
     Span GetSpan(size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderSpan(offset); }
     Span Read(Buffer buffer) { ASSERT(pipe); return pipe->ReaderRead(buffer.Pointer(), buffer.Length()); }
