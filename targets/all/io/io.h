@@ -15,3 +15,6 @@
 #include <io/PipeReader.h>
 #include <io/PipeWriter.h>
 #include <io/DuplexPipe.h>
+
+#include <io/Receiver.h>
+#include <io/Transmitter.h>
