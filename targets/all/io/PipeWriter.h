@@ -30,6 +30,7 @@ public:
     constexpr PipeWriter(const DuplexPipe& pipe);
 
     PipePosition Position() const { ASSERT(pipe); return pipe->WriterPosition(); }
+    PipePosition AllocatedPosition() const { ASSERT(pipe); return pipe->WriterAllocatedPosition(); }
     size_t Available() const { ASSERT(pipe); return pipe->WriterAvailable(); }
     size_t AvailableAfter(PipePosition pos) const { ASSERT(pipe); return pipe->WriterAvailableAfter(pos); }
     bool CanAllocate() const { ASSERT(pipe); return pipe->WriterCanAllocate(); }

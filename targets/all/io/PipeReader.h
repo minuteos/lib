@@ -37,6 +37,7 @@ public:
     async(Empty, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Empty, timeout); }
     async_once(Change, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Change, timeout); }
     Span GetSpan(size_t offset = 0) const { ASSERT(pipe); return pipe->ReaderSpan(offset); }
+    Span GetSpanAt(PipePosition position) { ASSERT(pipe); return pipe->ReaderSpanAt(position); }
     Span Read(Buffer buffer) { ASSERT(pipe); return pipe->ReaderRead(buffer.Pointer(), buffer.Length()); }
     void Advance(size_t count) { ASSERT(pipe); pipe->ReaderAdvance(count); }
     void AdvanceTo(PipePosition position) { ASSERT(pipe); pipe->ReaderAdvanceTo(position); }
