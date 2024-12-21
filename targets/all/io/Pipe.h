@@ -118,6 +118,8 @@ public:
 
         void Skip(size_t length);
         Buffer Read(Buffer buf) { return ReadImpl(buf.Pointer(), buf.Length()); }
+        bool Consume(char ch) { return *this && **this == ch ? (++*this, true) : false; }
+        int Read(int def = -1) { if (*this) { def = **this; ++*this; }; return def; }
         ALWAYS_INLINE bool Matches(Span data, size_t offset = 0) const { return remaining >= offset + data.Length() && seg->Matches(segEnd + segRemaining - seg->data + offset, data); }
 
         ALWAYS_INLINE constexpr SpanIterator Spans() const { return SpanIterator(seg, seg->length + segRemaining, remaining); }
