@@ -105,7 +105,7 @@ TEST_CASE("02 Masked waits")
     s.Add([](AsyncFrame** p)
     {
         test();
-        return _ASYNC_RES(0, AsyncResult::Complete);
+        async_once_return(0);
     });
     s.Run();
 }
