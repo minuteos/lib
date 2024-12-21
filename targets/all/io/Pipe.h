@@ -44,55 +44,6 @@ public:
     size_t ThrottleLevel() const { return throttle; }
     void ThrottleLevel(size_t bytes) { throttle = bytes; }
 
-    class Iterator
-    {
-    public:
-        Iterator() = default;
-
-        ALWAYS_INLINE constexpr bool operator ==(const Iterator& other) const { return remaining == other.remaining; }
-        ALWAYS_INLINE constexpr bool operator !=(const Iterator& other) const { return remaining != other.remaining; }
-        ALWAYS_INLINE constexpr Iterator& operator ++()
-        {
-            if (--remaining)
-            {
-                if (!++segRemaining)
-                {
-                    seg = seg->next;
-                    ASSERT(seg);
-                    segRemaining = -seg->length;
-                    segEnd = seg->data - segRemaining;
-                }
-            }
-            return *this;
-        }
-        ALWAYS_INLINE constexpr char operator *() const { return segEnd[segRemaining]; }
-        ALWAYS_INLINE constexpr ptrdiff_t operator -(const Iterator& other) const { return other.remaining - remaining; }
-        ALWAYS_INLINE Iterator operator +(size_t offset) const { auto res = *this; res.Skip(offset); return res; }
-
-        ALWAYS_INLINE constexpr Iterator begin() const { return *this; }
-        ALWAYS_INLINE constexpr Iterator end() const { return Iterator(); }
-
-        ALWAYS_INLINE constexpr operator bool() const { return !!remaining; }
-        ALWAYS_INLINE constexpr size_t Available() const { return remaining; }
-
-        void Skip(size_t length);
-        Buffer Read(Buffer buf) { return ReadImpl(buf.Pointer(), buf.Length()); }
-        ALWAYS_INLINE bool Matches(Span data, size_t offset = 0) const { return remaining >= offset + data.Length() && seg->Matches(segEnd + segRemaining - seg->data + offset, data); }
-
-    private:
-        constexpr Iterator(PipeSegment* seg, size_t offset, size_t remaining)
-            : seg(seg), segEnd(seg->data + seg->length), segRemaining(offset - seg->length), remaining(remaining) {}
-
-        PipeSegment* seg;
-        const uint8_t* segEnd;
-        int segRemaining;
-        size_t remaining;
-
-        Buffer::packed_t ReadImpl(char* data, size_t length);
-
-        friend class Pipe;
-    };
-
     class SpanIterator
     {
     public:
@@ -130,6 +81,57 @@ public:
 
         PipeSegment* seg;
         size_t offset, remaining;
+
+        friend class Pipe;
+    };
+
+    class Iterator
+    {
+    public:
+        Iterator() = default;
+
+        ALWAYS_INLINE constexpr bool operator ==(const Iterator& other) const { return remaining == other.remaining; }
+        ALWAYS_INLINE constexpr bool operator !=(const Iterator& other) const { return remaining != other.remaining; }
+        ALWAYS_INLINE constexpr Iterator& operator ++()
+        {
+            if (--remaining)
+            {
+                if (!++segRemaining)
+                {
+                    seg = seg->next;
+                    ASSERT(seg);
+                    segRemaining = -seg->length;
+                    segEnd = seg->data - segRemaining;
+                }
+            }
+            return *this;
+        }
+        ALWAYS_INLINE constexpr char operator *() const { return segEnd[segRemaining]; }
+        ALWAYS_INLINE constexpr ptrdiff_t operator -(const Iterator& other) const { return other.remaining - remaining; }
+        ALWAYS_INLINE Iterator operator +(size_t offset) const { auto res = *this; res.Skip(offset); return res; }
+
+        ALWAYS_INLINE constexpr Iterator begin() const { return *this; }
+        ALWAYS_INLINE constexpr Iterator end() const { return Iterator(); }
+
+        ALWAYS_INLINE constexpr operator bool() const { return !!remaining; }
+        ALWAYS_INLINE constexpr size_t Available() const { return remaining; }
+
+        void Skip(size_t length);
+        Buffer Read(Buffer buf) { return ReadImpl(buf.Pointer(), buf.Length()); }
+        ALWAYS_INLINE bool Matches(Span data, size_t offset = 0) const { return remaining >= offset + data.Length() && seg->Matches(segEnd + segRemaining - seg->data + offset, data); }
+
+        ALWAYS_INLINE constexpr SpanIterator Spans() const { return SpanIterator(seg, seg->length + segRemaining, remaining); }
+
+    private:
+        constexpr Iterator(PipeSegment* seg, size_t offset, size_t remaining)
+            : seg(seg), segEnd(seg->data + seg->length), segRemaining(offset - seg->length), remaining(remaining) {}
+
+        PipeSegment* seg;
+        const uint8_t* segEnd;
+        int segRemaining;
+        size_t remaining;
+
+        Buffer::packed_t ReadImpl(char* data, size_t length);
 
         friend class Pipe;
     };
