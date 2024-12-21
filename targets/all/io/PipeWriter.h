@@ -38,6 +38,7 @@ public:
     async(WriteF, const char* format, ...) async_def_va(WriteFV, format, Timeout::Infinite, format);
     async(WriteFTimeout, Timeout timeout, const char* format, ...) async_def_va(WriteFV, format, timeout, format);
     async(WriteFV, Timeout timeout, const char* format, va_list va) { ASSERT(pipe); return async_forward(pipe->WriterWriteFV, timeout, format, va); }
+    async_once(Change, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Change, timeout); }
     Buffer GetBuffer(size_t offset = 0) { ASSERT(pipe); return pipe->WriterBuffer(offset); }
     Buffer GetBufferAt(PipePosition position) { ASSERT(pipe); return pipe->WriterBufferAt(position); }
     void Advance(size_t count) { ASSERT(pipe); pipe->WriterAdvance(count); }
