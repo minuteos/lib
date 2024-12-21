@@ -47,6 +47,8 @@ public:
     void Close() { ASSERT(pipe); pipe->WriterClose(); }
     bool IsClosed() const { ASSERT(pipe); return pipe->IsClosed(); }
 
+    ALWAYS_INLINE Pipe::Iterator EnumerateFrom(PipePosition start) const { ASSERT(pipe); return pipe->ReaderIteratorBegin() + size_t(start - pipe->ReaderPosition()); }
+
     constexpr operator bool() const { return pipe; }
 
 private:
