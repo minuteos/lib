@@ -17,7 +17,12 @@ class ID
     uint32_t id;
 
 public:
-    ALWAYS_INLINE constexpr ID(const char fourcc[5]) : id(TO_LE32(fourcc[0] | fourcc[1] << 8 | fourcc[2] << 16 | fourcc[3] << 24)) {}
+    ALWAYS_INLINE constexpr ID(const char (&fourcc)[1]) : id(TO_LE32(fourcc[0])) {}
+    ALWAYS_INLINE constexpr ID(const char (&fourcc)[2]) : id(TO_LE32(fourcc[0] | fourcc[1] << 8)) {}
+    ALWAYS_INLINE constexpr ID(const char (&fourcc)[3]) : id(TO_LE32(fourcc[0] | fourcc[1] << 8 | fourcc[2] << 16)) {}
+    ALWAYS_INLINE constexpr ID(const char (&fourcc)[4]) : id(TO_LE32(fourcc[0] | fourcc[1] << 8 | fourcc[2] << 16 | fourcc[3] << 24)) {}
+    ALWAYS_INLINE constexpr ID(const char (&fourcc)[5]) : id(TO_LE32(fourcc[0] | fourcc[1] << 8 | fourcc[2] << 16 | fourcc[3] << 24)) {}
+
     constexpr ID(uint32_t id) : id(TO_LE32(id)) {}
     constexpr ID() : id(0) {}
 

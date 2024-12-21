@@ -20,4 +20,13 @@ TEST_CASE("01 Byte Order")
     Assert(!memcmp("TEST", &id, 4));
 }
 
+TEST_CASE("02 Alternate Lengths")
+{
+    ID id0(""), id1("T"), id2("TE"), id3("TES");
+    AssertEqual(0u, (uint32_t)id0);
+    Assert(!memcmp("T\0\0\0", &id1, 4));
+    Assert(!memcmp("TE\0\0\0", &id2, 4));
+    Assert(!memcmp("TES\0\0", &id3, 4));
+}
+
 }
