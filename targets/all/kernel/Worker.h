@@ -34,10 +34,10 @@ class Worker
 #endif
 {
 public:
-    template<typename TRes, typename... Args, typename... AArgs> static async_once(RunWithOptions, const WorkerOptions& opts, TRes (*fn)(Args...), AArgs&&... args);
-    template<typename TRes, typename... Args, typename... AArgs> static async_once(RunWithOptions, const WorkerOptions& opts, Delegate<TRes, Args...> fn, AArgs&&... args) { return async_forward(RunWithOptions, {}, fn.FunctionPointer(), fn.Target(), args...); }
-    template<typename TRes, typename... Args, typename... AArgs> static async_once(Run, TRes (*fn)(Args...), AArgs&&... args) { return async_forward(RunWithOptions, {}, fn, args...); }
-    template<typename TRes, typename... Args, typename... AArgs> static async_once(Run, Delegate<TRes, Args...> fn, AArgs&&... args) { return async_forward(RunWithOptions, {}, fn, args...); }
+    template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(RunWithOptions, const WorkerOptions& opts, TRes (*fn)(Args...), AArgs&&... args);
+    template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(RunWithOptions, const WorkerOptions& opts, Delegate<TRes, Args...> fn, AArgs&&... args) { return async_forward(RunWithOptions, {}, fn.FunctionPointer(), fn.Target(), args...); }
+    template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(Run, TRes (*fn)(Args...), AArgs&&... args) { return async_forward(RunWithOptions, {}, fn, args...); }
+    template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(Run, Delegate<TRes, Args...> fn, AArgs&&... args) { return async_forward(RunWithOptions, {}, fn, args...); }
 
 private:
     typedef intptr_t (*fptr_run_t)(Worker* w);
@@ -66,14 +66,14 @@ template<typename TRes, typename... Args> class WorkerFnWithArgs : public Worker
     std::tuple<Args...> args;
 
 public:
-    WorkerFnWithArgs(const WorkerOptions& opts, fptr_t f, Args... args)
+    constexpr WorkerFnWithArgs(const WorkerOptions& opts, fptr_t f, Args... args)
         : Worker(opts, &Call), f(f), args(args...)
     {
     }
 
 private:
-    static intptr_t Call(Worker* w) { return ((WorkerFnWithArgs*)w)->Call(); }
-    intptr_t Call()
+    FLATTEN static intptr_t Call(Worker* w) { return ((WorkerFnWithArgs*)w)->Call(); }
+    FLATTEN intptr_t Call()
     {
         if constexpr (std::is_same_v<TRes, void>)
         {
@@ -87,7 +87,7 @@ private:
     }
 };
 
-template<typename TRes, typename... Args, typename... AArgs> async_once(Worker::RunWithOptions, const WorkerOptions& opts, TRes (*fn)(Args...), AArgs&&... args)
+template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE async_once(Worker::RunWithOptions, const WorkerOptions& opts, TRes (*fn)(Args...), AArgs&&... args)
 {
     auto worker = new(MemPoolAllocDynamic<WorkerFnWithArgs<TRes, Args...>>()) WorkerFnWithArgs<TRes, Args...>(opts, fn, std::forward<AArgs>(args)...);
     return worker->Run(__pCallee);

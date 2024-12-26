@@ -120,7 +120,7 @@ public:
     }
 
 private:
-    async(Call) { return std::apply(delegate, std::tuple_cat(std::make_tuple(__pCallee), args)); }
+    FLATTEN async(Call) { return std::apply(delegate, std::tuple_cat(std::make_tuple(__pCallee), args)); }
 };
 
 template<typename... Args> class TaskFnWithArgs : public Task
@@ -137,7 +137,7 @@ public:
     }
 
 private:
-    async(Call) { return std::apply(f, std::tuple_cat(std::make_tuple(__pCallee), args)); }
+    FLATTEN async(Call) { return std::apply(f, std::tuple_cat(std::make_tuple(__pCallee), args)); }
 };
 
 

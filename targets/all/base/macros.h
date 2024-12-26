@@ -9,7 +9,8 @@
 #pragma once
 
 #if __GNUC__
-#define ALWAYS_INLINE   __attribute__((always_inline)) inline
+#define ALWAYS_INLINE   __attribute__((always_inline, artificial)) inline
+#define FLATTEN         __attribute__((flatten))
 #define NO_INLINE       __attribute__((noinline))
 #define UNUSED          __attribute__((unused))
 #define PACKED_STRUCT   struct __attribute__((packed, aligned(sizeof(int))))
@@ -29,6 +30,10 @@
 // safe fallbacks
 #ifndef ALWAYS_INLINE
 #define ALWAYS_INLINE   inline
+#endif
+
+#ifndef FLATTEN
+#define FLATTEN
 #endif
 
 #ifndef NO_INLINE
