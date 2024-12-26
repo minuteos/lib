@@ -94,3 +94,5 @@ template<typename TRes, typename... Args, typename... AArgs> async_once(Worker::
 }
 
 }
+
+#include <kernel/PlatformWorkerInline.h>
