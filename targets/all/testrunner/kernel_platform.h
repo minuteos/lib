@@ -25,4 +25,8 @@ extern mono_t __testrunner_time;
 #define PLATFORM_ENABLE_INTERRUPTS()
 #define PLATFORM_SLEEP(since, duration) ({ __testrunner_time = since + duration; })
 
+#ifndef PLATFORM_CRITICAL_SECTION
+#define PLATFORM_CRITICAL_SECTION()
+#endif
+
 #define TEST_BACKGROUND_LOOP    while (TestCase::Active())
