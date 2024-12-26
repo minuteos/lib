@@ -152,6 +152,9 @@ void TestCase::_Fail(int line, const char* format, ...)
 void TestCase::_Fail(int line, std::function<void(void)> reason)
 {
     s_cur->PrintResult(line, reason);
+#if Ckernel
+    ::kernel::Scheduler::Main().Reset();
+#endif
     longjmp(*s_failJump, 1);
 }
 

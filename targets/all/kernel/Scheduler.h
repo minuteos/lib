@@ -92,6 +92,9 @@ public:
     //! Executes the scheduled tasks
     mono_t Run();
 
+    //! Resets the scheduler, removing all tasks regardless of their state - this is normally useful only for testing
+    void Reset();
+
 #if !KERNEL_SYNC_ONLY
     //! Retrieves current monotonic time used by the scheduler
     static ALWAYS_INLINE mono_t CurrentTime() { return MONO_CLOCKS; }

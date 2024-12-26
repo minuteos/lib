@@ -537,4 +537,33 @@ noSleep:
     }
 }
 
+void Scheduler::Reset()
+{
+    struct Helper
+    {
+        static inline void ResetQueue(Task*& q)
+        {
+            while (auto task = q)
+            {
+                DBGCL("kernel", "WARNING! Removing orphaned task %p", task);
+                q = task->next;
+                if (task->wait.dynamic)
+                {
+                    MemPoolFreeDynamic(task);
+                }
+                else
+                {
+                    MemPoolFree(task);
+                }
+            }
+        }
+    };
+
+    Helper::ResetQueue(active);
+    Helper::ResetQueue(delayed);
+    Helper::ResetQueue(waiting);
+    current = NULL;
+    nextWaiting = &waiting;
+}
+
 }
