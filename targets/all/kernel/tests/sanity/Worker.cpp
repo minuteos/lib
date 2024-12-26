@@ -76,4 +76,56 @@ async_test
 }
 async_test_end
 
+TEST_CASE("02 Await in Worker")
+async_test
+{
+    mono_t t1w, t2w, t3w;
+    mono_t t1, t2, t3, t4;
+
+    void Worker()
+    {
+        t1w = MONO_CLOCKS;
+        kernel::Worker::Await(GetMethodDelegate(this, AsyncWorker), 100);
+        t2w = MONO_CLOCKS;
+        kernel::Worker::Await(GetMethodDelegate(this, AsyncOnceWorker), 50);
+        t3w = MONO_CLOCKS;
+    }
+
+    async(AsyncWorker, mono_t delay)
+    async_def()
+    {
+        t1 = MONO_CLOCKS;
+        async_delay_ticks(delay);
+        t2 = MONO_CLOCKS;
+    }
+    async_end
+
+    async_once(AsyncOnceWorker, mono_t delay)
+    async_once_def()
+    {
+        t3 = MONO_CLOCKS;
+        async_delay_ticks(delay);
+        t4 = MONO_CLOCKS;
+    }
+    async_end
+
+    async(Run)
+    async_def()
+    {
+        t4 = 0;
+
+        await(kernel::Worker::Run, GetMethodDelegate(this, Worker));
+
+        AssertEqual(t1, t1w);
+        AssertEqual(t2, t2w);
+        AssertEqual(t2 - t1, 100u);
+        AssertEqual(t3w - t2w, 50u);
+        AssertEqual(t3, t2);
+        AssertEqual(t4, 0u);
+    }
+    async_end
+}
+async_test_end
+
+
 }
