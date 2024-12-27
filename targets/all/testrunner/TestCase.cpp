@@ -29,6 +29,7 @@ bool TestCase::RunAll(int argc, char** argv)
 {
     int passed = 0, failed = 0;
 
+    printf("<details>\n\n");
     printf("| Test file | Test name | Duration (ms) | Result |\n");
     printf("| :-------- | :-------- | ------------: | :----: |\n");
 
@@ -48,6 +49,9 @@ bool TestCase::RunAll(int argc, char** argv)
     printf("| **TOTAL** | **%d** | **%u.%03u** | **%d** :white_check_mark: / **%d** :x: |\n", passed + failed,
         unsigned(_tcTotal / 1000), unsigned(_tcTotal % 1000),
         passed, failed);
+    printf("<summary>%d tests (<b>%s</b>)\n\n", passed + failed, failed ? "FAILED" : "PASSED");
+    printf("**%d** :white_check_mark: / **%d** :x:\n", passed, failed);
+    printf("</summary></details>\n");
     return failed != 0;
 }
 
