@@ -14,6 +14,7 @@ TestCase* TestCase::s_first = NULL;
 TestCase* TestCase::s_last = NULL;
 TestCase* TestCase::s_cur = NULL;
 jmp_buf* TestCase::s_failJump = NULL;
+static uint32_t _tcStart, _tcTotal;
 
 TestCase::TestCase()
 {
@@ -28,8 +29,8 @@ bool TestCase::RunAll(int argc, char** argv)
 {
     int passed = 0, failed = 0;
 
-    printf("| Test file | Test name | Result |\n");
-    printf("| :-------- | :-------- | :----: |\n");
+    printf("| Test file | Test name | Duration (ms) | Result |\n");
+    printf("| :-------- | :-------- | ------------: | :----: |\n");
 
     for (auto tc = s_first; tc; tc = tc->next)
     {
@@ -44,7 +45,9 @@ bool TestCase::RunAll(int argc, char** argv)
             passed++;
     }
 
-    printf("| **TOTAL** | **%d** | **%d** :white_check_mark: / **%d** :x: |\n", passed + failed, passed, failed);
+    printf("| **TOTAL** | **%d** | **%u.%03u** | **%d** :white_check_mark: / **%d** :x: |\n", passed + failed,
+        unsigned(_tcTotal / 1000), unsigned(_tcTotal % 1000),
+        passed, failed);
     return failed != 0;
 }
 
@@ -126,6 +129,7 @@ bool TestCase::Execute()
 #ifdef Ckernel
     __testrunner_time = 0;
 #endif
+    _tcStart = MONO_US;
     Run();
     PrintResult();
     return false;
@@ -160,12 +164,14 @@ void TestCase::_Fail(int line, std::function<void(void)> reason)
 
 void TestCase::PrintResult(int errorLine, std::function<void(void)> errorReason)
 {
+    auto dur = MONO_US - _tcStart;
+    _tcTotal += dur;
     printf("| %s:%d ", File(), Line());
     if (errorLine)
     {
        printf("<br/> *...assertion at line %d* ", errorLine);
     }
-    printf("| %s | %s ", Name(), errorLine ? ":x:" : ":white_check_mark:");
+    printf("| %s | %u.%03u | %s ", Name(), unsigned(dur / 1000), unsigned(dur % 1000), errorLine ? ":x:" : ":white_check_mark:");
     if (errorReason)
     {
         printf("<br/> **(");
