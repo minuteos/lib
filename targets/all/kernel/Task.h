@@ -98,7 +98,7 @@ public:
     }
 
     //! Temporarily switches the current task to another root function, useful when it's likely many waits will occur
-    static async_once(Switch, AsyncDelegate<> other);
+    static async_once(Switch, AsyncDelegate<> other, bool trySync = false);
 
     friend class Scheduler;
     friend struct ::AsyncFrame;
