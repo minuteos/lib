@@ -65,16 +65,16 @@ private:
     TestCase* next;
 };
 
-#define Assert(...) _Assert(__LINE__, ## __VA_ARGS__)
-#define AssertEqual(...) _AssertEqual(__LINE__, ## __VA_ARGS__)
-#define AssertNotEqual(...) _AssertNotEqual(__LINE__, ## __VA_ARGS__)
-#define AssertLessThan(...) _AssertLessThan(__LINE__, ## __VA_ARGS__)
-#define AssertGreaterThan(...) _AssertGreaterThan(__LINE__, ## __VA_ARGS__)
-#define AssertLessOrEqual(...) _AssertLessOrEqual(__LINE__, ## __VA_ARGS__)
-#define AssertGreaterOrEqual(...) _AssertGreaterOrEqual(__LINE__, ## __VA_ARGS__)
-#define AssertEqualString(...) _AssertEqualString(__LINE__, ## __VA_ARGS__)
-#define AssertNotEqualString(...) _AssertNotEqualString(__LINE__, ## __VA_ARGS__)
-#define Fail(...) _Fail(__LINE__, ## __VA_ARGS__)
+#define Assert(...) ::TestCase::_Assert(__LINE__, ## __VA_ARGS__)
+#define AssertEqual(...) ::TestCase::_AssertEqual(__LINE__, ## __VA_ARGS__)
+#define AssertNotEqual(...) ::TestCase::_AssertNotEqual(__LINE__, ## __VA_ARGS__)
+#define AssertLessThan(...) ::TestCase::_AssertLessThan(__LINE__, ## __VA_ARGS__)
+#define AssertGreaterThan(...) ::TestCase::_AssertGreaterThan(__LINE__, ## __VA_ARGS__)
+#define AssertLessOrEqual(...) ::TestCase::_AssertLessOrEqual(__LINE__, ## __VA_ARGS__)
+#define AssertGreaterOrEqual(...) ::TestCase::_AssertGreaterOrEqual(__LINE__, ## __VA_ARGS__)
+#define AssertEqualString(...) ::TestCase::_AssertEqualString(__LINE__, ## __VA_ARGS__)
+#define AssertNotEqualString(...) ::TestCase::_AssertNotEqualString(__LINE__, ## __VA_ARGS__)
+#define Fail(...) ::TestCase::_Fail(__LINE__, ## __VA_ARGS__)
 
 #define TEST_CASE(name) _TEST_CASE(name, __COUNTER__)
 #define _TEST_CASE(name, id) __TEST_CASE(name, id)
