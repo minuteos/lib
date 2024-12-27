@@ -45,6 +45,8 @@ public:
     template<typename... Args, typename... AArgs> ALWAYS_INLINE static intptr_t Await(Delegate<async_res_t, AsyncFrame**, Args...> fn, AArgs&&... args) { return AwaitImpl(fn, args...); }
     template<typename... Args, typename... AArgs> ALWAYS_INLINE static intptr_t Await(Delegate<async_res_t, AsyncFrame&, Args...> fn, AArgs&&... args) { return AwaitOnceImpl(fn, args...); }
 
+    static bool CanAwait();
+
 private:
     typedef intptr_t (*fptr_run_t)(Worker* w);
 

@@ -35,6 +35,8 @@ async_def_sync()
 }
 async_end
 
+__attribute__((weak)) bool Worker::CanAwait() { return true; }
+
 void Worker::YieldSync(async_res_t res)
 {
 #if TRACE
