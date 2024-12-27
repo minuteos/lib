@@ -751,7 +751,7 @@ Buffer::packed_t Pipe::Iterator::ReadImpl(char* buffer, size_t length)
     Buffer res(buffer, length);
     remaining -= length;
 
-    while (length > size_t(-segRemaining))
+    while (length >= size_t(-segRemaining))
     {
         memcpy(buffer, segEnd + segRemaining, -segRemaining);
         buffer -= segRemaining;
