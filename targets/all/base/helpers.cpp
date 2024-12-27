@@ -11,7 +11,7 @@
 int parse_nibble(char c, int base)
 {
     if (c < '0') return -1;
-    if (c < '9') return c - '0';
+    if (c <= '9') return c - '0';
     if (c < 'A') return -1;
     if (c < 'A' + base - 10) return c - 'A' + 10;
     if (c < 'a') return -1;
