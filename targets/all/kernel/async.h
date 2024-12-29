@@ -158,8 +158,8 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 #define async_def(...) { \
     __label__ __start__; \
     struct __FRAME { AsyncFrame __async; \
-        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } \
-        void __continue(contptr_t cont) { __async.cont = cont; } \
+        ALWAYS_INLINE async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } \
+        ALWAYS_INLINE void __continue(contptr_t cont) { __async.cont = cont; } \
         __VA_ARGS__; }; \
     static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
     union { async_prolog_t p; _async_prolog_t u; } __prolog_res { _async_prolog(__pCallee, &__spec) }; \
@@ -174,7 +174,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! Starts definition of a synchronous function using the async calling convention
 #define async_def_sync(...) { \
     struct __FRAME { \
-        async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
+        ALWAYS_INLINE async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
         __VA_ARGS__; } f; \
 
 //! Defines a simple synchronous function immediately returning a value, using the async calling convention
@@ -184,8 +184,8 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! The function can end with a wait operation
 #define async_once_def(...) { \
     struct __FRAME { \
-        async_res_t __epilog(AsyncFrame& pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
-        void __continue(contptr_t cont) { /* discard */ } \
+        ALWAYS_INLINE async_res_t __epilog(AsyncFrame& pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
+        ALWAYS_INLINE void __continue(contptr_t cont) { /* discard */ } \
         __VA_ARGS__; } f; \
     AsyncFrame& __async = __pCallee;
 
