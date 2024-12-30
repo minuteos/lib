@@ -101,6 +101,7 @@ public:
     static async_once(Switch, AsyncDelegate<> other, bool trySync = false);
 
     friend class Scheduler;
+    friend struct SwitchContext;
     friend struct ::AsyncFrame;
     template<typename... Args> friend class TaskWithArgs;
     template<typename... Args> friend class TaskFnWithArgs;
