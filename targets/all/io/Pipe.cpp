@@ -417,7 +417,7 @@ void Pipe::WriterAdvance(size_t count)
     wpos += count;
     state++;
     WriterSignal();
-    while (woff >= (*pwseg)->length)
+    while (woff && woff >= (*pwseg)->length)
     {
         woff -= (*pwseg)->length;
         pwseg = &(*pwseg)->next;
