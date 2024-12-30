@@ -79,3 +79,5 @@ private:
 
     friend class kernel::Scheduler;
 };
+
+#define OPT_TIMEOUT_ARG  ::Timeout timeout = ::Timeout::Infinite
