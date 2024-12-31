@@ -207,6 +207,9 @@ objs: $(OBJS)
 
 prebuild:
 	$(info )
+	$(info Compiler:)
+	$(info $(shell $(CXX) --version))
+	$(info )
 	$(info Compilation flags:)
 	$(info DEFINES:  $(DEF_OPT))
 	$(info INCLUDE:  $(INC_OPT))
