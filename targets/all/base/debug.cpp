@@ -106,21 +106,21 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
     if (!PLATFORM_DBG_ACTIVE(channel))
         return;
 
-#ifdef MONO_US
+#ifdef MONO_CLOCKS
     static struct
     {
-        unsigned stamp = MONO_US;
-        unsigned sec = 0, sub = 0;
-    } last;
+        mono_t stamp, sec, sub;
+    } last = {};
 
-    auto stamp = MONO_US;
-    auto elapsed = last.stamp ? stamp - last.stamp : 0;
+    mono_t stamp = MONO_CLOCKS;
+    mono_t elapsed = last.stamp ? stamp - last.stamp : 0;
     last.stamp = stamp;
 
-    int sub = last.sub + elapsed;
-    int sec = sub / 1000000;
-    last.sub = sub -= sec * 1000000;
+    mono_t sub = last.sub + elapsed;
+    mono_t sec = sub / MONO_FREQUENCY;
+    last.sub = sub -= sec * MONO_FREQUENCY;
     last.sec = sec += last.sec;
+    sub = sub * (((uint64_t)1000000 << 32) / MONO_FREQUENCY) >> 32;  // scale to microseconds
 
     char bracket = PLATFORM_DBG_BRACKET();
     bool nz = false;
