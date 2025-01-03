@@ -132,6 +132,9 @@ COMPONENTS := $(call uniq,$(COMPONENTS))
 # Toolchain
 #
 
+HOST_CC := $(CC)
+HOST_CXX := $(CXX)
+
 CC = $(TOOLCHAIN_PREFIX)gcc
 CXX = $(TOOLCHAIN_PREFIX)g++
 OBJCOPY = $(TOOLCHAIN_PREFIX)objcopy
