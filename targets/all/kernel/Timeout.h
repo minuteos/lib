@@ -43,7 +43,8 @@ public:
     constexpr bool IsInfinite() const { return value == 0; }
     constexpr bool IsAbsolute() const { return value > MONO_SIGNED_MAX; }
     constexpr bool IsRelative() const { return value <= MONO_SIGNED_MAX; }
-    Timeout MakeAbsolute() const { return Timeout(IsAbsolute() || IsInfinite() ? value : ((MONO_CLOCKS + value) | (mono_t(MONO_SIGNED_MAX) + 1))); }
+    Timeout MakeAbsolute() const { return MakeAbsoluteImpl(value); }
+    Timeout MakeAbsolute(mono_t relativeTo) const { return MakeAbsoluteImpl(value, relativeTo); }
 
     bool Elapsed() const { return Relative() < 0; }
     /*!
@@ -52,7 +53,8 @@ public:
      * - it makes a relative timeout absolute when called the first time
      * - after the timeout elapses, it is zeroed/converted to infinite
      */
-    bool Pending(mono_t at = MONO_CLOCKS);
+    bool Pending();
+    bool Pending(mono_t at);
     ALWAYS_INLINE mono_signed_t Relative() const { return IsRelative() ? value : mono_signed_t((value - MONO_CLOCKS) << 1) >> 1; }
     ALWAYS_INLINE mono_signed_t Relative(mono_t to) const { return IsRelative() ? value : mono_signed_t((value - to) << 1) >> 1; }
     ALWAYS_INLINE mono_t ToMono(mono_t base = MONO_CLOCKS) const { return base + Relative(base); }
@@ -83,6 +85,10 @@ private:
         : value(value) {}
 
     mono_t value;
+
+    bool PendingImpl();
+    static Timeout MakeAbsoluteImpl(mono_t value);
+    static Timeout MakeAbsoluteImpl(mono_t value, mono_t relativeTo);
 
     friend class kernel::Scheduler;
 };
