@@ -38,7 +38,11 @@ private:
     {
         struct
         {
-            const char* p;
+            union
+            {
+                const char* p;
+                const void* vp;
+            };
             size_t len;
         };
         packed_t packed;
@@ -48,13 +52,13 @@ public:
     //! Constructs an empty span
     constexpr Span() : p(NULL), len(0) {}
     //! Constructs a Span covering a range of memory determined by start and length
-    constexpr Span(const void* p, size_t len) : p((const char*)p), len(len) {}
+    constexpr Span(const void* p, size_t len) : vp(p), len(len) {}
     //! Constructs a Span covering a range of memory determined by start (inclusive) and end (exclusive)
-    constexpr Span(const void* start, const void* end) : p((const char*)start), len((const char*)end - (const char*)start) {}
+    constexpr Span(const void* start, const void* end) : vp(start), len((const char*)end - (const char*)start) {}
     //! Constructs a Span covering a single object
-    template<class T> constexpr Span(const T& value) : p((const char*)&value), len(sizeof(T)) {}
+    template<class T> constexpr Span(const T& value) : vp(&value), len(sizeof(T)) {}
     //! Constructs a Span covering a single object
-    template<class T> static Span Of(const T& value) { return Span((const char*)&value, sizeof(T)); }
+    template<class T> static Span Of(const T& value) { return Span(&value, sizeof(T)); }
 
     //! Constructs a Span from a Null-terminated string literal, excluding the terminator
     template<size_t n> constexpr Span(const char (&literal)[n]) : p(literal), len(n - 1)
@@ -289,7 +293,7 @@ public:
     //! Constructs a Buffer covering a range of memory determined by start (inclusive) and end (exclusive)
     constexpr Buffer(void* start, void* end) : Span(start, end) {}
     //! Constructs a Buffer covering a single object
-    template<class T> constexpr Buffer(T& value) : Span((char*)&value, sizeof(T)) {}
+    template<class T> constexpr Buffer(T& value) : Span(&value, sizeof(T)) {}
 
     //! Constructs a Buffer from a @ref packed_t - used to force passing of return values via registers
     constexpr Buffer(packed_t packed) : Span((Span::packed_t)packed) {}
@@ -331,7 +335,7 @@ public:
 
 private:
     //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
-    ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((char*)span.p, span.len); }
+    ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((void*)span.p, span.len); }
 
     static packed_t FormatImpl(char* buffer, size_t length, const char* format, va_list va);
 };
