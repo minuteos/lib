@@ -15,6 +15,9 @@
 #define UNUSED          __attribute__((unused))
 #define PACKED_STRUCT   struct __attribute__((packed, aligned(sizeof(int))))
 #define PACKED_UNALIGNED_STRUCT   struct __attribute__((packed, aligned(1)))
+#define INIT_PRIORITY(n)      __attribute__((init_priority(20000+n)))
+#define INIT_FUNCTION_PRIO(n) __attribute__((constructor(20000+n)))
+#define INIT_FUNCTION         __attribute__((constructor))
 
 #define BSWAP16 __builtin_bswap16
 #define BSWAP32 __builtin_bswap32
