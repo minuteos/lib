@@ -10,36 +10,25 @@
 
 #include <kernel/kernel.h>
 
-#include <kernel-app/InitList.h>
+#ifndef STARTUP_TASK_INIT_PRIORITY
+#define STARTUP_TASK_INIT_PRIORITY 60000
+#endif
 
 namespace kernel
 {
 
-class StartupTask : public InitList<StartupTask>
-{
-    AsyncDelegate<> task;
-    mono_t delay;
+inline void __addStartupTask(async_fptr_t fn, mono_t delay = 0)
+    { Task::Run(fn).DelayMilliseconds(delay); }
 
-public:
-    StartupTask(async_fptr_t fn, mono_t delay = 0)
-        : task(Scheduler::__CallStatic, (void*)fn), delay(delay) {}
+inline void __addStartupTask(AsyncDelegate<> delegate, mono_t delay = 0)
+    { Task::Run(delegate).DelayMilliseconds(delay); }
 
-    StartupTask(AsyncDelegate<> delegate, mono_t delay = 0)
-        : task(delegate), delay(delay) {}
+template<typename T> void __addStartupTask(T& target, async_methodptr_t<T> method, mono_t delay = 0)
+    { Task::Run(target, method).DelayMilliseconds(delay); }
 
-    template<class T> StartupTask(T& target, async_methodptr_t<T> method, mono_t delay = 0)
-        : task(&target, method), delay(delay) {}
-
-    template<class T> StartupTask(T* target, async_methodptr_t<T> method, mono_t delay = 0)
-        : task(&target, method), delay(delay) {}
-
-    static void ScheduleAll()
-    {
-        for (auto t = InitList<StartupTask>::First(); t; t = t->Next())
-            Task::Run(t->task).DelayMilliseconds(t->delay);
-    }
-};
+template<typename T> void __addStartupTask(T* target, async_methodptr_t<T> method, mono_t delay = 0)
+    { Task::Run(&target, method).DelayMilliseconds(delay); }
 
 }
 
-#define STARTUP_TASK(...) static kernel::StartupTask UNIQUE(__startupTask)(__VA_ARGS__)
+#define STARTUP_TASK(...) INIT_FUNCTION static void UNIQUE(__startupTask)() { ::kernel::__addStartupTask(__VA_ARGS__); }

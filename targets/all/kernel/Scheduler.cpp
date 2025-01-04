@@ -14,6 +14,7 @@ namespace kernel
 {
 
 //! Main scheduler instance
+INIT_PRIORITY(-9990)  // initialize the scheduler *very* early so that tasks can be added from other init functions
 Scheduler Scheduler::s_main;
 //! Currently active scheduler instance
 Scheduler* Scheduler::s_current = &s_main;

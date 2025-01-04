@@ -10,26 +10,8 @@
 
 #include <kernel/kernel.h>
 
-#include <kernel-app/InitList.h>
+#ifndef HARDWARE_INIT_PRIORITY
+#define HARDWARE_INIT_PRIORITY 1000
+#endif
 
-namespace kernel
-{
-
-class HardwareInit : public InitList<HardwareInit>
-{
-    void (*init)();
-
-public:
-    HardwareInit(void (*init)())
-        : init(init) {}
-
-    static void Execute()
-    {
-        for (auto i = InitList<HardwareInit>::First(); i; i = i->Next())
-            i->init();
-    }
-};
-
-}
-
-#define HARDWARE_INIT(...) static kernel::HardwareInit UNIQUE(__hardwareInit)(__VA_ARGS__)
+#define HARDWARE_INIT(...) INIT_FUNCTION_PRIO(HARDWARE_INIT_PRIORITY) static void UNIQUE(__hardwareInit)() { __VA_ARGS__(); }

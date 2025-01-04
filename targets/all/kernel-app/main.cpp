@@ -13,18 +13,6 @@
 #if !Ctestrunner
 int main()
 {
-    if (!kernel::HardwareInit::Empty())
-    {
-        DBGCL("kernel-app", "Hardware init...");
-        kernel::HardwareInit::Execute();
-    }
-
-    if (!kernel::StartupTask::Empty())
-    {
-        DBGCL("kernel-app", "%d startup tasks defined", kernel::StartupTask::Count());
-        kernel::StartupTask::ScheduleAll();
-    }
-
     DBGCL("kernel-app", "Starting main loop...");
     kernel::Scheduler::Main().Run();
 }
