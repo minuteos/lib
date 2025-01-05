@@ -36,4 +36,7 @@ template<typename T> constexpr T nonzero(T value, int nonZero = 1) { return valu
 //! Parse a nibble out of a base 11-36 value, returning -1 for invalid characters
 int parse_nibble(char c, int base = 16);
 
+//! Converts float to fixed-decimal integer
+int f2q(float f, unsigned decimals);
+
 #endif

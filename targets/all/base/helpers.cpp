@@ -18,3 +18,13 @@ int parse_nibble(char c, int base)
     if (c < 'a' + base - 10) return c - 'a' + 10;
     return -1;
 }
+
+int f2q(float f, unsigned decimals)
+{
+    int mul = 1;
+    while (decimals--) { mul *= 10; }
+    f *= mul;
+    if (signbit(f)) { f -= 0.5f; }
+    else { f += 0.5f; }
+    return f;
+}
