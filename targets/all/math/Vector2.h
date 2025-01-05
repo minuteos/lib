@@ -32,6 +32,8 @@ struct Vector2
     Vector2 operator -=(const Vector2& b);
     //! Scales the vector
     Vector2 operator *=(float b);
+    //! Scales the vector
+    Vector2 operator /=(float b);
 
     //! Calculate the dot product of two vectors
     static float DotProduct(const Vector2& a, const Vector2& b)
@@ -60,3 +62,10 @@ inline Vector2 operator *(const Vector2& a, float b)
     return { a.x * b, a.y * b };
 }
 inline Vector2 Vector2::operator *=(float b) { return *this = *this * b; }
+
+//! Scale the vector by a constant
+inline Vector2 operator /(const Vector2& a, float b)
+{
+    return { a.x / b, a.y / b };
+}
+inline Vector2 Vector2::operator /=(float b) { return *this = *this / b; }
