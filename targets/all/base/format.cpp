@@ -38,7 +38,8 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
 {
     unsigned n, base, order, maxOrder;
     int width, limit, frac;
-    bool negative, left;
+    bool left;
+    char sign;
     char fill, hexLower;
     const char* str;
     int outputCount = 0;
@@ -65,6 +66,7 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
             base = 10;
             fill = ' ';
             left = false;
+            sign = 0;
             hexLower = 0;
 
             for (;;)
@@ -111,6 +113,11 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                 case '-':
                     // left alignment
                     left = true;
+                    continue;
+
+                case '+':
+                    // force sign
+                    sign = '+';
                     continue;
 
                 case 'l':
@@ -239,12 +246,18 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                 case 'u':
                 number:
                     n = va_arg(va, unsigned);
-                    negative = false;
 
-                    if ((format[-1] == 'd' || format[-1] == 'q') && (int)n < 0)
+                    if ((format[-1] == 'd' || format[-1] == 'q'))
                     {
-                        n = -n;
-                        negative = true;
+                        if ((int)n < 0)
+                        {
+                            n = -n;
+                            sign = '-';
+                        }
+                    }
+                    else
+                    {
+                        sign = 0;
                     }
 
                     if (frac > 0)
@@ -264,16 +277,16 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                         width--;
                     }
 
-                    if (negative)
+                    if (sign)
                     {
                         width--;
 
                         if (fill == '0')
                         {
-                            // place the minus now
-                            output(context, '-');
+                            // place the sign now
+                            output(context, sign);
                             outputCount++;
-                            negative = false;
+                            sign = 0;
                         }
                     }
 
@@ -285,9 +298,9 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                         width--;
                     }
 
-                    if (negative)
+                    if (sign)
                     {
-                        output(context, '-');
+                        output(context, sign);
                         outputCount++;
                     }
 
