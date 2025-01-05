@@ -16,9 +16,14 @@ _EventTable* _EventTable::active;
 void _EventTable::AddHandler(_Delegate handler)
 {
     // register the table as active
-    if (!next && active != this)
+    if (!next)
     {
         next = active;
+        if (!next)
+        {
+            // prevent double registration by point to self
+            next = this;
+        }
         active = this;
     }
 
@@ -64,9 +69,17 @@ void _EventTable::RemoveHandlers(const void* owner)
 
 void UnregisterEvents(const void* owner)
 {
-    for (_EventTable* tbl = _EventTable::active; tbl; tbl = tbl->next)
+    if (_EventTable* tbl = _EventTable::active)
     {
-        tbl->RemoveHandlers(owner);
+        for (;;)
+        {
+            tbl->RemoveHandlers(owner);
+            if (tbl->next == tbl)
+            {
+                break;
+            }
+            tbl = tbl->next;
+        }
     }
 }
 
