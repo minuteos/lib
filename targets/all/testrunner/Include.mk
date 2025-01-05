@@ -7,3 +7,4 @@
 #
 
 DEFINES += KERNEL_PLATFORM_HEADER=testrunner/kernel_platform.h
+COMPONENTS += base
