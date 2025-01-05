@@ -19,6 +19,7 @@ struct WorkerOptions
 {
     static constexpr size_t DefaultStack = 1024;
     size_t stack = DefaultStack;
+    void* staticStack = NULL;
     bool noPreempt : 1;
     bool trySync : 1;
 };
