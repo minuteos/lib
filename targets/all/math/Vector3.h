@@ -32,6 +32,8 @@ struct Vector3
     Vector3 operator -=(const Vector3& b);
     //! Scales the vector
     Vector3 operator *=(float b);
+    //! Scales the vector
+    Vector3 operator /=(float b);
 
     //! Calculate the dot product of two vectors
     static float DotProduct(const Vector3& a, const Vector3& b)
@@ -66,3 +68,10 @@ inline Vector3 operator *(const Vector3& a, float b)
     return { a.x * b, a.y * b, a.z * b };
 }
 inline Vector3 Vector3::operator *=(float b) { return *this = *this * b; }
+
+//! Divide the vector by a constant
+inline Vector3 operator /(const Vector3& a, float b)
+{
+    return { a.x / b, a.y / b, a.z / b };
+}
+inline Vector3 Vector3::operator /=(float b) { return *this = *this / b; }

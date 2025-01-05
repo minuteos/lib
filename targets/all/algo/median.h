@@ -8,6 +8,8 @@
  * Simple median implementations for fixed number of elements
  */
 
+#pragma once
+
 #include <base/base.h>
 
 template<typename T> T median(T a, T b, T c)
