@@ -66,16 +66,17 @@ struct SwitchContext
 async_once(Task::Switch, AsyncDelegate<> other, bool trySync)
 {
     AsyncFrame* top = NULL;
+    auto res = _ASYNC_RES(0, AsyncResult::SleepTicks);
     if (trySync)
     {
-        auto res = other(&top);
+        res = other(&top);
         if (_ASYNC_RES_TYPE(res) == AsyncResult::Complete)
         {
             return res;
         }
     }
     new(MemPoolAlloc<SwitchContext>()) SwitchContext(Current(), __pCallee, other, top);
-    return _ASYNC_RES(0, AsyncResult::SleepTicks);
+    return res;
 }
 
 }
