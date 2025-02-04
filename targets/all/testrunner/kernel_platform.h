@@ -23,6 +23,7 @@ extern mono_t __testrunner_time;
 
 #define PLATFORM_DISABLE_INTERRUPTS()
 #define PLATFORM_ENABLE_INTERRUPTS()
+#undef PLATFORM_SLEEP
 #define PLATFORM_SLEEP(since, duration) ({ __testrunner_time = since + duration; })
 
 #ifndef PLATFORM_CRITICAL_SECTION

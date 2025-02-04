@@ -419,10 +419,18 @@ mono_t Scheduler::Run()
                 return t;
             }
 
+#ifdef PLATFORM_CLEAR_WAKEUP_EVENT
+            // clear the wakeup event now, we don't care about what happened
+            // asynchronously so far. However, any interrupts/events happening
+            // during the wait check must prevent the sleep as well to handle
+            // side effects
+            PLATFORM_CLEAR_WAKEUP_EVENT();
+#else
             // disable interrupts if we're going to sleep
             // this is to make sure that an interrupt doesn't get
             // triggered between the wait check and actually going to sleep
             PLATFORM_DISABLE_INTERRUPTS();
+#endif
         }
 #else
         if (!(active || waiting))
@@ -444,7 +452,9 @@ mono_t Scheduler::Run()
                 if (maxSleep > 0)
                 {
                     maxSleep = 0;
+#ifndef PLATFORM_CLEAR_WAKEUP_EVENT
                     PLATFORM_ENABLE_INTERRUPTS();
+#endif
                 }
 #endif
 
@@ -475,7 +485,9 @@ mono_t Scheduler::Run()
                     if (maxSleep > 0)
                     {
                         maxSleep = 0;
+#ifndef PLATFORM_CLEAR_WAKEUP_EVENT
                         PLATFORM_ENABLE_INTERRUPTS();
+#endif
                     }
 
                     // return the task to the active queue, set timeout result
@@ -531,8 +543,10 @@ mono_t Scheduler::Run()
                 }
             }
 #endif
-noSleep:
+noSleep:;
+#ifndef PLATFORM_CLEAR_WAKEUP_EVENT
             PLATFORM_ENABLE_INTERRUPTS();
+#endif
         }
 #endif
     }
