@@ -52,7 +52,7 @@ NO_INLINE async_prolog_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* sp
  * Called once an asynchronous function finishes executing.
  * Deallocates function frame and returns the final value (optimized for easy tail-chaining)
  */
-NO_INLINE async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result)
+NO_INLINE async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee)
 {
     auto callee = *pCallee;
     *pCallee = NULL;
@@ -63,7 +63,7 @@ NO_INLINE async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result)
         free(callee);
 #endif
 
-    return _ASYNC_RES(result, AsyncResult::Complete);
+    return res;
 }
 
 NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type)

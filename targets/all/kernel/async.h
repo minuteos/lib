@@ -90,6 +90,7 @@ struct AsyncSpec
     class MemPool* pool;//!< Memory pool used to allocate function frames, or NULL for oversized frames
     size_t frameSize;   //!< Size of the frames required by the function
     contptr_t start;    //!< Pointer to the first actual instruction
+    async_res_t (*exit)(async_res_t res, AsyncFrame** pCallee);     //!< Pointer to start of cleanup
 };
 
 //! Header for every execution frame in the asynchronous stack
@@ -120,7 +121,7 @@ struct AsyncFrame
 //! Asynchronous function prolog
 extern async_prolog_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec);
 //! Asynchronous function epilog
-extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
+extern async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee);
 
 //! Declaration of an async function
 #define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
@@ -158,10 +159,10 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 #define async_def(...) { \
     __label__ __start__; \
     struct __FRAME { AsyncFrame __async; \
-        ALWAYS_INLINE async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _async_epilog(pCallee, result); } \
+        static async_res_t __epilog(async_res_t res, AsyncFrame** pCallee) { ((__FRAME*)*pCallee)->~__FRAME(); return _async_epilog(res, pCallee); } \
         ALWAYS_INLINE void __continue(contptr_t cont) { __async.cont = cont; } \
         __VA_ARGS__; }; \
-    static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__ }; \
+    static const AsyncSpec __spec = { MemPoolGet<__FRAME>(), sizeof(__FRAME), &&__start__, std::is_trivially_destructible_v<__FRAME> ? &_async_epilog : &__FRAME::__epilog }; \
     union { async_prolog_t p; _async_prolog_t u; } __prolog_res { _async_prolog(__pCallee, &__spec) }; \
     __FRAME& f = *(__FRAME*)__prolog_res.u.frame; \
     AsyncFrame& __async = f.__async; \
@@ -174,7 +175,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! Starts definition of a synchronous function using the async calling convention
 #define async_def_sync(...) { \
     struct __FRAME { \
-        ALWAYS_INLINE async_res_t __epilog(AsyncFrame** pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
+        ALWAYS_INLINE async_res_t __epilog(async_res_t res, AsyncFrame** pCallee) { return res; } \
         __VA_ARGS__; } f; \
 
 //! Defines a simple synchronous function immediately returning a value, using the async calling convention
@@ -184,7 +185,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 //! The function can end with a wait operation
 #define async_once_def(...) { \
     struct __FRAME { \
-        ALWAYS_INLINE async_res_t __epilog(AsyncFrame& pCallee, intptr_t result) { return _ASYNC_RES(result, AsyncResult::Complete); } \
+        ALWAYS_INLINE async_res_t __epilog(async_res_t res, AsyncFrame& pCallee) { return res; } \
         ALWAYS_INLINE void __continue(contptr_t cont) { /* discard */ } \
         __VA_ARGS__; } f; \
     AsyncFrame& __async = __pCallee;
@@ -208,7 +209,7 @@ extern async_res_t _async_epilog(AsyncFrame** pCallee, intptr_t result);
 }
 
 //! Finishes the execution of an async function immediately and returns the specified value
-#define async_return(value) ({ auto __res = (value); f.~__FRAME(); return f.__epilog(__pCallee, __res); })
+#define async_return(value) ({ return f.__epilog(_ASYNC_RES(value, AsyncResult::Complete), __pCallee); })
 
 //! Finishes the execution of an async_once function immediately and returns the specified value
 #define async_once_return(value) ({ return _ASYNC_RES((value), AsyncResult::Complete); })
