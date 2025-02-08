@@ -31,7 +31,7 @@ async_def_sync()
 {
     auto res = run(this);
     MemPoolFreeDynamic(this);
-    async_return(res);
+    return res;
 }
 async_end
 

@@ -20,6 +20,7 @@ struct WorkerOptions
     static constexpr size_t DefaultStack = 1024;
     size_t stack = DefaultStack;
     void* staticStack = NULL;
+    async_res_t (*adjustResult)(async_res_t) = NULL;
     bool noPreempt : 1;
     bool trySync : 1;
 };
@@ -67,7 +68,7 @@ public:
     static void Throw(ExceptionType type, intptr_t value);
 
 private:
-    typedef intptr_t (*fptr_run_t)(Worker* w);
+    typedef async_res_t (*fptr_run_t)(Worker* w);
 
     Worker(const WorkerOptions& opts, fptr_run_t run)
         :
@@ -135,26 +136,42 @@ template<typename TRes, typename... Args> class WorkerFnWithArgs : public Worker
 
     fptr_t f;
     std::tuple<Args...> args;
+    async_res_t (*adjustResult)(async_res_t);
 
 public:
     constexpr WorkerFnWithArgs(const WorkerOptions& opts, fptr_t f, Args... args)
-        : Worker(opts, &Call), f(f), args(args...)
+        : Worker(opts, &Call), f(f), args(args...), adjustResult(opts.adjustResult)
     {
     }
 
 private:
-    FLATTEN static intptr_t Call(Worker* w) { return ((WorkerFnWithArgs*)w)->Call(); }
-    FLATTEN intptr_t Call()
+    FLATTEN static async_res_t Call(Worker* w) { return ((WorkerFnWithArgs*)w)->Call(); }
+    FLATTEN async_res_t Call()
     {
+        async_res_t res;
         if constexpr (std::is_same_v<TRes, void>)
         {
             std::apply(f, args);
-            return 0;
+            res = {};
         }
         else
         {
-            return std::apply(f, args);
+            auto fRes = std::apply(f, args);
+            if constexpr (std::is_same_v<TRes, async_res_t>)
+            {
+                res = fRes;
+            }
+            else
+            {
+                res = _ASYNC_RES(fRes, AsyncResult::Complete);
+            }
+            if (adjustResult)
+            {
+                res = adjustResult(res);
+            }
         }
+
+        return res;
     }
 };
 
