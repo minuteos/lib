@@ -126,9 +126,9 @@ async_def(
 
     while (f.written < length)
     {
-        if (wpos == apos && !await(WriterAllocate, length - f.written, f.timeout))
+        if (wpos == apos)
         {
-            async_return(-f.written);
+            await(WriterAllocate, length - f.written, f.timeout);
         }
 
         ASSERT(pwseg && *pwseg);
@@ -169,9 +169,9 @@ async_def(
 
     do
     {
-        if (wpos == apos && !await(WriterAllocate, f.length - f.written, f.timeout))
+        if (wpos == apos)
         {
-            async_return(-f.written);
+            await(WriterAllocate, f.length - f.written, f.timeout);
         }
 
         auto before = f.written;
@@ -258,7 +258,7 @@ async_def(
             if (!await_mask_not_timeout(to.state, ~0u, to.state, f.timeout) || to.IsClosed())
             {
                 MYTRACEX("[%p] > [%p] COPY: stopping at %d bytes", &from, &to, to.TotalBytes());
-                async_return(0);
+                async_throw(TimeoutError, f.written);
             }
         }
 
@@ -308,7 +308,7 @@ async_def(
             if (!await_mask_not_timeout(to.state, ~0u, to.state, f.timeout) || to.IsClosed())
             {
                 MYTRACEX("[%p] > [%p] MOVE: stopping at %d bytes", &from, &to, to.TotalBytes());
-                async_return(0);
+                async_throw(TimeoutError, f.written);
             }
         }
 
@@ -356,7 +356,7 @@ async_def(
     if (IsClosed())
     {
         MYTRACE("W: no allocation on closed pipe");
-        async_return(0);
+        async_throw(AbortError, 0);
     }
 
     f.timeout = timeout;
@@ -367,24 +367,18 @@ async_def(
         if (!await_mask_not_timeout(state, ~0u, state, f.timeout))
         {
             MYTRACE("W: could not allocate new segment, %d bytes in pipe", TotalBytes());
-            async_return(0);
+            async_throw(TimeoutError, 0);
         }
         if (IsClosed())
         {
             MYTRACE("W: pipe closed while waiting for allocation");
-            async_return(0);
+            async_throw(AbortError, 0);
         }
     }
 
     MYTRACE("W: allocating new segment (hint: %u)", hint);
     PipeSegment* seg;
     seg = (PipeSegment*)await(allocator.AllocateSegment, hint, f.timeout);
-    if (!seg)
-    {
-        MYTRACE("W: could not allocate new segment");
-        async_return(0);
-    }
-
     MYTRACE("W: allocated %u byte segment %p", seg->length, seg);
 
     if (auto* last = *pwseg)
@@ -452,7 +446,8 @@ async_def(
         // wait for more data to become available
         if (!await_mask_not_timeout(state, ~0u, state, f.timeout))
         {
-            break;
+            MYTRACE("R: %u bytes available instead of %u required", wpos - rpos, count);
+            async_throw(TimeoutError, wpos - rpos);
         }
     }
 
@@ -476,8 +471,7 @@ async_def(
         // read initial data
         if (!await(ReaderRequire, 1, f.timeout))
         {
-            MYTRACE("RRU: no data");
-            async_return(0);
+            async_throw(AbortError, 0);
         }
     }
 
@@ -494,8 +488,7 @@ async_def(
             await(ReaderRequire, f.epos - rpos + 1, f.timeout);
             if (!(remain = (wpos - f.epos)))
             {
-                MYTRACE("RRU: no data");
-                async_return(0);
+                async_throw(AbortError, f.epos - rpos);
             }
         }
 
@@ -539,26 +532,22 @@ async_def(
 async_end
 
 async(Pipe::ReaderRead, char* data, size_t length, Timeout timeout)
-async_def(
-    Timeout timeout;
-    size_t read;
-)
+async_def()
 {
-    f.timeout = timeout.MakeAbsolute();
-
-    while (f.read < length)
+    size_t avail;
+    if (!(avail = ReaderAvailable()))
     {
-        size_t avail;
-        if (!(avail = ReaderAvailable()))
-        {
-            await(ReaderRequire, 1, f.timeout);
-            if (!(avail = ReaderAvailable()))
-                break;
-        }
-        f.read += Span(ReaderRead(data + f.read, std::min(length - f.read, avail))).Length();
+        await(ReaderRequire, 1, timeout);
+        avail = ReaderAvailable();
     }
 
-    async_return(f.read);
+    size_t block = std::min(length, avail);
+    if (block)
+    {
+        block = Span(ReaderRead(data, block)).Length();
+    }
+
+    async_return(block);
 }
 async_end
 

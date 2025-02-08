@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <io/Errors.h>
+
 #include <io/InputStream.h>
 #include <io/OutputStream.h>
 

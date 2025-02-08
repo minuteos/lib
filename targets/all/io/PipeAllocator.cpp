@@ -103,19 +103,22 @@ public:
                 async_suppress_uninitialized_warning(
                 if (!await_mask_not_timeout(*mon, ~0, *mon, f.timeout))
                 {
-                    async_return(0);
+                    break;
                 }
                 );
             }
             else if (f.timeout.Elapsed())
             {
-                async_return(0);
+                break;
             }
             else
             {
                 async_sleep_timeout(f.timeout);
             }
         }
+
+        MYTRACE("Timeout waiting for new segment");
+        async_throw(TimeoutError, 0);
     }
     async_end
 

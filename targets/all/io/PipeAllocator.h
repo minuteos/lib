@@ -10,12 +10,15 @@
 
 #include <kernel/kernel.h>
 
+#include <io/Errors.h>
+
 namespace io
 {
 
 class PipeAllocator
 {
 public:
+    //! Allocates a new segment, throws if timeout expires before a new segment can be allocated
     virtual async(AllocateSegment, size_t hint, Timeout timeout) = 0;
 
 private:

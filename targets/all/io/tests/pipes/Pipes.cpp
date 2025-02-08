@@ -119,8 +119,8 @@ TEST_CASE("03 Read Until")
             AssertEqual(n, 7u);
             Assert(r.Matches("Line 1\n"));
             r.Advance(n);
-            n = await(r.RequireUntil, '\n');
-            AssertEqual(n, 0u);
+            auto res = await_catch(r.RequireUntil, '\n');
+            AssertException(res, io::AbortError, 6);
             AssertEqual(r.IsComplete(), true);
             AssertEqual(r.Available(), 6u);
             Assert(r.Matches("Line 2")); // no terminator
@@ -161,8 +161,8 @@ TEST_CASE("04 Copy")
             AssertEqual(n, 7u);
             Assert(r.Matches("Line 2\n"));
             r.Advance(n);
-            n = await(r.RequireUntil, '\n');
-            AssertEqual(n, 0u);
+            auto res = await_catch(r.RequireUntil, '\n');
+            AssertException(res, io::AbortError, 6);
             AssertEqual(r.IsComplete(), true);
             AssertEqual(r.Available(), 6u);
             Assert(r.Matches("Line 1")); // no terminator
@@ -219,8 +219,8 @@ TEST_CASE("04 Move")
             AssertEqual(n, 7u);
             Assert(r.Matches("Line 1\n"));
             r.Advance(n);
-            n = await(r.RequireUntil, '\n');
-            AssertEqual(n, 0u);
+            auto res = await_catch(r.RequireUntil, '\n');
+            AssertException(res, io::AbortError, 6);
             AssertEqual(r.IsComplete(), true);
             AssertEqual(r.Available(), 6u);
             Assert(r.Matches("Line 2")); // no terminator

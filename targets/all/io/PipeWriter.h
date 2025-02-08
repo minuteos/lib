@@ -34,10 +34,15 @@ public:
     size_t Available() const { ASSERT(pipe); return pipe->WriterAvailable(); }
     size_t AvailableAfter(PipePosition pos) const { ASSERT(pipe); return pipe->WriterAvailableAfter(pos); }
     bool CanAllocate() const { ASSERT(pipe); return pipe->WriterCanAllocate(); }
+    //! Allocates a new block, throwing an error on timeout or if the pipe is closed
     async(Allocate, size_t block, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterAllocate, block, timeout); }
+    //! Writes data to the pipe, throwing an error unless data can be written in full
     async(Write, Span data, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->WriterWrite, data.Pointer(), data.Length(), timeout); }
+    //! Writes a formatted string to the pipe, throwing an error unless it can be written in full
     async(WriteF, const char* format, ...) async_def_va(WriteFV, format, Timeout::Infinite, format);
+    //! Writes a formatted string to the pipe, throwing an error unless it can be written in full within the specified timeout
     async(WriteFTimeout, Timeout timeout, const char* format, ...) async_def_va(WriteFV, format, timeout, format);
+    //! Writes a formatted string to the pipe, throwing an error unless it can be written in full within the specified timeout
     async(WriteFV, Timeout timeout, const char* format, va_list va) { ASSERT(pipe); return async_forward(pipe->WriterWriteFV, timeout, format, va); }
     async(Empty, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Empty, timeout); }
     async_once(Change, Timeout timeout = Timeout::Infinite) { ASSERT(pipe); return async_forward(pipe->Change, timeout); }

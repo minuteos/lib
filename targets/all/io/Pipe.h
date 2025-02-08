@@ -37,8 +37,11 @@ public:
     bool IsEmpty() const { return rpos == wpos; }
     bool IsCompleted() const { return IsEmpty() && IsClosed(); }
     void BindSignal(bool* sig) { wsignal = sig; }
+    //! Waits for the pipe to complete (become empty and closed), returns false on timeout
     async(Completed, Timeout timeout = Timeout::Infinite);
+    //! Waits for the pipe to become empty, returns false on timeout
     async(Empty, Timeout timeout = Timeout::Infinite);
+    //! Waits for the next change in pipe state, returns false on timeout
     async_once(Change, Timeout timeout = Timeout::Infinite) { return async_forward(WaitMaskNot, state, ~0u, state, timeout); }
     void Reset();
     size_t ThrottleLevel() const { return throttle; }
@@ -159,8 +162,11 @@ private:
     size_t WriterAvailableAfter(PipePosition position) const { ASSERT(position >= wpos); return position.LengthUntil(apos); }
     bool WriterCanAllocate() const { return !throttle || TotalBytes() < throttle; }
     bool WriterCanWrite() const { return WriterAvailable() || WriterCanAllocate(); }
+    //! Allocates a new block, throwing an error on timeout or if the pipe is closed
     async(WriterAllocate, size_t block, Timeout timeout);
+    //! Writes data to the pipe, throwing an error unless the data is written in full
     async(WriterWrite, const char* data, size_t length, Timeout timeout);
+    //! Writes formatted data to the pipe, throwing an error unless the data is written in full
     async(WriterWriteFV, Timeout timeout, const char* format, va_list va);
     Buffer::packed_t WriterBuffer(size_t offset) const;
     Buffer WriterBufferAt(PipePosition position) { return WriterBuffer(wpos.LengthUntil(position)); }
@@ -173,8 +179,12 @@ private:
     PipePosition ReaderPosition() const { return rpos; }
     size_t ReaderAvailable() const { return wpos - rpos; }
     bool ReaderAvailableFullSegment() const { return rseg && ReaderAvailable() >= (rseg->length - roff); }
+    //! Waits until the required number of bytes is available for reading, throwing an error on timeout
+    //! Less than the request count (or 0) can be returned when the stream is closed
     async(ReaderRequire, size_t count, Timeout timeout);
+    //! Waits until the specified byte appears in the stream, throwing an error on timeout
     async(ReaderRequireUntil, uint8_t b, Timeout timeout);
+    //! Reads up to the specified number of bytes from the pipes
     async(ReaderRead, char* buffer, size_t length, Timeout timeout);
     Span::packed_t ReaderSpan(size_t offset) const;
     Span ReaderSpanAt(PipePosition position) const { return ReaderSpan(rpos.LengthUntil(position)); }
@@ -199,7 +209,11 @@ private:
 
     static Span::packed_t GetSpan(PipeSegment* seg, size_t offset, size_t count);
 
+    //! Copies (i.e. does not read) the specified number of bytes from the source pipe to the destination, reusing as much memory as possible
+    //! The from pipe must already contain enough data, throws if the data cannot be written
     static async(Copy, Pipe& from, Pipe& to, size_t offset, size_t length, Timeout timeout);
+    //! Moves (i.e. reads/removes) the specified number of bytes from the source pipe to the destination, reusing as much memory as possible
+    //! The from pipe must already contain enough data, thorws if the data cannot be written
     static async(Move, Pipe& from, Pipe& to, size_t length, Timeout timeout);
 
     friend class PipeWriter;
