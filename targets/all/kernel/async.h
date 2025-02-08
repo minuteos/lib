@@ -107,13 +107,13 @@ struct AsyncFrame
     {
         struct
         {
-            AsyncFrame* callee;     //!< Pointer to the frame of the asynchronous function being called
             uintptr_t children;     //!< Count of child tasks still executing
+            AsyncFrame* callee;     //!< Pointer to the frame of the asynchronous function being called
         };
         struct
         {
-            uintptr_t* waitPtr;     //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
             mono_t waitTimeout;     //!< Timeout for the wait operation (actually a Timeout::value)
+            uintptr_t* waitPtr;     //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
         };
         __async_res_t waitResult;
     };
@@ -149,6 +149,7 @@ extern async_prolog_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec)
 extern async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee);
 //! Asynchronous function cleanup (starts frame destruction from the provided one)
 extern async_res_t _async_wait_or_rethrow(async_res_t res, AsyncFrame** pCallee);
+ALWAYS_INLINE static async_res_t _async_wait_or_rethrow(async_res_t res, const AsyncFrame& pCallee) { return res; }
 
 //! Declaration of an async function
 #define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
@@ -216,6 +217,7 @@ extern async_res_t _async_wait_or_rethrow(async_res_t res, AsyncFrame** pCallee)
         ALWAYS_INLINE async_res_t __epilog(async_res_t res, AsyncFrame& pCallee) { return res; } \
         ALWAYS_INLINE void __continue(contptr_t cont) { /* discard */ } \
         __VA_ARGS__; } f; \
+    UNUSED __async_res_t __res; \
     UNUSED AsyncFrame& __async = __pCallee;
 
 //! Defines an asynchronous function with variable args that forwards to another async function with va_list
@@ -440,6 +442,7 @@ next: \
     f.__continue(__binding.contAfter ? &&next2 : &&next); \
 next2: \
     if (__res.u.type > AsyncResult::Complete) { return __res.p; } \
+    __async.callee = NULL; \
 done: \
     AsyncCatchResult(__res.p); })
 
