@@ -75,11 +75,11 @@ struct _async_prolog_t {
 typedef Packed<_async_prolog_t> async_prolog_t;
 
 //! Extracts the value from the result tuple
-#define _ASYNC_RES_VALUE(res)    (unpack<_async_res_t>(res).value)
+constexpr static intptr_t _ASYNC_RES_VALUE(async_res_t res) { return __async_res_t({ res }).u.value; }
 //! Extracts the execution type from the result tuple
-#define _ASYNC_RES_TYPE(res)     (unpack<_async_res_t>(res).type)
+constexpr static AsyncResult _ASYNC_RES_TYPE(async_res_t res) { return __async_res_t({ res }).u.type; }
 //! Creates an asynchronous result tuple
-#define _ASYNC_RES(value, type)  (pack<_async_res_t>(intptr_t(value), type))
+constexpr static async_res_t _ASYNC_RES(intptr_t value, AsyncResult type) { return __async_res_t({ .u = { value, type } }).p; }
 //! Filters the asynchronous result type for a set of flags
 constexpr static AsyncResult operator &(AsyncResult type, AsyncResult flag)
 {
@@ -460,7 +460,7 @@ done: \
 //! Adds a task to the group that will be awaited at once
 #define await_multiple_add_method(instance, method, ...) await_multiple_add(instance, &std::remove_pointer_t<decltype(instance)>::method, ## __VA_ARGS__)
 
-ALWAYS_INLINE async_once(_WaitMultiple) { return _ASYNC_RES(&__pCallee, AsyncResult::WaitMultiple); }
+ALWAYS_INLINE async_once(_WaitMultiple) { return _ASYNC_RES(intptr_t(&__pCallee), AsyncResult::WaitMultiple); }
 
 //! Waits for all the tasks added using await_multiple_add() to complete
 #define await_multiple() await(_WaitMultiple)

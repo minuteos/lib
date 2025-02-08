@@ -29,7 +29,7 @@ async_res_t Task::RunAll(::AsyncFrame& frame, const AsyncDelegate<>* delegates, 
     frame.children = count;
     current->wait.mask = ~0u;
     current->wait.expect = 0;
-    return _ASYNC_RES(&frame, AsyncResult::Wait);
+    return _ASYNC_RES(intptr_t(&frame), AsyncResult::Wait);
 }
 
 struct SwitchContext
