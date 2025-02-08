@@ -130,9 +130,9 @@ async_test_end
 TEST_CASE("03a Worker Exception Direct")
 async_test
 {
-    void Worker()
+    async_res_t Worker()
     {
-        kernel::Worker::Throw(kernel::Error, 42);
+        async_once_throw(kernel::Error, 42);
     }
 
     NO_INLINE async(Run)
@@ -144,6 +144,8 @@ async_test
     async_end
 }
 async_test_end
+
+#ifdef PLATFORM_WORKER_CLASS_BASE
 
 static char buf[10];
 static char* p;
@@ -188,5 +190,7 @@ async_test
     async_end
 }
 async_test_end
+
+#endif
 
 }
