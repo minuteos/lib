@@ -139,6 +139,14 @@ bool TestCase::Execute()
     return false;
 }
 
+#if Ckernel
+void TestCase::_AssertException(int line, AsyncCatchResult result, ::kernel::ExceptionType type, intptr_t value)
+{
+    _AssertEqual(line, result.ExceptionType(), type);
+    _AssertEqual(line, result.Value(), value);
+}
+#endif
+
 void TestCase::_Fail(int line)
 {
     _Fail(line, std::function<void(void)>{});

@@ -139,8 +139,7 @@ async_test
     async_def()
     {
         auto res = await_catch(kernel::Worker::Run, GetMethodDelegate(this, Worker));
-        AssertEqual(res.ExceptionType(), kernel::Error);
-        AssertEqual(res.Value(), 42);
+        AssertException(res, kernel::Error, 42);
     }
     async_end
 }
@@ -183,8 +182,7 @@ async_test
         p = buf;
         auto res = await_catch(kernel::Worker::Run, GetMethodDelegate(this, Worker));
         *p = 0;
-        AssertEqual(res.ExceptionType(), kernel::Error);
-        AssertEqual(res.Value(), 42);
+        AssertException(res, kernel::Error, 42);
         AssertEqualString(buf, "WABa");
     }
     async_end

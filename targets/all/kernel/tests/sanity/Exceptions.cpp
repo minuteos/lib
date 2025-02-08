@@ -23,16 +23,13 @@ async_test
     async_def()
     {
         auto res = await_catch(Throw, 42);
-        AssertEqual(res.ExceptionType(), kernel::Error);
-        AssertEqual(res.Value(), 42);
+        AssertException(res, kernel::Error, 42);
 
         res = await_catch(ThrowOnce, 43);
-        AssertEqual(res.ExceptionType(), kernel::Error);
-        AssertEqual(res.Value(), 43);
+        AssertException(res, kernel::Error, 43);
 
         res = await_catch(ThrowOnceDef, 44);
-        AssertEqual(res.ExceptionType(), kernel::Error);
-        AssertEqual(res.Value(), 44);
+        AssertException(res, kernel::Error, 44);
 
         res = await_catch(NoThrow, 45);
         Assert(res.Success());
@@ -78,8 +75,7 @@ async_test
         p = buf;
         auto res = await_catch(A);
         *p = 0;
-        AssertEqual(res.ExceptionType(), kernel::Error);
-        AssertEqual(res.Value(), 0);
+        AssertException(res, kernel::Error, 0);
         AssertEqualString(buf, "ABCcba");
     }
     async_end

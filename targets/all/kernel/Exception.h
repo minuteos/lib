@@ -11,11 +11,11 @@
 #include <base/base.h>
 
 #define DECLARE_EXCEPTION(name) \
-    extern const ::kernel::ExceptionTypeDefinition e ## name; \
-    static constexpr ::kernel::ExceptionType name = ::kernel::ExceptionType(e ## name);
+    extern const ::kernel::ExceptionTypeDefinition name ## _; \
+    static constexpr ::kernel::ExceptionType name = ::kernel::ExceptionType(name ## _);
 
 #define DEFINE_EXCEPTION(name) \
-    const ::kernel::ExceptionTypeDefinition e ## name = { #name }; \
+    const ::kernel::ExceptionTypeDefinition name ## _ = { #name }; \
 
 namespace kernel
 {

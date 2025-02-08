@@ -12,6 +12,10 @@
 #include <setjmp.h>
 #include <functional>
 
+#if Ckernel
+#include <kernel/kernel.h>
+#endif
+
 class TestCase
 {
 public:
@@ -36,6 +40,9 @@ public:
     template<typename T1, typename T2> static void _AssertGreaterOrEqual(int line, T1 o1, T2 o2) { if (!(o1 >= o2)) _Fail(line, [o1,o2] { Print(o1); Print(" < "); Print(o2); }); }
     static void _AssertEqualString(int line, const char* s1, const char* s2) { if (strcmp(s1, s2)) _Fail(line, [s1,s2] { Print(s1); Print(" != "); Print(s2); }); }
     static void _AssertNotEqualString(int line, const char* s1, const char* s2) { if (!strcmp(s1, s2)) _Fail(line, [s1,s2] { Print(s1); Print(" == "); Print(s2); }); }
+#if Ckernel
+    static void _AssertException(int line, AsyncCatchResult res, ::kernel::ExceptionType type, intptr_t value);
+#endif
     static void _Fail(int line);
     static void _Fail(int line, const char* reason);
     static void _Fail(int line, const char* format, ...);
@@ -74,6 +81,7 @@ private:
 #define AssertGreaterOrEqual(...) ::TestCase::_AssertGreaterOrEqual(__LINE__, ## __VA_ARGS__)
 #define AssertEqualString(...) ::TestCase::_AssertEqualString(__LINE__, ## __VA_ARGS__)
 #define AssertNotEqualString(...) ::TestCase::_AssertNotEqualString(__LINE__, ## __VA_ARGS__)
+#define AssertException(...) ::TestCase::_AssertException(__LINE__, ## __VA_ARGS__)
 #define Fail(...) ::TestCase::_Fail(__LINE__, ## __VA_ARGS__)
 
 #define TEST_CASE(name) _TEST_CASE(name, __COUNTER__)
