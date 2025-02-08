@@ -51,12 +51,19 @@ enum struct AsyncResult : intptr_t
     _WaitEnd = 0x17
 };
 
+// requires AsyncResult to be defined
+#include <kernel/Exception.h>
+
 struct _async_res_t {
     intptr_t value;
     AsyncResult type;
+
+    bool IsException() const { return intptr_t(type) < 0; }
+    kernel::Exception GetException() const { return kernel::Exception(type, value); }
 };
 
 typedef Packed<_async_res_t> async_res_t; //!< Intermediate result tuple (type and associated value) of asynchronous function execution
+union __async_res_t { async_res_t p; _async_res_t u; }; //!< Union for accessing the result tuple as a packed value or as its components
 
 struct AsyncFrame;
 
@@ -98,16 +105,19 @@ struct AsyncFrame
 {
     union
     {
-        AsyncFrame* callee; //!< Pointer to the frame of the asynchronous function being called
-        uintptr_t* waitPtr; //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
+        struct
+        {
+            AsyncFrame* callee;     //!< Pointer to the frame of the asynchronous function being called
+            uintptr_t children;     //!< Count of child tasks still executing
+        };
+        struct
+        {
+            uintptr_t* waitPtr;     //!< Pointer to the value to be monitored with @ref AsyncResult::Wait
+            mono_t waitTimeout;     //!< Timeout for the wait operation (actually a Timeout::value)
+        };
+        __async_res_t waitResult;
     };
-    contptr_t cont;     //!< Pointer to the instruction where execution will continue
-    union
-    {
-        mono_t waitTimeout;     //!< Timeout for the wait operation (actually a Timeout::value)
-        intptr_t waitResult;    //!< Result of the wait operation
-        uintptr_t children;     //!< Count of child tasks still executing
-    };
+    contptr_t cont;             //!< Pointer to the instruction where execution will continue
     const AsyncSpec* spec;      //!< Definition of the function to which this frame belongs
 
     //! Prepares the frame for a wait operation
@@ -118,10 +128,27 @@ struct AsyncFrame
     void _child_completed(intptr_t res);
 };
 
+class AsyncCatchResult
+{
+public:
+    ALWAYS_INLINE constexpr AsyncCatchResult(async_res_t res = {}) : r({ res }) {}
+    ALWAYS_INLINE constexpr AsyncCatchResult(intptr_t res) : r({ .u = { res, AsyncResult::Complete } }) {}
+
+    ALWAYS_INLINE constexpr bool Success() const { return r.u.type == AsyncResult::Complete; }
+    ALWAYS_INLINE constexpr kernel::ExceptionType ExceptionType() const { return r.u.type; }
+    ALWAYS_INLINE constexpr kernel::Exception Exception() const { return kernel::Exception(ExceptionType(), r.u.value); }
+    ALWAYS_INLINE constexpr intptr_t Value() const { return r.u.value; }
+
+private:
+    __async_res_t r;
+};
+
 //! Asynchronous function prolog
 extern async_prolog_t _async_prolog(AsyncFrame** pCallee, const AsyncSpec* spec);
 //! Asynchronous function epilog
 extern async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee);
+//! Asynchronous function cleanup (starts frame destruction from the provided one)
+extern async_res_t _async_wait_or_rethrow(async_res_t res, AsyncFrame** pCallee);
 
 //! Declaration of an async function
 #define async(name, ...)    async_res_t name(AsyncFrame** __pCallee, ## __VA_ARGS__)
@@ -166,6 +193,7 @@ extern async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee);
     union { async_prolog_t p; _async_prolog_t u; } __prolog_res { _async_prolog(__pCallee, &__spec) }; \
     __FRAME& f = *(__FRAME*)__prolog_res.u.frame; \
     AsyncFrame& __async = f.__async; \
+    UNUSED __async_res_t __res = { __async.waitResult }; \
     goto *__prolog_res.u.cont; \
     __start__: new(&f) __FRAME;
 
@@ -188,7 +216,7 @@ extern async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee);
         ALWAYS_INLINE async_res_t __epilog(async_res_t res, AsyncFrame& pCallee) { return res; } \
         ALWAYS_INLINE void __continue(contptr_t cont) { /* discard */ } \
         __VA_ARGS__; } f; \
-    AsyncFrame& __async = __pCallee;
+    UNUSED AsyncFrame& __async = __pCallee;
 
 //! Defines an asynchronous function with variable args that forwards to another async function with va_list
 #define async_def_va(func, last, ...) { \
@@ -218,6 +246,12 @@ extern async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee);
 
 //! Yields execution to other tasks, but will continue as soon as possible
 #define async_yield() _async_yield(SleepTicks, 0)
+
+//! Throws an async exception
+#define async_throw(type, value) ({ return f.__epilog(_ASYNC_RES(value, ::kernel::ExceptionType(type)), __pCallee); })
+
+//! Throws an async exception from an async_once function
+#define async_once_throw(type, value) ({ return _ASYNC_RES((value), ::kernel::ExceptionType(type)); })
 
 //! Delays execution until the specified timeout elapses
 #define async_delay_timeout(timeout)  _async_yield(DelayTimeout, Timeout::__raw_value(timeout))
@@ -386,16 +420,28 @@ template<typename TFrame> struct __async_binding
 //! Calls another async function
 #define await(fn, ...) ({ \
     __label__ next, next2, done; \
-    intptr_t __res; \
 next: \
     auto __binding = __async_binding<decltype(__pCallee)>(__async); \
-    union { async_res_t p; _async_res_t u; } _res { fn(__binding, ## __VA_ARGS__) }; \
-    if (_res.u.type != AsyncResult::Complete) { f.__continue(__binding.contAfter ? &&next2 : &&next); return _res.p; } \
-    __res = _res.u.value; goto done; \
+    __res = { fn(__binding, ## __VA_ARGS__) }; \
+    if (__res.u.type == AsyncResult::Complete) { goto done; } \
+    f.__continue(__binding.contAfter ? &&next2 : &&next); \
 next2: \
-    __res = __async.waitResult; \
+    if (__res.u.type != AsyncResult::Complete) { return _async_wait_or_rethrow(__res.p, __pCallee); } \
 done: \
-    __res; })
+    __res.u.value; })
+
+//! Calls another async function, stopping possible thrown exceptions
+#define await_catch(fn, ...) ({ \
+    __label__ next, next2, done; \
+next: \
+    auto __binding = __async_binding<decltype(__pCallee)>(__async); \
+    __res = { fn(__binding, ## __VA_ARGS__) }; \
+    if (__res.u.type == AsyncResult::Complete) { goto done; } \
+    f.__continue(__binding.contAfter ? &&next2 : &&next); \
+next2: \
+    if (__res.u.type > AsyncResult::Complete) { return __res.p; } \
+done: \
+    AsyncCatchResult(__res.p); })
 
 //! Spawns multiple tasks and awaits completion of all
 #define await_all(...) await(::kernel::Task::RunAll, __VA_ARGS__)

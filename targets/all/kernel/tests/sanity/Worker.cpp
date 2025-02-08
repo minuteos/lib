@@ -127,5 +127,68 @@ async_test
 }
 async_test_end
 
+TEST_CASE("03a Worker Exception Direct")
+async_test
+{
+    void Worker()
+    {
+        kernel::Worker::Throw(kernel::Error, 42);
+    }
+
+    NO_INLINE async(Run)
+    async_def()
+    {
+        auto res = await_catch(kernel::Worker::Run, GetMethodDelegate(this, Worker));
+        AssertEqual(res.ExceptionType(), kernel::Error);
+        AssertEqual(res.Value(), 42);
+    }
+    async_end
+}
+async_test_end
+
+static char buf[10];
+static char* p;
+
+TEST_CASE("03b Worker Exception Nested")
+async_test
+{
+    void Worker()
+    {
+        *p++ = 'W';
+        kernel::Worker::Await(GetMethodDelegate(this, AsyncWorker), 100).Rethrow();
+        *p++ = 'X';
+    }
+
+    async(AsyncWorker, mono_t delay)
+    async_def(
+        ~__FRAME() { *p++ = 'a'; }
+    )
+    {
+        *p++ = 'A';
+        async_delay_ticks(delay);
+        *p++ = 'B';
+        await(Throw);
+        *p++ = 'X';
+    }
+    async_end
+
+    async_once(Throw)
+    {
+        async_once_throw(kernel::Error, 42);
+    }
+
+    async(Run)
+    async_def()
+    {
+        p = buf;
+        auto res = await_catch(kernel::Worker::Run, GetMethodDelegate(this, Worker));
+        *p = 0;
+        AssertEqual(res.ExceptionType(), kernel::Error);
+        AssertEqual(res.Value(), 42);
+        AssertEqualString(buf, "WABa");
+    }
+    async_end
+}
+async_test_end
 
 }

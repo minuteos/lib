@@ -66,14 +66,24 @@ NO_INLINE async_res_t _async_epilog(async_res_t res, AsyncFrame** pCallee)
     return res;
 }
 
+/*!
+ * Handling a non-successful result from an awaited function.
+ * When the result is an exception, releases the current frame before continuing.
+ */
+NO_INLINE async_res_t _async_wait_or_rethrow(async_res_t res, AsyncFrame** pCallee)
+{
+    return _ASYNC_RES_TYPE(res) < AsyncResult::Complete
+        ? (*pCallee)->spec->exit(res, pCallee)
+        : res;
+}
+
 NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type)
 {
     bool match = !(*(uint8_t*)waitPtr);
     if (match != (type && AsyncResult::_WaitInvertedMask))
     {
-        type = AsyncResult::Complete;
-        waitPtr = NULL;
-        waitResult = true;
+        waitResult.u = { intptr_t(this), AsyncResult::Complete };
+        return waitResult.p;
     }
 
     return _ASYNC_RES(this, type);
@@ -90,9 +100,8 @@ NO_INLINE async_res_t AsyncFrame::_prepare_wait(AsyncResult type, uintptr_t mask
         {
             *waitPtr ^= mask;
         }
-        waitPtr = NULL;
-        waitResult = true;
-        return _ASYNC_RES(this, AsyncResult::Complete);
+        waitResult.u = { intptr_t(this), AsyncResult::Complete };
+        return waitResult.p;
     }
 
     kernel::Scheduler::s_current->current->wait.mask = mask;

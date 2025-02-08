@@ -37,17 +37,34 @@ class Worker
 #endif
 {
 public:
+    class WorkerAwaitResult : public AsyncCatchResult
+    {
+    public:
+        constexpr WorkerAwaitResult(const AsyncCatchResult& acr)
+            : AsyncCatchResult(acr) {}
+
+        void Rethrow()
+        {
+            if (ExceptionType())
+            {
+                Throw(ExceptionType(), Value());
+            }
+        }
+    };
+
     template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(RunWithOptions, const WorkerOptions& opts, TRes (*fn)(Args...), AArgs&&... args);
     template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(RunWithOptions, const WorkerOptions& opts, Delegate<TRes, Args...> fn, AArgs&&... args) { return async_forward(RunWithOptions, {}, fn.FunctionPointer(), fn.Target(), args...); }
     template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(Run, TRes (*fn)(Args...), AArgs&&... args) { return async_forward(RunWithOptions, {}, fn, args...); }
     template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE static async_once(Run, Delegate<TRes, Args...> fn, AArgs&&... args) { return async_forward(RunWithOptions, {}, fn, args...); }
 
-    template<typename... Args, typename... AArgs> ALWAYS_INLINE static intptr_t Await(async((*fn), Args...), AArgs&&... args) { return AwaitImpl(fn, args...); }
-    template<typename... Args, typename... AArgs> ALWAYS_INLINE static intptr_t Await(async_once((*fn), Args...), AArgs&&... args) { return AwaitOnceImpl(fn, args...); }
-    template<typename... Args, typename... AArgs> ALWAYS_INLINE static intptr_t Await(Delegate<async_res_t, AsyncFrame**, Args...> fn, AArgs&&... args) { return AwaitImpl(fn, args...); }
-    template<typename... Args, typename... AArgs> ALWAYS_INLINE static intptr_t Await(Delegate<async_res_t, AsyncFrame&, Args...> fn, AArgs&&... args) { return AwaitOnceImpl(fn, args...); }
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE static WorkerAwaitResult Await(async((*fn), Args...), AArgs&&... args) { return AwaitImpl(fn, args...); }
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE static WorkerAwaitResult Await(async_once((*fn), Args...), AArgs&&... args) { return AwaitOnceImpl(fn, args...); }
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE static WorkerAwaitResult Await(Delegate<async_res_t, AsyncFrame**, Args...> fn, AArgs&&... args) { return AwaitImpl(fn, args...); }
+    template<typename... Args, typename... AArgs> ALWAYS_INLINE static WorkerAwaitResult Await(Delegate<async_res_t, AsyncFrame&, Args...> fn, AArgs&&... args) { return AwaitOnceImpl(fn, args...); }
 
     static bool CanAwait();
+
+    static void Throw(ExceptionType type, intptr_t value);
 
 private:
     typedef intptr_t (*fptr_run_t)(Worker* w);
@@ -66,7 +83,7 @@ private:
     template<typename T> ALWAYS_INLINE static void Yield(T res) { YieldSync(res); }
     static void YieldSync(async_res_t res);
 
-    template<typename Fn, typename... Args> static intptr_t AwaitImpl(Fn fn, Args&&... args)
+    template<typename Fn, typename... Args> static AsyncCatchResult AwaitImpl(Fn fn, Args&&... args)
     {
         // a regular async function allocates its own frame and we'll call it repeatedly until it completes
         AsyncFrame* pCallee = NULL;
@@ -74,40 +91,38 @@ private:
         {
             // preemption must be disabled when moving back to async world to avoid all kinds
             // of strange race conditions
-            auto res = ({
+            __async_res_t res = {({
                 PLATFORM_CRITICAL_SECTION();
                 fn(&pCallee, args...);
-            });
+            })};
 
-            auto unpacked = unpack<_async_res_t>(res);
-            if (unpacked.type == AsyncResult::Complete)
+            if (res.u.type > AsyncResult::Complete)
             {
-                return unpacked.value;
+                Yield(res.p);
             }
             else
             {
-                Yield(res);
+                return res.p;
             }
         }
     }
 
-    template<typename Fn, typename... Args> static intptr_t AwaitOnceImpl(Fn fn, Args&&... args)
+    template<typename Fn, typename... Args> static AsyncCatchResult AwaitOnceImpl(Fn fn, Args&&... args)
     {
         // an async once function needs a full working frame (we'll provide one on stack) but can return at most one wait
         AsyncFrame frame = {};
-        auto res = ({
+        __async_res_t res = {({
             PLATFORM_CRITICAL_SECTION();
             fn(frame, args...);
-        });
+        })};
 
-        auto unpacked = unpack<_async_res_t>(res);
-        if (unpacked.type == AsyncResult::Complete)
+        if (res.u.type > AsyncResult::Complete)
         {
-            return unpacked.value;
+            Yield(res.p);
+            res = frame.waitResult;
         }
-        Yield(res);
-        // the final result will wait for us in the frame
-        return frame.waitResult;
+
+        return res.p;
     }
 
     template<typename TRes, typename... Args> friend class WorkerWithArgs;
@@ -152,3 +167,7 @@ template<typename TRes, typename... Args, typename... AArgs> ALWAYS_INLINE async
 }
 
 #include <kernel/PlatformWorkerInline.h>
+
+inline NO_INLINE void kernel::Worker::Throw(ExceptionType type, intptr_t value) {
+    kernel::Worker::Yield(_ASYNC_RES(value, type));
+}

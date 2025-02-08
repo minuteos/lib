@@ -86,14 +86,14 @@ TEST_CASE("02 Masked waits")
         AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
         AssertEqual((int*)t.p->waitPtr, &t.x);
         AssertEqual(unsafe_cast<Timeout>(t.p->waitTimeout), Timeout::Seconds(3u));
-        t.p->waitResult = true;  // simulate success
+        t.p->waitResult.u = { true, AsyncResult::Complete };  // simulate success
 
         res = t.Step();
         AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::WaitInverted);
         AssertEqual((AsyncFrame*)_ASYNC_RES_VALUE(res), t.p);
         AssertEqual((int*)t.p->waitPtr, &t.x);
         AssertEqual(unsafe_cast<Timeout>(t.p->waitTimeout), Timeout::Milliseconds(6));
-        t.p->waitResult = false; // simulate timeout
+        t.p->waitResult.u = { false, AsyncResult::Complete }; // simulate timeout
 
         res = t.Step();
         AssertEqual(_ASYNC_RES_TYPE(res), AsyncResult::Complete);

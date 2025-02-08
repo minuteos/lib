@@ -92,7 +92,12 @@ void TestCase_ ## id ::Run()
 #define async_test_end ; \
     struct __TestRunner { \
         __AsyncTest test; \
-        async(Run) async_def() { await(test.Run); _Done(); } async_end \
+        async(Run) async_def() { \
+            auto res = await_catch(test.Run); \
+            if (res.Success()) { _Done(); } \
+            else { Fail("Unhandled exception: %s %d", res.Exception().Name(), res.Exception().Value()); } \
+        } \
+        async_end \
     } test; \
     ::kernel::Scheduler::Main().Add(test, &__TestRunner::Run); \
     ::kernel::Scheduler::Main().Run(); \

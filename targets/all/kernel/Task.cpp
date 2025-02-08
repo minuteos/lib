@@ -43,17 +43,16 @@ struct SwitchContext
 
     async_res_t Run(AsyncFrame** pCallee)
     {
-        auto _res = fn(pCallee);
-        auto res = unpack<_async_res_t>(_res);
-        if (res.type == AsyncResult::Complete)
+        __async_res_t res = { fn(pCallee) };
+        if (res.u.type <= AsyncResult::Complete)
         {
             t.fn = prevFn;
             t.top = prevTop;
-            f.waitResult = res.value;
+            f.waitResult = res;
             MemPoolFree(this);
-            _res = _ASYNC_RES(0, AsyncResult::SleepTicks);
+            res.u = { 0, AsyncResult::SleepTicks };
         }
-        return _res;
+        return res.p;
     }
 
     Task& t;
@@ -66,17 +65,17 @@ struct SwitchContext
 async_once(Task::Switch, AsyncDelegate<> other, bool trySync)
 {
     AsyncFrame* top = NULL;
-    auto res = _ASYNC_RES(0, AsyncResult::SleepTicks);
+    __async_res_t res = { .u = { 0, AsyncResult::SleepTicks } };
     if (trySync)
     {
-        res = other(&top);
-        if (_ASYNC_RES_TYPE(res) == AsyncResult::Complete)
+        res.p = other(&top);
+        if (res.u.type <= AsyncResult::Complete)
         {
-            return res;
+            return res.p;
         }
     }
     new(MemPoolAlloc<SwitchContext>()) SwitchContext(Current(), __pCallee, other, top);
-    return res;
+    return res.p;
 }
 
 }

@@ -180,7 +180,9 @@ mono_t Scheduler::Run()
 #if KERNEL_STATS
             int cyc = -PLATFORM_CYCLE_COUNT;
 #endif
-            auto res = task->fn(&task->top);
+            __async_res_t res = { task->fn(&task->top) };
+            auto& type = res.u.type;
+            auto& value = res.u.value;
 #if KERNEL_STATS
             cyc += PLATFORM_CYCLE_COUNT;
             STAT_ADD(cycles, cyc);
@@ -195,14 +197,12 @@ mono_t Scheduler::Run()
             }
 #endif
 #endif
-            auto unpacked = unpack<_async_res_t>(res);
-            auto type = unpacked.type;
-            auto value = unpacked.value;
 
             switch (type)
             {
                 // task has finished
                 case AsyncResult::Complete:
+                __complete:
                     STAT_INCG(completions);
                     *pNext = task->next;
                     if (task->onComplete)
@@ -355,6 +355,11 @@ mono_t Scheduler::Run()
                 }
 
                 default:
+                    if (res.u.IsException())
+                    {
+                        DBGL("Unhandled exception: %s %d", res.u.GetException().Name(), res.u.value);
+                        goto __complete;
+                    }
                     DBG("INVALID WAIT TYPE: %X", type);
                     ASSERT(false);
 #if !KERNEL_SYNC_ONLY
@@ -469,7 +474,7 @@ mono_t Scheduler::Run()
                 task->next = active;
                 active = task;
                 task->wait.until = 0;   // make sure the next delay won't try to continue from an invalid time
-                task->wait.frame->waitResult = true;
+                task->wait.frame->waitResult.u = { true, AsyncResult::Complete };
                 continue;
             }
 
@@ -494,7 +499,7 @@ mono_t Scheduler::Run()
                     STAT_INC(waitTimeouts);
                     *pNext = task->next;
                     task->next = active;
-                    task->wait.frame->waitResult = false;
+                    task->wait.frame->waitResult.u = { false, AsyncResult::Complete };
                     active = task;
                     continue;
                 }
