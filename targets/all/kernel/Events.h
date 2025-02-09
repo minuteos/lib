@@ -27,6 +27,7 @@ class _EventHandler
 
 template<typename TEvent> bool FireEvent(const TEvent& evt);
 template<typename TEvent> void _RegisterEvent(_Delegate handler);
+template<typename TEvent> void _UnregisterEvent(_Delegate handler);
 void UnregisterEvents(const void* owner);
 
 class _EventTable
@@ -43,6 +44,7 @@ protected:
 
     template<typename TEvent> friend bool ::kernel::FireEvent(const TEvent& evt);
     template<typename TEvent> friend void ::kernel::_RegisterEvent(_Delegate handler);
+    template<typename TEvent> friend void ::kernel::_UnregisterEvent(_Delegate handler);
     friend void ::kernel::UnregisterEvents(const void* owner);
 };
 
@@ -84,6 +86,31 @@ template<typename TEvent, class TOwner> ALWAYS_INLINE void RegisterEvent(TOwner*
     return RegisterEvent<TEvent>(Delegate(owner, handler));
 }
 
+template<typename TEvent> ALWAYS_INLINE void _UnregisterEvent(_Delegate handler)
+{
+    _GetEventTable<const TEvent>().RemoveHandler(handler);
+}
+
+template<typename TEvent> ALWAYS_INLINE void UnregisterEvent(Delegate<void, const TEvent&> handler)
+{
+    return _UnregisterEvent<TEvent>(handler);
+}
+
+template<typename TEvent> ALWAYS_INLINE void UnregisterEvent(Delegate<void, const TEvent&, bool&> handler)
+{
+    return _UnregisterEvent<TEvent>(handler);
+}
+
+template<typename TEvent, class TOwner> ALWAYS_INLINE void UnregisterEvent(TOwner* owner, void (TOwner::*handler)(const TEvent& evt))
+{
+    return UnregisterEvent<TEvent>(Delegate(owner, handler));
+}
+
+template<typename TEvent, class TOwner> ALWAYS_INLINE void UnregisterEvent(TOwner* owner, void (TOwner::*handler)(const TEvent& evt, bool& handled))
+{
+    return UnregisterEvent<TEvent>(Delegate(owner, handler));
+}
+
 void UnregisterEvents(const void* owner);
 
 class EventTarget
@@ -91,9 +118,12 @@ class EventTarget
 protected:
     template <class TEvent, class TOwner> void RegisterEvent(void (TOwner::*handler)(const TEvent& evt)) { ::kernel::RegisterEvent((TOwner*)this, handler); }
     template <class TEvent, class TOwner> void RegisterEvent(void (TOwner::*handler)(const TEvent& evt, bool& handled)) { ::kernel::RegisterEvent((TOwner*)this, handler); }
+
+    template <class TEvent, class TOwner> void UnregisterEvent(void (TOwner::*handler)(const TEvent& evt)) { ::kernel::UnregisterEvent((TOwner*)this, handler); }
+    template <class TEvent, class TOwner> void UnregisterEvent(void (TOwner::*handler)(const TEvent& evt, bool& handled)) { ::kernel::UnregisterEvent((TOwner*)this, handler); }
 };
 
-class DynamicEventTarget
+class DynamicEventTarget : public EventTarget
 {
 public:
     ~DynamicEventTarget() { UnregisterEvents(this); }
