@@ -24,6 +24,9 @@ ALWAYS_INLINE static void inline_memzero(void* ptr, size_t size)
 
 void* MemPool::Alloc()
 {
+#if MEMPOOL_DEBUG_PERIODIC_DUMP
+    cnt++;
+#endif
     auto res = free;
     if (res)
     {
@@ -36,6 +39,9 @@ void* MemPool::Alloc()
 
 void* MemPool::AllocDynamic()
 {
+#if MEMPOOL_DEBUG_PERIODIC_DUMP
+    cnt++;
+#endif
     auto res = free;
     if (res)
     {
@@ -76,6 +82,14 @@ void** MemPool::AllocLarge(size_t size)
 
 void MemPool::Free(void* mem)
 {
+#if MEMPOOL_DEBUG_PERIODIC_DUMP
+    cnt--;
+    if (MONO_CLOCKS - lastDump >= MONO_FREQUENCY)
+    {
+        lastDump += MONO_FREQUENCY;
+        DBGL("MP %d = %d", size, cnt);
+    }
+#endif
     // enqueuing the chunk to the freelist before zeroing allows the ARM version
     // of this function to get by with only the 4 scratch registers,
     // avoiding stack push/pop

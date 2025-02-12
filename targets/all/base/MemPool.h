@@ -39,6 +39,10 @@ class MemPool
 {
     MemPoolEntry* free;
     const size_t size;
+#if MEMPOOL_DEBUG_PERIODIC_DUMP
+    int cnt = 0;
+    mono_t lastDump = 0;
+#endif
 
 public:
     constexpr MemPool(const size_t size) : free(NULL), size(size)
