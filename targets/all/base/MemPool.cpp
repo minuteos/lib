@@ -10,6 +10,8 @@
 
 #include <base/MemPool.h>
 
+#include <base/alloc_trace.h>
+
 // inline helper for zeroing aligned memory
 // note that it is MANDATORY for size to be non-zero and a multiple of natural pointer size (intptr_t)
 ALWAYS_INLINE static void inline_memzero(void* ptr, size_t size)
@@ -32,9 +34,12 @@ void* MemPool::Alloc()
     {
         free = res->next;
         res->next = NULL;
+        __trace_alloc(res, size);
         return res;
     }
-    return AllocNew();
+    auto ptr = AllocNew();
+    __trace_alloc(ptr, size);
+    return ptr;
 }
 
 void* MemPool::AllocDynamic()
@@ -47,9 +52,12 @@ void* MemPool::AllocDynamic()
     {
         free = res->next;
         res->pool = this;
+        __trace_alloc(res, size);
         return res->data;
     }
-    return AllocNewDynamic();
+    auto ptr = AllocNewDynamic();
+    __trace_alloc((char*)ptr - sizeof(MemPool*), size);
+    return ptr;
 }
 
 void* MemPool::AllocNewDynamic()
@@ -63,7 +71,7 @@ void* MemPool::AllocNew()
 {
     // simply allocate the required memory, it will go back into the pool once freed
 #if HAS_MALLOC_ONCE
-    void* mem = malloc_once(size);
+    void* mem = (char*)malloc_once(ALLOC_TRACE_OVERHEAD + size) + ALLOC_TRACE_OVERHEAD;
 #else
     void* mem = malloc(size);
 #endif
@@ -82,6 +90,7 @@ void** MemPool::AllocLarge(size_t size)
 
 void MemPool::Free(void* mem)
 {
+    __trace_free(mem);
 #if MEMPOOL_DEBUG_PERIODIC_DUMP
     cnt--;
     if (MONO_CLOCKS - lastDump >= MONO_FREQUENCY)
