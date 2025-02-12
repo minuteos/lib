@@ -33,7 +33,7 @@ public:
     constexpr PipePosition& operator +=(ptrdiff_t offset) { pos += offset; return *this; }
     constexpr PipePosition& operator -=(ptrdiff_t offset) { pos -= offset; return *this; }
 
-    constexpr size_t LengthUntil(PipePosition other) const { return other.pos <= pos ? 0 : other.pos - pos; }
+    constexpr size_t LengthUntil(PipePosition other) const { ASSERT(other.pos >= pos); return other.pos - pos; }
 
 private:
     constexpr PipePosition(size_t pos)

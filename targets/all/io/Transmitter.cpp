@@ -44,15 +44,15 @@ async_def(
                 return NULL;
             }
             auto p = self->GetReadPointer();
-            // if the pointer is inside the buffer, data up to it is already sent
-            // otherwise the entire buffer has already been sent
-            auto sent = p >= span.begin() && p < span.end() ? p - span.begin() : span.Length();
-            if (!sent)
+            // if the pointer is inside the buffer, data up to it is already sent and we need to wait until it moves
+            if (p >= span.begin() && p <= span.end())
             {
-                // nothing sent, we're going to wait until the pointer moves
+                pipe.Advance(p - span.begin());
                 return p;
             }
-            pipe.Advance(sent);
+
+            // otherwise the entire buffer has already been sent and we need to get another one
+            pipe.Advance(span.Length());
         }
     }
 
