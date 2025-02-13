@@ -138,6 +138,7 @@ public:
     ALWAYS_INLINE constexpr kernel::ExceptionType ExceptionType() const { return r.u.type; }
     ALWAYS_INLINE constexpr kernel::Exception Exception() const { return kernel::Exception(ExceptionType(), r.u.value); }
     ALWAYS_INLINE constexpr intptr_t Value() const { return r.u.value; }
+    ALWAYS_INLINE constexpr operator async_res_t() const { return r.p; }
 
 private:
     __async_res_t r;
@@ -251,6 +252,8 @@ ALWAYS_INLINE static async_res_t _async_wait_or_rethrow(async_res_t res, const A
 
 //! Throws an async exception
 #define async_throw(type, value) ({ return f.__epilog(_ASYNC_RES(value, ::kernel::ExceptionType(type)), __pCallee); })
+//! Rethrows an exception if caught by await_catch
+#define async_rethrow(res) ({ if (!res.Success()) { return res; } })
 
 //! Throws an async exception from an async_once function
 #define async_once_throw(type, value) ({ return _ASYNC_RES((value), ::kernel::ExceptionType(type)); })
