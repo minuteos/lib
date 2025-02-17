@@ -23,8 +23,6 @@ BEGIN_EXTERN_C
 
 #if TRACE
 
-extern void DBG_AssertFailed(const char* file, unsigned line);
-
 extern void DBG_PutChar(char ch);
 extern void DBG_PutString(const char* s);
 extern void DBG_PrintF(const char* format, ...);
@@ -37,7 +35,16 @@ extern void CDBG_DebugPrintF(unsigned channel, const char* format, ...);
 extern void CDBG_DebugPrintFC(unsigned channel, const char* component, const char* format, ...);
 extern void DebugPrintFV(unsigned channel, const char* component, const char* format, va_list va);
 
+#if DEBUG || TRACE_ASSERT
+
+extern void DBG_AssertFailed(const char* file, unsigned line);
 #define ASSERT(expr)	 if(!(expr)) { DBG_AssertFailed(__FILE__, __LINE__); }
+
+#else
+
+#define ASSERT(expr)
+
+#endif
 
 #define DBG(...)                    DBG_DebugPrintF(__VA_ARGS__)
 #define DBGC(component, ...)        DBG_DebugPrintFC(component, __VA_ARGS__)
