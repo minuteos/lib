@@ -24,6 +24,7 @@ enum struct ResetCause
     Watchdog,    //< watchdog timeout
     Software,    //< software request
     Hardware,    //< hardware request (RST signal, via debug interface or a button)
+    MCU,         //< reset caused by MCU-specific operation
 };
 
 extern ResetCause resetCause;
