@@ -13,10 +13,14 @@
 template<typename T, size_t n> class MovingAverage
 {
 public:
-    void Reset()
+    constexpr MovingAverage(const T& init = {})
+        : cur(init) {}
+
+    void Reset(const T& init = {})
     {
         cnt = i = 0;
-        agg = cur = {};
+        agg = {};
+        cur = init;
     }
 
     void Add(const T& element)

@@ -13,9 +13,13 @@
 template<typename T, size_t n> class MovingMedian
 {
 public:
-    void Reset()
+    constexpr MovingMedian(const T& init = {})
+        : cur(init) {}
+
+    void Reset(const T& init = {})
     {
         cnt = i = 0;
+        cur = init;
     }
 
     void Add(const T& element)
