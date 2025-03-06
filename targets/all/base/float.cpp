@@ -265,7 +265,8 @@ float fast_atof(const char* s)
     auto m64 = p10.Multiply64(u);
 
     // offset significand to normal F32 form (keep 24 significant bits in the upper word)
-    int offset = 32 + 8 - __builtin_clz(m64 >> 32);
+    uint32_t clz = m64 >> 32 ? __builtin_clz(m64 >> 32) : 32;   // CLZ is not defined for zero input
+    int offset = 32 + 8 - clz;
     e += 126 + offset - 8;   // final biased exponent
     if (e <= 0)
     {
