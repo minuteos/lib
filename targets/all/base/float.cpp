@@ -265,6 +265,12 @@ float fast_itof(bool minus, uint32_t u, int k)
         return unsafe_cast<float>((minus * BIT(31)) | (0xFF << 23));
     }
 
+    // known "bad" exponents where rounding yields incorrect results for larger groups of numbers
+    if (u < 100000000 && (k == -43 || k == -31 || k == -26 || k == -25 || k == -23 || k == -21 || k == 14 || k == 18))
+    {
+        u *= 10;
+        k--;
+    }
 
     Pow10 p10(k);
     int e = p10.Exponent();

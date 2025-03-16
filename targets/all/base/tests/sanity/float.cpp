@@ -37,10 +37,9 @@ static const struct
     { unsafe_cast<float>(0xBE800000), "-0.25" },
     { unsafe_cast<float>(0x6C000000), "6.1897002e26" },
     { unsafe_cast<float>(0x6F800000), "7.9228162e28" },
-    // atof doesn't work correctly for these (and some more, yet)
-    // { unsafe_cast<float>(0x01E881F1), "8.54098e-38" },
-    // { unsafe_cast<float>(0x1778A4A5), "8.034093e-25" },
-    // { unsafe_cast<float>(0x1C79CFFC), "8.2656e-22" },
+    { unsafe_cast<float>(0x01E881F1), "8.54098e-38" },
+    { unsafe_cast<float>(0x1778A4A5), "8.034093e-25" },
+    { unsafe_cast<float>(0x1C79CFFC), "8.2656e-22" },
 };
 
 TEST_CASE("01 FtoA")
