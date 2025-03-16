@@ -26,3 +26,12 @@ EXTERN_C char* fast_ftoa(float v, char* buf);
  * @returns Best-effort conversion of the string value, or NAN if it conversion wasn't possible
  */
 EXTERN_C float fast_atof(const char* s);
+
+/*!
+ * Creates a single-precision float value from the specified inputs
+ * @param sign Sign of the result (explicit because float supports negative zero etc.)
+ * @param significand Significand (mantissa) of the result
+ * @param exponent Decimal exponent of the result
+ * @returns A single-precision float as close as possible to the input parameters
+ */
+EXTERN_C float fast_itof(bool sign, uint32_t significand, int exponent);

@@ -247,6 +247,11 @@ float fast_atof(const char* s)
         k += eminus ? -ee : ee;
     }
 
+    return fast_itof(minus, u, k);
+}
+
+float fast_itof(bool minus, uint32_t u, int k)
+{
     if (!u || k < Pow10::Min)
     {
         // zero or too small
