@@ -66,12 +66,13 @@ char* fast_ftoa(float v, char* buf)
     // - p is the maximum significand to be output
     // - delta is the maximum acceptable difference before the result becomes another number
     // - err is the distance to the input number
-    n = -e - p10.Exponent() - 28;
-    uint32_t qfp = p10.Multiply32(fp) >> n;
-    uint32_t qfm = p10.Multiply32(fm) >> n;
-    uint32_t qf = p10.Multiply32(f) >> n;
+    n = -e - p10.Exponent() + 4;
+    uint64_t half = 1uLL << (n - 1);
+    uint32_t qfp = (p10.Multiply(fp) - half) >> 32 >> (n - 32);
+    uint32_t qfm = (p10.Multiply(fm) + half) >> 32 >> (n - 32);
+    uint32_t qf = p10.Multiply(f) >> n;
     uint32_t rest = qfp;
-    uint32_t delta = qfp - qfm - 3;
+    uint32_t delta = qfp - qfm - 1;
     uint32_t err = qfp - qf;
 
     // generate significant digits until rest < delta
@@ -267,7 +268,7 @@ float fast_itof(bool minus, uint32_t u, int k)
 
     Pow10 p10(k);
     int e = p10.Exponent();
-    auto m64 = p10.Multiply64(u);
+    auto m64 = p10.Multiply(u);
 
     // offset significand to normal F32 form (keep 24 significant bits in the upper word)
     uint32_t clz = m64 >> 32 ? __builtin_clz(m64 >> 32) : 32;   // CLZ is not defined for zero input

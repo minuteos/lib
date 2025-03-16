@@ -3,10 +3,10 @@
 // symmetric ends, so we can use the table for both ftoa and atof
 const start = -53
 const end = 53
-const maxBits = 200
+const maxBits = 300
 const maxBase = 2n ** BigInt(maxBits)
 const outBits = 32
-const roundUp = false
+const roundUp = true
 
 const f = [], e = []
 
@@ -87,9 +87,7 @@ public:
     //! Get the decimal exponent of this instance
     constexpr int Exponent() const { return e; }
     //! Apply the conversion to the specified value - the decimal point is between high and low words of the result
-    constexpr uint64_t Multiply64(uint32_t v) const { return (v * uint64_t(f)); }
-    //! Apply the conversion to the specified value - the result is the whole part of the result
-    constexpr uint32_t Multiply32(uint32_t v) const { return (v * uint64_t(f)) >> 32; }
+    constexpr uint64_t Multiply(uint32_t v) const { return (v * uint64_t(f)); }
 
 private:
     uint32_t f;
