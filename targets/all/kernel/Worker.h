@@ -15,11 +15,18 @@
 namespace kernel
 {
 
+class WorkerStackAllocator
+{
+public:
+    virtual void* Allocate(size_t& size) = 0;
+    virtual void Free(void* ptr) = 0;
+};
+
 struct WorkerOptions
 {
     static constexpr size_t DefaultStack = 1024;
     size_t stack = DefaultStack;
-    void* staticStack = NULL;
+    WorkerStackAllocator* stackAlloc = NULL;
     async_res_t (*adjustResult)(async_res_t) = NULL;
     bool noPreempt : 1;
     bool trySync : 1;
