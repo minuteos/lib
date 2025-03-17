@@ -254,6 +254,8 @@ ALWAYS_INLINE static async_res_t _async_wait_or_rethrow(async_res_t res, const A
 #define async_throw(type, value) ({ return f.__epilog(_ASYNC_RES(value, ::kernel::ExceptionType(type)), __pCallee); })
 //! Rethrows an exception if caught by await_catch
 #define async_rethrow(res) ({ if (!res.Success()) { return f.__epilog(res, __pCallee); } })
+//! Forward the return value, e.g. one received from async_catch
+#define async_return_forward(res) ({ return f.__epilog(res, __pCallee); })
 
 //! Throws an async exception from an async_once function
 #define async_once_throw(type, value) ({ return _ASYNC_RES((value), ::kernel::ExceptionType(type)); })
