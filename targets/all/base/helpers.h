@@ -39,4 +39,7 @@ int parse_nibble(char c, int base = 16);
 //! Converts float to fixed-decimal integer
 int f2q(float f, unsigned decimals);
 
+//! Wrapper to pass floats as var args without converting them to doubles
+constexpr uint32_t fva(float f) { return unsafe_cast<uint32_t>(f); }
+
 #endif

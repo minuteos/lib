@@ -11,6 +11,10 @@
 
 #include <base/format.h>
 
+#if FORMAT_ENABLE_FAST_FLOAT
+#include <base/float.h>
+#endif
+
 static const char l_hex[] = "0123456789ABCDEF";
 
 void format_output_discard(void* context, char ch)
@@ -317,6 +321,22 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
                         order /= base;
                     }
                     break;
+
+#if FORMAT_ENABLE_FAST_FLOAT
+                case 'F':
+                {
+                    // 32-bit floating point number, passed using fva
+                    union { uint32_t u; float f; } f32 = { .u = va_arg(va, uint32_t) };
+                    char buf[16];
+                    char* end = fast_ftoa(f32.f, buf);
+                    for (str = buf; str < end; str++)
+                    {
+                        output(context, *str);
+                        outputCount++;
+                    }
+                    break;
+                }
+#endif
 
                 case '%':
                     output(context, '%');
