@@ -17,6 +17,7 @@
 #include <algorithm>
 
 class Buffer;
+template<typename ElementType> class TypedSpan;
 
 /*!
  * A class representing a contiguous range of bytes in memory
@@ -79,6 +80,8 @@ public:
     template<class T> ALWAYS_INLINE constexpr const T& Element(size_t index = 0) const { return ((const T*)p)[index]; }
     //! Gets the length of the Span
     ALWAYS_INLINE constexpr size_t Length() const { return len; }
+    //! Gets a typed span with elements of the specified type
+    template<class T> constexpr TypedSpan<T> Cast() const;
 
     //! Gets the pointer to the beginning of the Span
     ALWAYS_INLINE constexpr operator const char*() const { return p; }
@@ -279,6 +282,7 @@ private:
     static bool IsAll(Span s, uint32_t val);
 
     friend class Buffer;
+    template<typename ElementType> friend class TypedSpan;
 };
 
 class Buffer : public Span
@@ -345,3 +349,47 @@ ALWAYS_INLINE Buffer Span::CopyTo(Buffer buf) const { auto len = std::min(buf.le
 template<> constexpr Span::Span(const Span& value) : p(value.p), len(value.len) {}
 template<> constexpr Span::Span(const Buffer& value) : Span(value.packed) {}
 template<> constexpr Buffer::Buffer(Buffer& value) : Span(value) {}
+
+template<typename ElementType> class TypedSpan
+{
+public:
+    using packed_t = Packed<TypedSpan, sizeof(intptr_t)*2>;
+
+private:
+    union
+    {
+        struct
+        {
+            const ElementType* p;
+            size_t len;
+        };
+        packed_t packed;
+    };
+
+public:
+    //! Constructs an empty span
+    constexpr TypedSpan() : packed {} {}
+    //! Constructs a TypeSpan from a @ref packed_t - used to force passing of return values via registers
+    constexpr TypedSpan(packed_t packed) : packed(packed) {}
+
+    //! Gets the pointer to the beginning of the Span
+    template<class T> ALWAYS_INLINE constexpr const T* Pointer() const { return (const T*)p; }
+    //! Gets the count of typed elments in the Span
+    ALWAYS_INLINE constexpr size_t Count() const { return len / sizeof(ElementType); }
+
+    //! C++ iterator interface
+    ALWAYS_INLINE constexpr const ElementType* begin() const { return (const ElementType*)p; }
+    //! C++ iterator interface
+    ALWAYS_INLINE constexpr const ElementType* end() const { return (const ElementType*)(p + Count()); }
+
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const ElementType& operator[](int index) const { return p[index]; }
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const ElementType& operator[](unsigned index) const { return p[index]; }
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const ElementType& operator[](long index) const { return p[index]; }
+    //! Explicit indexer implementation to resolve possible ambiguity
+    ALWAYS_INLINE constexpr const ElementType& operator[](unsigned long index) const { return p[index]; }
+};
+
+template<class T> constexpr TypedSpan<T> Span::Cast() const { return TypedSpan<T>((typename TypedSpan<T>::packed_t)packed); }
