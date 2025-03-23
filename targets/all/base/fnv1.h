@@ -11,6 +11,7 @@
 #pragma once
 
 #include <base/base.h>
+#include <base/Span.h>
 
 #define FNV1_BASIS 0x811C9DC5u
 #define FNV1_PRIME 0x01000193u
@@ -25,6 +26,12 @@ constexpr uint32_t fnv1a(const char* s, uint32_t hash = FNV1_BASIS)
 constexpr uint32_t fnv1a(const char* s, size_t len, uint32_t hash)
 {
     return len ? fnv1a(s + 1, len - 1, (hash ^ s[0]) * FNV1_PRIME) : hash;
+}
+
+//! Calculates the FNV1a hash of a block of memory
+constexpr uint32_t fnv1a(Span s, uint32_t hash = FNV1_BASIS)
+{
+    return fnv1a(s.Pointer(), s.Length(), hash);
 }
 
 #ifdef __cplusplus
