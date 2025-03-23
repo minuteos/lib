@@ -62,7 +62,7 @@ public:
     template<class T> static Span Of(const T& value) { return Span(&value, sizeof(T)); }
 
     //! Constructs a Span from a Null-terminated string literal, excluding the terminator
-    template<size_t n> constexpr Span(const char (&literal)[n]) : p(literal), len(n - 1)
+    template<size_t n> ALWAYS_INLINE constexpr Span(const char (&literal)[n]) : p(literal), len(n - 1)
     {
         ASSERT(literal[n - 1] == 0);
     }
