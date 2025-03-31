@@ -11,14 +11,12 @@
 namespace kernel
 {
 
-async_once(PeriodicWakeup::Next)
-async_once_def()
+mono_t PeriodicWakeup::Next()
 {
     mono_t total = error + period;
     mono_t delay = total / fraction;
     error = total - delay * fraction;
-    async_delay_until(t += delay);
+    return t += delay;
 }
-async_end
 
 }

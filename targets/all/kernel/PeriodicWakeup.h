@@ -28,8 +28,10 @@ public:
     mono_t Time() const { return t; }
     //! Current accumulated error (< fraction), if any
     mono_t Error() const { return error; }
+    //! Get next wakeup time (mutates state - do not use toget with async Next)
+    mono_t Next();
     //! Sleeps until the next scheduled wakeup interval
-    async_once(Next);
+    async_once(Next) async_once_def() { async_delay_until(Next()); } async_end
 
 private:
     unsigned fraction;
