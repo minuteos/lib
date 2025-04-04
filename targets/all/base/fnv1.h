@@ -54,6 +54,8 @@ public:
 
     constexpr operator uint32_t() const { return hash; }
 
+    constexpr bool IsValid() const { return hash && hash != FNV1_BASIS; }
+
 private:
     uint32_t hash;
 };
