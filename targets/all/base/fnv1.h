@@ -42,6 +42,7 @@ public:
     constexpr FNV1a() : hash(FNV1_BASIS) {}
     constexpr FNV1a(const char* s) : hash(fnv1a(s)) {}
     constexpr FNV1a(const char* s, size_t len) : hash(fnv1a(s, len, FNV1_BASIS)) {}
+    constexpr FNV1a(Span s) : hash(fnv1a(s)) {}
     constexpr FNV1a(uint32_t hash) : hash(hash) {}
 
     constexpr FNV1a& operator +=(char c) { hash = (hash ^ c) * FNV1_PRIME; return *this; }
