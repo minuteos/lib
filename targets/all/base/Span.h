@@ -376,15 +376,34 @@ public:
     //! Constructs a TypeSpan from a @ref packed_t - used to force passing of return values via registers
     constexpr TypedSpan(packed_t packed) : packed(packed) {}
 
-    //! Gets the pointer to the beginning of the Span
+    //! Gets the pointer to the beginning of the TypedSpan
     template<class T> ALWAYS_INLINE constexpr const T* Pointer() const { return (const T*)p; }
-    //! Gets the count of typed elments in the Span
+    //! Gets the count of typed elments in the TypedSpan
     ALWAYS_INLINE constexpr size_t Count() const { return len / sizeof(ElementType); }
+    //! Gets the TypedSpan as a regular Span
+    ALWAYS_INLINE constexpr Span AsSpan() const { return Span((Span::packed_t)packed); }
 
     //! C++ iterator interface
     ALWAYS_INLINE constexpr const ElementType* begin() const { return (const ElementType*)p; }
     //! C++ iterator interface
     ALWAYS_INLINE constexpr const ElementType* end() const { return (const ElementType*)(p + Count()); }
+
+    //! C++ iterator interface
+    ALWAYS_INLINE constexpr auto rbegin() const { return std::make_reverse_iterator(end()); }
+    //! C++ iterator interface
+    ALWAYS_INLINE constexpr auto rend() const { return std::make_reverse_iterator(begin()); }
+
+    struct ReverseIterable
+    {
+        ALWAYS_INLINE constexpr ReverseIterable(const TypedSpan& span) : span(span) {}
+        ALWAYS_INLINE constexpr auto begin() const { return span.rbegin(); }
+        ALWAYS_INLINE constexpr auto end() const { return span.rend(); }
+
+    private:
+        TypedSpan span;
+    };
+
+    ALWAYS_INLINE constexpr ReverseIterable Reverse() const { return ReverseIterable(*this); }
 
     //! Explicit indexer implementation to resolve possible ambiguity
     ALWAYS_INLINE constexpr const ElementType& operator[](int index) const { return p[index]; }
@@ -394,6 +413,15 @@ public:
     ALWAYS_INLINE constexpr const ElementType& operator[](long index) const { return p[index]; }
     //! Explicit indexer implementation to resolve possible ambiguity
     ALWAYS_INLINE constexpr const ElementType& operator[](unsigned long index) const { return p[index]; }
+
+    //! Returns a new TypedSpan consisting of up to n elements from the start of the original TypedSpan
+    ALWAYS_INLINE TypedSpan Left(size_t n) const { return packed_t(AsSpan().Left(n * sizeof(ElementType)).packed); }
+    //! Returns a new TypedSpan consisting of up to n elements from the end of the original Span
+    ALWAYS_INLINE TypedSpan Right(size_t n) const { return packed_t(AsSpan().Right(n * sizeof(ElementType)).packed); }
+    //! Returns a new TypedSpan consisting of the original Span with up to n bytes removed from the start
+    ALWAYS_INLINE TypedSpan RemoveLeft(size_t n) const { return packed_t(AsSpan().RemoveLeft(n * sizeof(ElementType)).packed); }
+    //! Returns a new TypedSpan consisting of the original Span with up to n bytes removed from the end
+    ALWAYS_INLINE TypedSpan RemoveRight(size_t n) const { return packed_t(AsSpan().RemoveRight(n * sizeof(ElementType)).packed); }
 };
 
 template<class T> constexpr TypedSpan<T> Span::Cast() const { return TypedSpan<T>((typename TypedSpan<T>::packed_t)packed); }
