@@ -218,7 +218,14 @@ bool Span::IsAll(Span s, uint32_t val)
 
 Buffer::packed_t Buffer::FormatImpl(char* buf, size_t len, const char* format, va_list va)
 {
+    bool terminate = std::make_signed_t<size_t>(len) < 0;
+    if (terminate) { len = -len; }
     format_write_info fwi = { buf, buf + len };
     vformat(format_output_mem, &fwi, format, va);
+    if (terminate)
+    {
+        if (fwi.p == fwi.end) { fwi.p--; }
+        *fwi.p = 0;
+    }
     return Buffer(buf, fwi.p);
 }

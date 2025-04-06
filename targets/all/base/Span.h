@@ -336,6 +336,10 @@ public:
     Buffer Format(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, len, format); }
     //! Formats a string into the buffer
     ALWAYS_INLINE Buffer FormatVA(const char* format, va_list va) const { return FormatImpl((char*)p, len, format, va); }
+    //! Formats a string into the buffer, making sure it is null-terminated
+    Buffer FormatSZ(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, -len, format); }
+    //! Formats a string into the buffer, making sure it is null-terminated
+    ALWAYS_INLINE Buffer FormatSZVA(const char* format, va_list va) const { return FormatImpl((char*)p, -len, format, va); }
 
 private:
     //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
