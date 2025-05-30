@@ -62,6 +62,24 @@ struct Matrix3
         } };
     }
 
+    static Matrix3 Scale(float s)
+    {
+        return { .raw = {
+            s, 0, 0,
+            0, s, 0,
+            0, 0, s,
+        } };
+    }
+
+    static Matrix3 Scale(float sx, float sy, float sz)
+    {
+        return { .raw = {
+            sx,  0,  0,
+             0, sy,  0,
+             0,  0, sz,
+        } };
+    }
+
     static Matrix3 RotateX(float theta)
     {
         float s = sinf(theta), c = cosf(theta);
