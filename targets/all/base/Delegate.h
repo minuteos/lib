@@ -97,7 +97,7 @@ public:
         Init(target, unsafe_cast<_PMFInternal>(method));
     }
 
-    ALWAYS_INLINE constexpr TRes operator()(Args... args) { return fn(target, args...); }
+    ALWAYS_INLINE constexpr TRes operator()(Args... args) const { return fn(target, args...); }
 
     ALWAYS_INLINE constexpr operator bool() const { return fn; }
 
