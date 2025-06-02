@@ -333,19 +333,20 @@ public:
     //! Fills the entire bufer with the specified value
     ALWAYS_INLINE Buffer Fill(int value) const { memset(Pointer(), value, len); return *this; }
     //! Formats a string into the buffer
-    Buffer Format(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, len, format); }
+    template<typename... Args> ALWAYS_INLINE Buffer Format(const char* format, Args... args) const { return FormatImpl((char*)p, len, format, args...); }
     //! Formats a string into the buffer
-    ALWAYS_INLINE Buffer FormatVA(const char* format, va_list va) const { return FormatImpl((char*)p, len, format, va); }
+    ALWAYS_INLINE Buffer FormatVA(const char* format, va_list va) const { return FormatImplVA((char*)p, len, format, va); }
     //! Formats a string into the buffer, making sure it is null-terminated
-    Buffer FormatSZ(const char* format, ...) const { return va_call(FormatImpl, format, (char*)p, -len, format); }
+    template<typename... Args> ALWAYS_INLINE Buffer FormatSZ(const char* format, Args... args) const { return FormatImpl((char*)p, -len, format, args...); }
     //! Formats a string into the buffer, making sure it is null-terminated
-    ALWAYS_INLINE Buffer FormatSZVA(const char* format, va_list va) const { return FormatImpl((char*)p, -len, format, va); }
+    ALWAYS_INLINE Buffer FormatSZVA(const char* format, va_list va) const { return FormatImplVA((char*)p, -len, format, va); }
 
 private:
     //! This is a strictly internal function for reinterpreting a Span as a writable Buffer
     ALWAYS_INLINE static Buffer _FromSpan(Span span) { return Buffer((void*)span.p, span.len); }
 
-    static packed_t FormatImpl(char* buffer, size_t length, const char* format, va_list va);
+    static packed_t FormatImpl(char* buffer, size_t length, const char* format, ...);
+    static packed_t FormatImplVA(char* buffer, size_t length, const char* format, va_list va);
 };
 
 ALWAYS_INLINE Buffer Span::CopyTo(Buffer buf) const { auto len = std::min(buf.len, this->len); memcpy(buf.Pointer(), this->p, len); return Buffer(buf.Pointer(), len); }

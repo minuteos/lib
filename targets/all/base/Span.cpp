@@ -216,7 +216,12 @@ bool Span::IsAll(Span s, uint32_t val)
     return true;
 }
 
-Buffer::packed_t Buffer::FormatImpl(char* buf, size_t len, const char* format, va_list va)
+Buffer::packed_t Buffer::FormatImpl(char* buf, size_t len, const char* format, ...)
+{
+    return va_call(FormatImplVA, format, buf, len, format);
+}
+
+Buffer::packed_t Buffer::FormatImplVA(char* buf, size_t len, const char* format, va_list va)
 {
     bool terminate = std::make_signed_t<size_t>(len) < 0;
     if (terminate) { len = -len; }
