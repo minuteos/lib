@@ -233,7 +233,7 @@ OPTIMIZE int vformat(format_output output, void* context, const char* format, va
 
                 case 'q':
                     // limit == fixed fractional part
-                    frac = limit++;
+                    frac = limit ? limit++ : -1;
                     goto number;
 
                 case 'x':
