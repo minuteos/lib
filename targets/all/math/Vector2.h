@@ -40,6 +40,12 @@ struct Vector2
     {
         return a.x * b.x + a.y * b.y;
     }
+
+    //! Calculate the vector from polar coordinates
+    static Vector2 FromPolar(float angle, float radius = 1)
+    {
+        return { radius * cosf(angle), radius * sinf(angle) };
+    }
 };
 
 //! Calculate the sum of two vectors
