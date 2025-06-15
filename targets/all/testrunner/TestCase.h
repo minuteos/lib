@@ -8,6 +8,7 @@
 
 #include <base/base.h>
 #include <base/Span.h>
+#include <base/float.h>
 
 #include <setjmp.h>
 #include <functional>
@@ -54,6 +55,7 @@ public:
     static void Print(unsigned int value) { printf("%u", value); }
     static void Print(long value) { printf("%ld", value); }
     static void Print(unsigned long value) { printf("%lu", value); }
+    static void Print(float value) { char buf[16]; *fast_ftoa(value, buf) = 0; puts(buf); }
     static void Print(Span value) { for (char c: value) printf("%02X", c); }
     template<typename T> static void Print(const T* ptr) { printf("%p", ptr); }
     template<typename T> static void Print(T* ptr) { printf("%p", ptr); }
