@@ -106,6 +106,8 @@ void DebugPrintFV(unsigned channel, const char* component, const char* format, v
     if (!PLATFORM_DBG_ACTIVE(channel))
         return;
 
+    PLATFORM_CRITICAL_SECTION();    // prevent breaking Worker log output
+
 #ifdef MONO_CLOCKS
     static struct
     {
