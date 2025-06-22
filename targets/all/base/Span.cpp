@@ -57,6 +57,21 @@ Span::packed_t Span::Split(Span& s, char sep)
     return Span();
 }
 
+Span::packed_t Span::SplitRight(Span& s, char sep)
+{
+    for (size_t i = s.len; i > 0; i--)
+    {
+        if (s.p[i - 1] == sep)
+        {
+            auto res = Span(s.p + i, s.end());
+            s = Span(s.p, s.p + i - 1);
+            return res;
+        }
+    }
+
+    return Span();
+}
+
 Span::packed_t Span::Consume(Span& s, char sep)
 {
     size_t i;

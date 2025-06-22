@@ -175,6 +175,28 @@ public:
      */
     ALWAYS_INLINE bool Split(char separator, Span& key, Span& value) const { value = *this; return (key = Split(value, separator)).p != NULL; }
 
+    //! Splits off the part of the span after the last specified @p separator
+    /*!
+     * The target Span is modified in place and will contain the part remaining
+     * before the separator. If the separator is not found, the original Span
+     * is left unmodified.
+     *
+     * @return The part of the original Span to the right of the separator.
+     * An empty span, if the separator is not found in the original Span.
+     */
+    ALWAYS_INLINE Span SplitRight(char separator) { return SplitRight(*this, separator); }
+
+    //! Splits the span into a part before and after the last instance of the separator
+    /*!
+     * If @p separator is found in the Span, @p rest will be set to the part to the
+     * left of the separator and @p suffix will be the part to the right.
+     * If @p separator is not found, @p rest will contain the entire original
+     * Span and @p suffix will be an empty span.
+     *
+     * @return @c true if the separator was found in the Span, @c false otherwise
+     */
+    ALWAYS_INLINE bool SplitRight(char separator, Span& rest, Span& suffix) const { rest = *this; return (suffix = Split(rest, separator)).p != NULL; }
+
     //! Consumes part of the Span up to the specified @p separator or the end of the Span
     /*!
      * The target Span is modified in place and will contain the part remaining
@@ -273,6 +295,7 @@ private:
     static packed_t Slice(Span s, int start, int end);
 
     static packed_t Split(Span& s, char separator);
+    static packed_t SplitRight(Span& s, char separator);
     static packed_t Consume(Span& s, char separator);
 
     ALWAYS_INLINE int ParseInt(int base, int defVal, bool stopAtInvalid) const { return ParseInt(*this, stopAtInvalid ? base : base ? -base : -1, defVal); }
