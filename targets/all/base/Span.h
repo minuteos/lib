@@ -67,6 +67,9 @@ public:
         ASSERT(literal[n - 1] == 0);
     }
 
+    //! Constructs a Span from a null-terminated string, excluding the terminator
+    ALWAYS_INLINE static constexpr Span FromSZ(const char* value) { return value ? Span(value, strlen(value)) : Span(); }
+
     //! Constructs a Span from a @ref packed_t - used to force passing of return values via registers
     constexpr Span(packed_t packed) : packed(packed) {}
     //! Converts a Span to a @ref packed_t - used to force passing of return values via registers
