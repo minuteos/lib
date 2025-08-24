@@ -125,7 +125,7 @@ public:
     //! Compares the span byte-by-byte with another memory location
     int CompareTo(const void* p) const { return memcmp(this->p, p, len); }
     //! Compares the span with byte-by-byte with another Span
-    int CompareTo(Span other) const { auto res = memcmp(this->p, p, std::min(len, other.len)); return res ? res : len - other.len; }
+    int CompareTo(Span other) const { auto res = memcmp(this->p, other.p, std::min(len, other.len)); return res ? res : len - other.len; }
 
     //! Returns a new Span consisting of up to n bytes from the start of the original Span
     ALWAYS_INLINE Span Left(size_t n) const { return Span(p, n < len ? n : len); }
