@@ -18,4 +18,4 @@
 //! define a lookup table of 32-bit words
 #define WORDS(...)	LOOKUP_TABLE(uint32_t, ## __VA_ARGS__)
 //! define a lookup table of null-terminated string literals
-#define STRINGS(...)	LOOKUP_TABLE(char*, ## __VA_ARGS__)
+#define STRINGS(...)	LOOKUP_TABLE(char* const, ## __VA_ARGS__)
