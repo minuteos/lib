@@ -39,6 +39,13 @@ char* fast_ftoa(float v, char* buf)
     }
 
     int e = f >> 23;    // exponent (biased)
+
+    // handle NAN (output nothing, just the optional sign)
+    if (e == 0xff)
+    {
+        return buf;
+    }
+
     f &= MASK(23);      // significand
 
     // handle subnormals
